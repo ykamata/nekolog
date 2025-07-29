@@ -1,0 +1,63 @@
+// Production Prisma schema file for MySQL
+// Use this schema for production deployments
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Cat {
+  id        String   @id @default(cuid())
+  name      String
+  birthdate DateTime?
+  weight    Float?
+  photoUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  meals     MealRecord[]
+
+  @@map("cats")
+}
+
+model Food {
+  id              String   @id @default(cuid())
+  name            String
+  type            FoodType
+  brand           String?
+  caloriesPerGram Float
+  pricePerUnit    Float?
+  unit            String   @default("g")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  meals           MealRecord[]
+
+  @@map("foods")
+}
+
+model MealRecord {
+  id        String   @id @default(cuid())
+  catId     String
+  foodId    String
+  quantity  Float    // in grams
+  calories  Float    // calculated or manual
+  mealTime  DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  food      Food     @relation(fields: [foodId], references: [id], onDelete: Restrict)
+
+  @@map("meal_records")
+}
+
+enum FoodType {
+  DRY
+  WET
+}

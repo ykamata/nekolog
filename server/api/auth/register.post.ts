@@ -1,0 +1,95 @@
+import { z } from 'zod';
+import {
+  hashPassword,
+  generateTokenPair,
+  getSecureCookieOptions,
+  getRefreshCookieOptions,
+} from '~/lib/auth';
+import { prisma } from '~/lib/prisma';
+
+const registerSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  name: z.string().optional(),
+});
+
+export default defineEventHandler(async (event) => {
+  try {
+    // Only allow POST method
+    assertMethod(event, 'POST');
+
+    // Parse and validate request body
+    const body = await readBody(event);
+    const { email, password, name } = registerSchema.parse(body);
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'User already exists',
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+
+    // Create user
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Generate tokens
+    const tokenPayload = {
+      userId: user.id,
+      email: user.email,
+    };
+    const { accessToken, refreshToken } = await generateTokenPair(tokenPayload);
+
+    // Set secure cookies
+    setCookie(event, 'access-token', accessToken, getSecureCookieOptions());
+    setCookie(event, 'refresh-token', refreshToken, getRefreshCookieOptions());
+
+    return {
+      user,
+      accessToken,
+      refreshToken,
+    };
+  }
+  catch (error) {
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Validation failed',
+        data: error.errors,
+      });
+    }
+
+    // Re-throw HTTP errors
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error;
+    }
+
+    // Handle unexpected errors
+    console.error('Registration error:', error);
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Internal server error',
+    });
+  }
+});

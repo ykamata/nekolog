@@ -1,0 +1,62 @@
+{
+  // https://nuxt.com/docs/guide/concepts/typescript
+  "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    // Strict TypeScript settings for better type safety
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": false,
+    "useUnknownInCatchVariables": true,
+
+    // Module resolution and JSON support
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+
+    // Path aliases for clean imports (~/*)
+    "baseUrl": ".",
+    "paths": {
+      "~/*": ["./*"],
+      "~~/*": ["./*"],
+      "@/*": ["./*"],
+      "@@/*": ["./*"]
+    },
+
+    // Additional compiler options for better development experience
+    "forceConsistentCasingInFileNames": true,
+    "preserveWatchOutput": true,
+    "incremental": true,
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": [
+    "./.nuxt/nuxt.d.ts",
+    "./nuxt.config.ts",
+    "./app.vue",
+    "./components/**/*.vue",
+    "./components/**/*.ts",
+    "./layouts/**/*.vue",
+    "./layouts/**/*.ts",
+    "./pages/**/*.vue",
+    "./pages/**/*.ts",
+    "./plugins/**/*.ts",
+    "./composables/**/*.ts",
+    "./utils/**/*.ts",
+    "./middleware/**/*.ts",
+    "./server/**/*.ts",
+    "./types/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}

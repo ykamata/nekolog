@@ -1,0 +1,166 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Cat {
+  id        String   @id @default(cuid())
+  name      String
+  birthdate DateTime?
+  weight    Float?
+  photoUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  meals              MealRecord[]
+  medicationRecords  MedicationRecord[]
+  medicationSchedules MedicationSchedule[]
+  medicationReminders MedicationReminder[]
+
+  @@map("cats")
+}
+
+model Food {
+  id              String   @id @default(cuid())
+  name            String
+  type            FoodType
+  brand           String?
+  caloriesPerGram Float
+  pricePerUnit    Float?
+  unit            String   @default("g")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  meals           MealRecord[]
+
+  @@map("foods")
+}
+
+model MealRecord {
+  id        String   @id @default(cuid())
+  catId     String
+  foodId    String
+  quantity  Float    // in grams
+  calories  Float    // calculated or manual
+  mealTime  DateTime
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cat       Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  food      Food     @relation(fields: [foodId], references: [id], onDelete: Restrict)
+
+  @@map("meal_records")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum FoodType {
+  DRY
+  WET
+}
+
+model Medication {
+  id          String   @id @default(cuid())
+  name        String
+  type        MedicationType
+  description String?
+  dosage      String?  // 投与量の説明
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  records     MedicationRecord[]
+  schedules   MedicationSchedule[]
+  reminders   MedicationReminder[]
+
+  @@map("medications")
+}
+
+model MedicationRecord {
+  id           String   @id @default(cuid())
+  catId        String
+  medicationId String
+  quantity     Int      // 投与個数
+  administeredAt DateTime
+  status       MedicationStatus @default(PENDING)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cat          Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+
+  @@map("medication_records")
+}
+
+model MedicationSchedule {
+  id           String   @id @default(cuid())
+  catId        String
+  medicationId String
+  frequency    String   // "daily", "twice_daily", "weekly", etc.
+  times        String   // JSON array of times: ["08:00", "20:00"]
+  startDate    DateTime
+  endDate      DateTime?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cat          Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+  reminders    MedicationReminder[]
+
+  @@map("medication_schedules")
+}
+
+model MedicationReminder {
+  id           String   @id @default(cuid())
+  scheduleId   String
+  catId        String
+  medicationId String
+  scheduledAt  DateTime
+  status       ReminderStatus @default(PENDING)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  schedule     MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  cat          Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+
+  @@map("medication_reminders")
+}
+
+enum MedicationType {
+  MEDICINE
+  SUPPLEMENT
+  VITAMIN
+}
+
+enum MedicationStatus {
+  PENDING
+  ADMINISTERED
+  SKIPPED
+  MISSED
+}
+
+enum ReminderStatus {
+  PENDING
+  ACKNOWLEDGED
+  SNOOZED
+  DISMISSED
+}
