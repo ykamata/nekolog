@@ -23,6 +23,8 @@ model Cat {
   medicationRecords  MedicationRecord[]
   medicationSchedules MedicationSchedule[]
   medicationReminders MedicationReminder[]
+  veterinaryVisits   VeterinaryVisit[]
+  veterinaryAppointments VeterinaryAppointment[]
 
   @@map("cats")
 }
@@ -163,4 +165,104 @@ enum ReminderStatus {
   ACKNOWLEDGED
   SNOOZED
   DISMISSED
+}
+
+model VeterinaryVisit {
+  id           String   @id @default(cuid())
+  catId        String
+  visitDate    DateTime
+  hospitalId   String
+  doctorId     String?
+  cost         Float
+  notes        String?
+  hasBloodTest Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cat          Cat                    @relation(fields: [catId], references: [id], onDelete: Cascade)
+  hospital     VeterinaryHospital     @relation(fields: [hospitalId], references: [id])
+  doctor       VeterinaryDoctor?      @relation(fields: [doctorId], references: [id])
+  treatments   VeterinaryVisitTreatment[]
+
+  @@map("veterinary_visits")
+}
+
+model VeterinaryAppointment {
+  id                String            @id @default(cuid())
+  catId             String
+  appointmentDate   DateTime
+  hospitalId        String
+  doctorId          String?
+  plannedTreatments String?
+  notes             String?
+  status            AppointmentStatus @default(SCHEDULED)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  cat      Cat                  @relation(fields: [catId], references: [id], onDelete: Cascade)
+  hospital VeterinaryHospital   @relation(fields: [hospitalId], references: [id])
+  doctor   VeterinaryDoctor?    @relation(fields: [doctorId], references: [id])
+
+  @@map("veterinary_appointments")
+}
+
+model VeterinaryHospital {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  address   String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  visits       VeterinaryVisit[]
+  appointments VeterinaryAppointment[]
+  doctors      VeterinaryDoctor[]
+
+  @@map("veterinary_hospitals")
+}
+
+model VeterinaryDoctor {
+  id             String  @id @default(cuid())
+  name           String
+  hospitalId     String?
+  specialization String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  hospital     VeterinaryHospital?     @relation(fields: [hospitalId], references: [id])
+  visits       VeterinaryVisit[]
+  appointments VeterinaryAppointment[]
+
+  @@map("veterinary_doctors")
+}
+
+model VeterinaryTreatment {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String?
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  visitTreatments VeterinaryVisitTreatment[]
+
+  @@map("veterinary_treatments")
+}
+
+model VeterinaryVisitTreatment {
+  id          String @id @default(cuid())
+  visitId     String
+  treatmentId String
+
+  visit     VeterinaryVisit     @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  treatment VeterinaryTreatment @relation(fields: [treatmentId], references: [id])
+
+  @@unique([visitId, treatmentId])
+  @@map("veterinary_visit_treatments")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
 }

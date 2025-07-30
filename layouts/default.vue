@@ -56,6 +56,33 @@
         </NuxtLink>
 
         <NuxtLink
+          to="/veterinary-visits"
+          class="nav-item"
+          :class="{ 'nav-item--active': $route.path === '/veterinary-visits' }"
+        >
+          <span class="nav-icon">🏥</span>
+          <span class="nav-text">通院履歴</span>
+        </NuxtLink>
+
+        <NuxtLink
+          to="/veterinary-appointments"
+          class="nav-item"
+          :class="{ 'nav-item--active': $route.path === '/veterinary-appointments' }"
+        >
+          <span class="nav-icon">📅</span>
+          <span class="nav-text">予約管理</span>
+        </NuxtLink>
+
+        <NuxtLink
+          to="/medications"
+          class="nav-item"
+          :class="{ 'nav-item--active': $route.path === '/medications' }"
+        >
+          <span class="nav-icon">💊</span>
+          <span class="nav-text">薬の管理</span>
+        </NuxtLink>
+
+        <NuxtLink
           to="/analytics"
           class="nav-item"
           :class="{ 'nav-item--active': $route.path === '/analytics' }"

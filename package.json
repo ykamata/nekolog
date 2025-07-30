@@ -17,6 +17,7 @@
     "test:run": "vitest run",
     "test:components": "vitest run tests/components",
     "test:performance": "vitest run tests/performance --reporter=verbose",
+    "test:performance:report": "node scripts/run-performance-tests.js",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",

@@ -1,35 +1,110 @@
-技術スタック:
-インフラ・デプロイ:
-API: Nuxt 内の API ルート（Nitro）
-ホスティング: Private Network 内の Ubuntu サーバー（Docker コンテナ運用）
-画像/ファイル配信: ローカルファイル保存 + Nginx で静的配信
-監視: - Sentry（エラー監視） - Uptime Kuma（死活監視）
-データベース:
-キャッシュ: 未導入（必要であれば Redis）
-本番: MySQL（Private Network 上の本番用 DB サーバー）
-開発: SQLite（軽量でローカル開発に最適）
-バックエンド:
-ORM / DB アクセス: Prisma（MySQL/SQLite 両対応）
-フレームワーク: Nitro
-ランタイム: Node.js 20.x（.nvmrc 管理、GitHub Actions でも使用）
-認証: JWT + Cookie ベースの自前実装
-フロントエンド:
-スタイリング: - Tailwind CSS v4 - UnoCSS（オンデマンドユーティリティ）
-バリデーション: Zod
-フォーム: VueUseForm
-フレームワーク: Nuxt 3（LTS、v3.11 以上、Nitro v3）
-状態管理: Pinia v3（ストア自動インポート）
-言語: 'TypeScript 5.x（strict: true、resolveJsonModule: true、~/\* パスエイリアス使用）'
-注意事項:
+---
+inclusion: always
+---
 
-- .nvmrc で Node.js バージョンを固定（20.x）
-- husky や pre-commit フックは未導入
-  開発ツール:
-  CI: GitHub Actions（node@20, npm ci）
-  テスト:
-  - Vitest
-  - '@nuxt/test-utils'
-  - Playwright
-    パッケージマネージャー: npm
-    フォーマッター: ESLint による統合（Prettier 不使用）
-    リンター: ESLint v9（Flat config、@nuxt/eslint、Stylistic 有効）
+# Technical Architecture & Development Guidelines
+
+## Core Stack
+
+### Frontend
+
+- **Framework**: Nuxt 3 (LTS v3.11+) with Nitro v3
+- **Language**: TypeScript 5.x with strict mode enabled
+- **Styling**: Tailwind CSS v4 + UnoCSS for on-demand utilities
+- **State Management**: Pinia v3 with auto-imported stores
+- **Forms**: VueUseForm for form handling
+- **Validation**: Zod schemas for runtime validation
+
+### Backend
+
+- **Runtime**: Node.js 22.x (managed via .nvmrc)
+- **Framework**: Nitro (built into Nuxt)
+- **API**: Nuxt API routes for REST endpoints
+- **Authentication**: Custom JWT + Cookie-based implementation
+- **ORM**: Prisma with dual database support
+
+### Database
+
+- **Development**: SQLite (lightweight, local)
+- **Production**: MySQL (private network deployment)
+- **Cache**: Not implemented (Redis if needed)
+
+### Infrastructure
+
+- **Hosting**: Ubuntu server in private network
+- **Deployment**: Docker containers
+- **Static Files**: Local storage + Nginx for delivery
+- **Monitoring**: Sentry (errors) + Uptime Kuma (health checks)
+
+## Development Standards
+
+### Code Style
+
+- Use TypeScript strict mode with `resolveJsonModule: true`
+- Leverage `~/` path aliases for imports
+- Follow ESLint v9 flat config with @nuxt/eslint and Stylistic rules
+- No Prettier - ESLint handles all formatting
+
+### File Organization
+
+- API routes: `server/api/` directory structure
+- Components: Auto-imported from `components/` directory
+- Composables: Auto-imported from `composables/` directory
+- Types: Centralized in `types/` directory
+- Stores: Pinia stores in `stores/` directory
+- Validation schemas: `lib/validations/` directory
+
+### Testing Strategy
+
+- **Unit/Integration**: Vitest with @nuxt/test-utils
+- **E2E**: Playwright for end-to-end testing
+- **API Testing**: Direct server endpoint testing
+- Test files follow `*.test.ts` naming convention
+
+### Database Patterns
+
+- Use Prisma schema for type-safe database operations
+- Implement proper error handling for database operations
+- Support both MySQL (production) and SQLite (development)
+- Use database migrations for schema changes
+
+### Authentication Flow
+
+- JWT tokens stored in HTTP-only cookies
+- Custom middleware for route protection
+- User session management with refresh token support
+- Client-side auth state management via composables
+
+### API Design
+
+- RESTful endpoints following `/api/resource/[id]` pattern
+- Consistent error response format
+- Input validation using Zod schemas
+- Proper HTTP status codes and error handling
+
+## Development Workflow
+
+### Package Management
+
+- Use `npm` as the package manager
+- Node.js version locked to 22.x via .nvmrc
+- No pre-commit hooks (husky not implemented)
+
+### CI/CD
+
+- GitHub Actions with Node.js 22
+- Use `npm ci` for dependency installation
+- Self-hosted runner for private network deployment
+
+### Environment Setup
+
+- Development uses SQLite for quick setup
+- Environment variables managed via `.env` file
+- Docker containerization for production deployment
+
+## Key Constraints
+
+- Private network deployment only
+- No external CDN usage for assets
+- Custom authentication implementation (no third-party auth)
+- Responsive design for both desktop and mobile Safari/Chrome

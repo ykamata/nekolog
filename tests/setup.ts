@@ -11,6 +11,7 @@ global.nextTick = (await import('vue')).nextTick;
 global.onMounted = (await import('vue')).onMounted;
 global.onUnmounted = (await import('vue')).onUnmounted;
 global.withDefaults = (await import('vue')).withDefaults;
+global.readonly = (await import('vue')).readonly;
 
 // Mock Nuxt's auto-imports
 global.$fetch = vi.fn();
