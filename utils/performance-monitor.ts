@@ -137,9 +137,9 @@ class PerformanceMonitor {
     return {
       count: relevantMetrics.length,
       average: sum / values.length,
-      min: values[0],
-      max: values[values.length - 1],
-      p95: values[p95Index] || values[values.length - 1],
+      min: values[0] || 0,
+      max: values[values.length - 1] || 0,
+      p95: values[p95Index] || values[values.length - 1] || 0,
       recent: relevantMetrics.slice(-10), // 最新10件
     };
   }

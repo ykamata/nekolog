@@ -238,7 +238,7 @@ export const useFoodsStore = defineStore('foods', {
         if (syncStatus.value.isOnline) {
           // Online: Update on server
           const data = await $fetch<Food>(`/api/foods/${id}`, {
-            method: 'PUT',
+            method: 'PUT' as any,
             body: foodUpdate,
           });
 
@@ -266,8 +266,12 @@ export const useFoodsStore = defineStore('foods', {
               ...foodUpdate,
               updatedAt: new Date(),
             };
-            this.foods[index] = updatedFood;
-            return updatedFood;
+            const validatedFood = {
+              ...updatedFood,
+              id: updatedFood.id || this.foods[index]?.id || '',
+            };
+            this.foods[index] = validatedFood as Food;
+            return validatedFood as Food;
           }
 
           throw new Error('Food not found');
@@ -292,7 +296,7 @@ export const useFoodsStore = defineStore('foods', {
         if (syncStatus.value.isOnline) {
           // Online: Delete on server
           await $fetch(`/api/foods/${id}`, {
-            method: 'DELETE',
+            method: 'DELETE' as any,
           });
         }
         else {

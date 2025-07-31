@@ -89,7 +89,10 @@ const validateForm = (): boolean => {
         errors: Array<{ path: string[]; message: string }>;
       };
       for (const err of zodError.errors) {
-        newErrors[err.path[0]] = err.message;
+        const pathKey = err.path[0];
+        if (pathKey) {
+          newErrors[pathKey] = err.message;
+        }
       }
     }
     errors.value = newErrors;
@@ -155,7 +158,7 @@ const validateField = (field: string) => {
       ];
     if (fieldSchema) {
       fieldSchema.parse(formData.value[field as keyof MealRecordForm]);
-      errors.value[field] = undefined;
+      delete errors.value[field];
     }
   }
   catch (error: unknown) {

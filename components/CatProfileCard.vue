@@ -119,9 +119,9 @@ const loadMealStats = async (): Promise<void> => {
       lastMealTime:
         response.analytics.dailyCalories.length > 0
           ? new Date(
-            response.analytics.dailyCalories[
+            response.analytics?.dailyCalories?.[
               response.analytics.dailyCalories.length - 1
-            ].date,
+            ]?.date || '',
           )
           : undefined,
     };

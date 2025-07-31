@@ -75,7 +75,7 @@ export default defineEventHandler(async (event) => {
         total,
         limit: filter.limit,
         offset: filter.offset,
-        hasMore: filter.offset + filter.limit < total,
+        hasMore: (filter.offset || 0) + (filter.limit || 10) < total,
       },
     };
   }

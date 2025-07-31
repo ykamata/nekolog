@@ -462,7 +462,9 @@ function updateChart() {
   if (!chart.value) return;
 
   chart.value.data = chartData.value;
-  chart.value.options = chartConfig.value.options;
+  if (chartConfig.value.options) {
+    chart.value.options = chartConfig.value.options;
+  }
   chart.value.update('active');
 }
 

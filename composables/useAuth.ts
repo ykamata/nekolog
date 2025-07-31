@@ -264,9 +264,10 @@ export const useAuth = () => {
 
       // Only clear tokens if the refresh token is actually invalid (401/403)
       // Don't clear on network errors or temporary server issues
-      if ((error?.response?.status === 401 || error?.statusCode === 401
-        || error?.response?.status === 403 || error?.statusCode === 403)
-      && error?.statusMessage?.includes('Invalid') || error?.statusMessage?.includes('expired')) {
+      const errorObj = error as any;
+      if ((errorObj?.response?.status === 401 || errorObj?.statusCode === 401
+        || errorObj?.response?.status === 403 || errorObj?.statusCode === 403)
+      && (errorObj?.statusMessage?.includes('Invalid') || errorObj?.statusMessage?.includes('expired'))) {
         const accessToken = useCookie('access-token');
         const refreshTokenCookie = useCookie('refresh-token');
         accessToken.value = null;

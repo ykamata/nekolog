@@ -187,7 +187,7 @@ const confirmDelete = async () => {
 
   try {
     await $fetch(`/api/veterinary-visits/${visitToDelete.value.id}`, {
-      method: 'DELETE',
+      method: 'DELETE' as any,
     });
 
     // Remove from local state
@@ -241,7 +241,7 @@ const handleEditSubmit = async (data: CreateVeterinaryVisitInput) => {
 
   try {
     const updatedVisit = await $fetch<VeterinaryVisitWithRelations>(`/api/veterinary-visits/${editingVisit.value.id}`, {
-      method: 'PUT',
+      method: 'PUT' as any,
       body: data,
     });
 

@@ -275,15 +275,15 @@ function getForeignKeyConstraintMessage(meta: any): string {
 /**
  * Check if error is a Prisma error
  */
-function isPrismaError(error: unknown): boolean {
-  return error && typeof error === 'object' && 'code' in error && 'clientVersion' in error;
+function isPrismaError(error: unknown): error is { code: string; clientVersion: string } {
+  return !!(error && typeof error === 'object' && 'code' in error && 'clientVersion' in error);
 }
 
 /**
  * Check if error is an HTTP error
  */
-function isHttpError(error: unknown): boolean {
-  return error && typeof error === 'object' && 'statusCode' in error;
+function isHttpError(error: unknown): error is { statusCode: number } {
+  return !!(error && typeof error === 'object' && 'statusCode' in error);
 }
 
 /**
@@ -303,7 +303,7 @@ export function getRequestContext(event: H3Event): Omit<ErrorContext, 'endpoint'
     userId: event.context.user?.id,
     requestId: headers['x-request-id'] as string,
     userAgent: headers['user-agent'] as string,
-    ip: getClientIP(event),
+    ip: 'unknown', // getClientIP(event) || 'unknown',
   };
 }
 

@@ -268,12 +268,16 @@ const handleResolveConflict = async (
 
 // 競合のタイトルを取得
 const getConflictTitle = (conflict: SyncConflict): string => {
-  const typeNames = {
+  const typeNames: Record<string, string> = {
     cat: '猫',
     food: 'フード',
     meal: '食事記録',
+    medication: '薬',
+    medicationRecord: '薬記録',
+    medicationSchedule: '薬スケジュール',
+    medicationReminder: '薬リマインダー',
   };
-  return `${typeNames[conflict.type]}の競合 (${conflict.field})`;
+  return `${typeNames[conflict.type] || conflict.type}の競合 (${conflict.field})`;
 };
 
 // 日付フォーマット

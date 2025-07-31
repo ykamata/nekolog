@@ -138,7 +138,7 @@ export default defineEventHandler(async (event) => {
     // 通院記録を日付ごとにグループ化
     visits.forEach((visit) => {
       const dateKey = visit.visitDate.toISOString().split('T')[0];
-      if (!calendarData[dateKey]) {
+      if (dateKey && !calendarData[dateKey]) {
         calendarData[dateKey] = {
           date: dateKey,
           visits: [],
@@ -149,10 +149,12 @@ export default defineEventHandler(async (event) => {
         };
       }
 
-      calendarData[dateKey].visits.push(visit);
-      calendarData[dateKey].hasBloodTest = calendarData[dateKey].hasBloodTest || visit.hasBloodTest;
-      calendarData[dateKey].totalCost += visit.cost;
-      calendarData[dateKey].catCount.add(visit.catId);
+      if (dateKey) {
+        calendarData[dateKey].visits.push(visit);
+        calendarData[dateKey].hasBloodTest = calendarData[dateKey].hasBloodTest || visit.hasBloodTest;
+        calendarData[dateKey].totalCost += visit.cost;
+        calendarData[dateKey].catCount.add(visit.catId);
+      }
     });
 
     // 予約を日付ごとにグループ化

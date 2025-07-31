@@ -59,7 +59,7 @@ const showCreateOption = computed(() => {
   if (!props.allowNew || !searchQuery.value.trim()) return false;
 
   const exactMatch = props.items.some(item =>
-    item[props.displayField] === searchQuery.value.trim(),
+    (item as any)[props.displayField] === searchQuery.value.trim(),
   );
 
   return !exactMatch;
@@ -69,7 +69,7 @@ const displayValue = computed(() => {
   if (searchQuery.value) return searchQuery.value;
 
   const selectedItem = props.items.find(item => item.id === props.modelValue);
-  return selectedItem ? String(selectedItem[props.displayField]) : '';
+  return selectedItem ? String((selectedItem as any)[props.displayField]) : '';
 });
 
 // Methods
@@ -97,7 +97,7 @@ const closeDropdown = () => {
 const selectItem = (item: T) => {
   emit('update:modelValue', item.id);
   emit('select', item);
-  searchQuery.value = String(item[props.displayField]);
+  searchQuery.value = String((item as any)[props.displayField]);
   closeDropdown();
 };
 
@@ -149,14 +149,16 @@ const handleKeydown = (event: KeyboardEvent) => {
       event.preventDefault();
       if (selectedIndex.value >= 0) {
         if (selectedIndex.value < filteredItems.value.length) {
-          selectItem(filteredItems.value[selectedIndex.value]);
+          const item = filteredItems.value[selectedIndex.value];
+          if (item) selectItem(item);
         }
         else if (showCreateOption.value) {
           createNewItem();
         }
       }
       else if (filteredItems.value.length === 1) {
-        selectItem(filteredItems.value[0]);
+        const item = filteredItems.value[0];
+        if (item) selectItem(item);
       }
       else if (showCreateOption.value) {
         createNewItem();
@@ -206,7 +208,7 @@ onUnmounted(() => {
 watch(() => props.modelValue, (newValue) => {
   if (!isOpen.value) {
     const selectedItem = props.items.find(item => item.id === newValue);
-    searchQuery.value = selectedItem ? String(selectedItem[props.displayField]) : '';
+    searchQuery.value = selectedItem ? String((selectedItem as any)[props.displayField]) : '';
   }
 });
 </script>
@@ -290,7 +292,7 @@ watch(() => props.modelValue, (newValue) => {
         >
           <div class="item-content">
             <div class="item-name">
-              {{ item[displayField] }}
+              {{ (item as any)[displayField] }}
             </div>
             <div
               v-if="'specialization' in item && item.specialization"

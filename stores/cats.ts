@@ -198,7 +198,7 @@ export const useCatsStore = defineStore('cats', {
         if (syncStatus.value.isOnline) {
           // Online: Update on server
           const data = await $fetch<Cat>(`/api/cats/${id}`, {
-            method: 'PUT',
+            method: 'PUT' as any,
             body: catUpdate,
           });
 
@@ -227,11 +227,15 @@ export const useCatsStore = defineStore('cats', {
               ...catUpdate,
               birthdate: catUpdate.birthdate
                 ? new Date(catUpdate.birthdate)
-                : this.cats[index].birthdate,
+                : this.cats[index]?.birthdate,
               updatedAt: new Date(),
             };
-            this.cats[index] = updatedCat;
-            return updatedCat;
+            const validatedCat = {
+              ...updatedCat,
+              id: updatedCat.id || this.cats[index]?.id || '',
+            };
+            this.cats[index] = validatedCat as Cat;
+            return validatedCat as Cat;
           }
 
           throw new Error('Cat not found');
@@ -256,7 +260,7 @@ export const useCatsStore = defineStore('cats', {
         if (syncStatus.value.isOnline) {
           // Online: Delete on server
           await $fetch(`/api/cats/${id}`, {
-            method: 'DELETE',
+            method: 'DELETE' as any,
           });
         }
         else {

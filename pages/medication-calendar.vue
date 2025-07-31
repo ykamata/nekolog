@@ -185,7 +185,7 @@ onMounted(() => {
           <button
             type="button"
             class="add-button"
-            @click="handleRecordCreate(new Date().toISOString().split('T')[0])"
+            @click="handleRecordCreate(new Date().toISOString().split('T')[0] || '')"
           >
             <span class="add-icon">+</span>
             <span class="add-text">今日の記録を追加</span>

@@ -83,7 +83,7 @@ const handleEdit = (record: MedicationRecord) => {
 const handleDelete = async (record: MedicationRecord) => {
   try {
     await $fetch(`/api/medication-records/${record.id}`, {
-      method: 'DELETE',
+      method: 'DELETE' as any,
     });
 
     // Refresh stats after deletion
@@ -119,7 +119,7 @@ const handleEditSubmit = async (data: MedicationRecordInput) => {
     await $fetch<MedicationRecord>(
       `/api/medication-records/${editingRecord.value.id}`,
       {
-        method: 'PUT',
+        method: 'PUT' as any,
         body: data,
       },
     );

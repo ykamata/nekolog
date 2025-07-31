@@ -510,7 +510,7 @@ const generateCalendarDays = (): CalendarDay[] => {
     const hasMissed = dayRecords.some(r => r.status === 'MISSED');
 
     days.push({
-      date: dateString,
+      date: dateString || '',
       dayNumber: currentDateObj.getDate(),
       isCurrentMonth,
       isToday,
@@ -732,7 +732,7 @@ onMounted(async () => {
 }
 
 .section-title {
-  @apply text-md font-medium text-gray-700 mb-2;
+  @apply text-base font-medium text-gray-700 mb-2;
 }
 
 .record-item,

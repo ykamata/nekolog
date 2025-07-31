@@ -6,6 +6,8 @@ import type {
   MedicationRecordInput,
   Medication,
 } from '~/types/medication';
+
+import { MedicationStatus } from '~/types/medication';
 import type { Cat } from '~/types/cat-meal';
 
 interface Props {
@@ -60,6 +62,7 @@ const handleSaveRecord = (recordInput: MedicationRecordInput) => {
     const newRecord: MedicationRecord = {
       id: `temp-${Date.now()}`, // Temporary ID, will be replaced by server
       ...recordInput,
+      status: recordInput.status || MedicationStatus.PENDING,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -153,7 +156,7 @@ const formatDate = (date: Date): string => {
     <!-- Medication Record Form -->
     <MedicationRecordForm
       :is-open="showRecordForm"
-      :medication-record="editingRecord"
+      :medication-record="editingRecord || undefined"
       :cats="[cat]"
       :medications="medications"
       :selected-cat-id="cat.id"

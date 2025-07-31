@@ -318,8 +318,9 @@ onMounted(() => {
         </div>
         <div class="modal-body">
           <CatManagementForm
-            @submit="handleAddSubmit"
-            @cancel="handleAddCancel"
+            :is-open="showAddModal"
+            @close="handleAddCancel"
+            @save="handleAddSubmit"
           />
         </div>
       </div>
@@ -349,14 +350,10 @@ onMounted(() => {
         </div>
         <div class="modal-body">
           <CatManagementForm
-            :initial-data="{
-              name: editingCat.name,
-              birthdate: editingCat.birthdate,
-              weight: editingCat.weight,
-              photoUrl: editingCat.photoUrl,
-            }"
-            @submit="handleEditSubmit"
-            @cancel="handleEditCancel"
+            :cat="editingCat"
+            :is-open="showEditModal"
+            @close="handleEditCancel"
+            @save="handleEditSubmit"
           />
         </div>
       </div>

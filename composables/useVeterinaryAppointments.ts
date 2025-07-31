@@ -53,7 +53,7 @@ export const useVeterinaryAppointments = () => {
       }
 
       total.value = response.total;
-      hasMore.value = response.hasMore;
+      hasMore.value = appointments.value.length < response.total;
       currentParams.value = params;
 
       return response;
@@ -153,7 +153,7 @@ export const useVeterinaryAppointments = () => {
 
     try {
       const updatedAppointment = await $fetch<VeterinaryAppointmentWithRelations>(`/api/veterinary-appointments/${data.id}`, {
-        method: 'PUT',
+        method: 'PUT' as any,
         body: data,
       });
 
@@ -186,7 +186,7 @@ export const useVeterinaryAppointments = () => {
 
     try {
       await $fetch(`/api/veterinary-appointments/${id}`, {
-        method: 'DELETE',
+        method: 'DELETE' as any,
       });
 
       // 既存のリストから該当予約を削除

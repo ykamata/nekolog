@@ -121,7 +121,10 @@ const debouncedValidate = createDebouncedValidator((data: CreateVeterinaryVisitI
 
       // Only update field errors, preserve submit errors
       Object.keys(validationErrors).forEach((key) => {
-        errors.value[key] = validationErrors[key];
+        const errorMessage = validationErrors[key];
+        if (errorMessage) {
+          errors.value[key] = errorMessage;
+        }
       });
     }
   }
@@ -156,7 +159,7 @@ const filteredHospitals = computed(() => {
 const filteredDoctors = computed(() => {
   if (!formData.doctorName) return doctors.value;
   return doctors.value.filter(d =>
-    d.name.toLowerCase().includes(formData.doctorName.toLowerCase()),
+    d.name.toLowerCase().includes((formData.doctorName || '').toLowerCase()),
   );
 });
 
@@ -364,6 +367,18 @@ const handleReset = () => {
   clearErrors();
   retryCount.value = 0;
 };
+
+const handleHospitalBlur = () => {
+  nextTick(() => {
+    showHospitalInput.value = false;
+  });
+};
+
+const handleDoctorBlur = () => {
+  nextTick(() => {
+    showDoctorInput.value = false;
+  });
+};
 </script>
 
 <template>
@@ -476,7 +491,7 @@ const handleReset = () => {
             class="form-input"
             :class="{ 'form-input--error': errors.visitDate }"
             data-testid="visit-date"
-            @input="formData.visitDate = parseDateTimeLocal($event.target.value)"
+            @input="formData.visitDate = parseDateTimeLocal(($event.target as HTMLInputElement)?.value || '')"
           >
           <span
             v-if="errors.visitDate"
@@ -503,7 +518,7 @@ const handleReset = () => {
               placeholder="病院名を入力してください"
               data-testid="hospital-input"
               @focus="showHospitalInput = true"
-              @blur="setTimeout(() => showHospitalInput = false, 200)"
+              @blur="handleHospitalBlur"
             >
             <div
               v-if="showHospitalInput && filteredHospitals.length > 0"
@@ -541,7 +556,7 @@ const handleReset = () => {
               :class="{ 'form-input--error': errors.doctorName }"
               placeholder="先生名を入力してください（任意）"
               @focus="showDoctorInput = true"
-              @blur="setTimeout(() => showDoctorInput = false, 200)"
+              @blur="handleDoctorBlur"
             >
             <div
               v-if="showDoctorInput && filteredDoctors.length > 0"

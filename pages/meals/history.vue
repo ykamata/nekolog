@@ -72,7 +72,7 @@ const confirmDelete = async () => {
 
   try {
     await $fetch(`/api/meals/${recordToDelete.value.id}`, {
-      method: 'DELETE',
+      method: 'DELETE' as any,
     });
 
     // Refresh the meal list
@@ -101,7 +101,7 @@ const handleEditSubmit = async (data: MealRecordInput) => {
 
   try {
     await $fetch(`/api/meals/${editingRecord.value.id}`, {
-      method: 'PUT',
+      method: 'PUT' as any,
       body: data,
     });
 

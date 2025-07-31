@@ -85,7 +85,7 @@ export const useVeterinaryVisitsOptimized = () => {
       const response = await $fetch<GetVeterinaryVisitsResponse>('/api/veterinary-visits', {
         query: optimizedParams,
         // リクエストの重複を防ぐ
-        key: cacheKey,
+        // key: cacheKey, // Remove unsupported key option
       });
 
       // データの更新
@@ -204,7 +204,7 @@ export const useVeterinaryVisitsOptimized = () => {
 
     try {
       const updatedVisit = await $fetch<VeterinaryVisitWithRelations>(`/api/veterinary-visits/${data.id}`, {
-        method: 'PUT',
+        method: 'PUT' as any,
         body: data,
       });
 
@@ -239,7 +239,7 @@ export const useVeterinaryVisitsOptimized = () => {
 
     try {
       await $fetch(`/api/veterinary-visits/${id}`, {
-        method: 'DELETE',
+        method: 'DELETE' as any,
       });
 
       // 既存のリストから該当記録を削除

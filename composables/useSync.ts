@@ -314,7 +314,7 @@ export const useSync = () => {
 
       case 'update': {
         await $fetch(`/api/cats/${item.data.id}`, {
-          method: 'PUT',
+          method: 'PUT' as any,
           body: {
             name: item.data.name,
             birthdate: item.data.birthdate,
@@ -327,7 +327,7 @@ export const useSync = () => {
 
       case 'delete': {
         await $fetch(`/api/cats/${item.data.id}`, {
-          method: 'DELETE',
+          method: 'DELETE' as any,
         });
         break;
       }
@@ -368,7 +368,7 @@ export const useSync = () => {
 
       case 'update': {
         await $fetch(`/api/foods/${item.data.id}`, {
-          method: 'PUT',
+          method: 'PUT' as any,
           body: {
             name: item.data.name,
             type: item.data.type,
@@ -383,7 +383,7 @@ export const useSync = () => {
 
       case 'delete': {
         await $fetch(`/api/foods/${item.data.id}`, {
-          method: 'DELETE',
+          method: 'DELETE' as any,
         });
         break;
       }
@@ -424,7 +424,7 @@ export const useSync = () => {
 
       case 'update': {
         await $fetch(`/api/meals/${item.data.id}`, {
-          method: 'PUT',
+          method: 'PUT' as any,
           body: {
             catId: item.data.catId,
             foodId: item.data.foodId,
@@ -439,7 +439,7 @@ export const useSync = () => {
 
       case 'delete': {
         await $fetch(`/api/meals/${item.data.id}`, {
-          method: 'DELETE',
+          method: 'DELETE' as any,
         });
         break;
       }
@@ -481,7 +481,7 @@ export const useSync = () => {
 
       case 'update': {
         await $fetch(`/api/medications/${item.data.id}`, {
-          method: 'PUT',
+          method: 'PUT' as any,
           body: {
             name: item.data.name,
             type: item.data.type,
@@ -494,7 +494,7 @@ export const useSync = () => {
 
       case 'delete': {
         await $fetch(`/api/medications/${item.data.id}`, {
-          method: 'DELETE',
+          method: 'DELETE' as any,
         });
         break;
       }
@@ -538,7 +538,7 @@ export const useSync = () => {
 
       case 'update': {
         await $fetch(`/api/medication-records/${item.data.id}`, {
-          method: 'PUT',
+          method: 'PUT' as any,
           body: {
             catId: item.data.catId,
             medicationId: item.data.medicationId,
@@ -553,7 +553,7 @@ export const useSync = () => {
 
       case 'delete': {
         await $fetch(`/api/medication-records/${item.data.id}`, {
-          method: 'DELETE',
+          method: 'DELETE' as any,
         });
         break;
       }
@@ -598,7 +598,7 @@ export const useSync = () => {
 
       case 'update': {
         await $fetch(`/api/medication-schedules/${item.data.id}`, {
-          method: 'PUT',
+          method: 'PUT' as any,
           body: {
             catId: item.data.catId,
             medicationId: item.data.medicationId,
@@ -614,7 +614,7 @@ export const useSync = () => {
 
       case 'delete': {
         await $fetch(`/api/medication-schedules/${item.data.id}`, {
-          method: 'DELETE',
+          method: 'DELETE' as any,
         });
         break;
       }
@@ -657,7 +657,7 @@ export const useSync = () => {
 
       case 'update': {
         await $fetch(`/api/medication-reminders/${item.data.id}`, {
-          method: 'PUT',
+          method: 'PUT' as any,
           body: {
             scheduleId: item.data.scheduleId,
             catId: item.data.catId,
@@ -671,7 +671,7 @@ export const useSync = () => {
 
       case 'delete': {
         await $fetch(`/api/medication-reminders/${item.data.id}`, {
-          method: 'DELETE',
+          method: 'DELETE' as any,
         });
         break;
       }
@@ -702,50 +702,50 @@ export const useSync = () => {
         switch (conflict.type) {
           case 'cat': {
             await $fetch(`/api/cats/${conflict.serverId}`, {
-              method: 'PUT',
-              body: conflict.localData,
+              method: 'PUT' as any,
+              body: conflict.localData as any,
             });
             break;
           }
           case 'food': {
             await $fetch(`/api/foods/${conflict.serverId}`, {
-              method: 'PUT',
-              body: conflict.localData,
+              method: 'PUT' as any,
+              body: conflict.localData as any,
             });
             break;
           }
           case 'meal': {
             await $fetch(`/api/meals/${conflict.serverId}`, {
-              method: 'PUT',
-              body: conflict.localData,
+              method: 'PUT' as any,
+              body: conflict.localData as any,
             });
             break;
           }
           case 'medication': {
             await $fetch(`/api/medications/${conflict.serverId}`, {
-              method: 'PUT',
-              body: conflict.localData,
+              method: 'PUT' as any,
+              body: conflict.localData as any,
             });
             break;
           }
           case 'medicationRecord': {
             await $fetch(`/api/medication-records/${conflict.serverId}`, {
-              method: 'PUT',
-              body: conflict.localData,
+              method: 'PUT' as any,
+              body: conflict.localData as any,
             });
             break;
           }
           case 'medicationSchedule': {
             await $fetch(`/api/medication-schedules/${conflict.serverId}`, {
-              method: 'PUT',
-              body: conflict.localData,
+              method: 'PUT' as any,
+              body: conflict.localData as any,
             });
             break;
           }
           case 'medicationReminder': {
             await $fetch(`/api/medication-reminders/${conflict.serverId}`, {
-              method: 'PUT',
-              body: conflict.localData,
+              method: 'PUT' as any,
+              body: conflict.localData as any,
             });
             break;
           }
@@ -756,7 +756,7 @@ export const useSync = () => {
         offlineStorage.updateOffline(
           conflict.type,
           conflict.localId,
-          conflict.serverData,
+          conflict.serverData as Record<string, unknown>,
         );
       }
 

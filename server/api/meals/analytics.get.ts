@@ -131,7 +131,18 @@ export default defineEventHandler(async (event) => {
     }));
 
     // Generate analytics
-    const analytics = generateMealAnalytics(transformedRecords);
+    const analytics = generateMealAnalytics(transformedRecords.map(record => ({
+      ...record,
+      notes: record.notes || undefined,
+      food: record.food
+        ? {
+            ...record.food,
+            type: record.food.type as 'DRY' | 'WET',
+            pricePerUnit: record.food.pricePerUnit || undefined,
+            brand: record.food.brand || undefined,
+          }
+        : undefined,
+    })) as any[]);
 
     // Get additional summary data
     const totalMeals = mealRecords.length;

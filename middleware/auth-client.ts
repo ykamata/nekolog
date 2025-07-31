@@ -24,8 +24,9 @@ export default defineNuxtRouteMiddleware(async (_to) => {
       catch (error: unknown) {
         // Only redirect to login if we're certain the tokens are invalid
         // For network errors or temporary issues, let the user stay and try again
-        if (error?.message?.includes('Token refresh failed')
-          && (error?.statusCode === 401 || error?.statusCode === 403)) {
+        const errorObj = error as any;
+        if (errorObj?.message?.includes('Token refresh failed')
+          && (errorObj?.statusCode === 401 || errorObj?.statusCode === 403)) {
           return navigateTo('/login');
         }
       }

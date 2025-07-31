@@ -12,6 +12,10 @@ import type {
   MedicationReminder,
   MedicationReminderInput,
   MedicationReminderFilter,
+} from '~/types/medication';
+
+import {
+  MedicationStatus,
   ReminderStatus,
 } from '~/types/medication';
 import { OfflineStorage } from '~/utils/offline-storage';
@@ -95,7 +99,7 @@ export const useMedicationsStore = defineStore('medications', {
         if (!acc[medication.type]) {
           acc[medication.type] = [];
         }
-        acc[medication.type].push(medication);
+        acc[medication.type]?.push(medication);
         return acc;
       }, {} as Record<string, Medication[]>);
     },
@@ -205,12 +209,6 @@ export const useMedicationsStore = defineStore('medications', {
           return state.records.filter(
             record => record.medicationId === medicationId,
           );
-        },
-
-    getMedicationRecordsByStatus:
-      state =>
-        (status: string): MedicationRecord[] => {
-          return state.records.filter(record => record.status === status);
         },
 
     getMedicationRecordsByDateRange:
@@ -627,7 +625,7 @@ export const useMedicationsStore = defineStore('medications', {
             medication: Medication;
             message: string;
           }>(`/api/medications/${id}`, {
-            method: 'PUT',
+            method: 'PUT' as any,
             body: medicationUpdate,
           });
 
@@ -659,8 +657,12 @@ export const useMedicationsStore = defineStore('medications', {
               ...medicationUpdate,
               updatedAt: new Date(),
             };
-            this.medications[index] = updatedMedication;
-            return updatedMedication;
+            const validatedMedication = {
+              ...updatedMedication,
+              id: updatedMedication.id || this.medications[index]?.id || '',
+            };
+            this.medications[index] = validatedMedication as Medication;
+            return validatedMedication as Medication;
           }
 
           throw new Error('Medication not found');
@@ -688,7 +690,7 @@ export const useMedicationsStore = defineStore('medications', {
           // Online: Delete on server
           const query = cascade ? '?cascade=true' : '';
           await $fetch(`/api/medications/${id}${query}`, {
-            method: 'DELETE',
+            method: 'DELETE' as any,
           });
         }
         else {
@@ -904,7 +906,7 @@ export const useMedicationsStore = defineStore('medications', {
             medicationId: recordInput.medicationId,
             quantity: recordInput.quantity,
             administeredAt: recordInput.administeredAt,
-            status: recordInput.status,
+            status: recordInput.status || MedicationStatus.PENDING,
             notes: recordInput.notes,
           });
 
@@ -914,7 +916,7 @@ export const useMedicationsStore = defineStore('medications', {
             medicationId: recordInput.medicationId,
             quantity: recordInput.quantity,
             administeredAt: recordInput.administeredAt,
-            status: recordInput.status || 'PENDING',
+            status: recordInput.status || MedicationStatus.PENDING,
             notes: recordInput.notes,
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -951,7 +953,7 @@ export const useMedicationsStore = defineStore('medications', {
             record: MedicationRecord;
             message: string;
           }>(`/api/medication-records/${id}`, {
-            method: 'PUT',
+            method: 'PUT' as any,
             body: recordUpdate,
           });
 
@@ -980,8 +982,12 @@ export const useMedicationsStore = defineStore('medications', {
               ...recordUpdate,
               updatedAt: new Date(),
             };
-            this.records[index] = updatedRecord;
-            return updatedRecord;
+            const validatedRecord = {
+              ...updatedRecord,
+              id: updatedRecord.id || this.records[index]?.id || '',
+            };
+            this.records[index] = validatedRecord as MedicationRecord;
+            return validatedRecord as MedicationRecord;
           }
 
           throw new Error('Medication record not found');
@@ -1008,7 +1014,7 @@ export const useMedicationsStore = defineStore('medications', {
         if (syncStatus.value.isOnline) {
           // Online: Delete on server
           await $fetch(`/api/medication-records/${id}`, {
-            method: 'DELETE',
+            method: 'DELETE' as any,
           });
         }
         else {
@@ -1182,6 +1188,7 @@ export const useMedicationsStore = defineStore('medications', {
             catId: reminderInput.catId,
             medicationId: reminderInput.medicationId,
             scheduledAt: reminderInput.scheduledAt,
+            status: ReminderStatus.PENDING,
           }) || `temp-reminder-${Date.now()}`;
 
           const newReminder: MedicationReminder = {
@@ -1190,7 +1197,7 @@ export const useMedicationsStore = defineStore('medications', {
             catId: reminderInput.catId,
             medicationId: reminderInput.medicationId,
             scheduledAt: reminderInput.scheduledAt,
-            status: 'PENDING',
+            status: ReminderStatus.PENDING,
             createdAt: new Date(),
             updatedAt: new Date(),
           };
@@ -1223,7 +1230,7 @@ export const useMedicationsStore = defineStore('medications', {
         if (syncStatus.value.isOnline) {
           // Online: Update on server
           const response = await $fetch<MedicationReminder>(`/api/medication-reminders/${id}`, {
-            method: 'PUT',
+            method: 'PUT' as any,
             body: updates,
           });
 
@@ -1253,8 +1260,12 @@ export const useMedicationsStore = defineStore('medications', {
               ...(updates.scheduledAt && { scheduledAt: updates.scheduledAt }),
               updatedAt: new Date(),
             };
-            this.reminders[index] = updatedReminder;
-            return updatedReminder;
+            const validatedReminder = {
+              ...updatedReminder,
+              id: updatedReminder.id || this.reminders[index]?.id || '',
+            };
+            this.reminders[index] = validatedReminder as MedicationReminder;
+            return validatedReminder as MedicationReminder;
           }
 
           throw new Error('Medication reminder not found');
@@ -1273,7 +1284,7 @@ export const useMedicationsStore = defineStore('medications', {
     },
 
     async acknowledgeReminder(id: string): Promise<MedicationReminder> {
-      return this.updateMedicationReminder(id, { status: 'ACKNOWLEDGED' });
+      return this.updateMedicationReminder(id, { status: ReminderStatus.ACKNOWLEDGED });
     },
 
     async snoozeReminder(id: string, minutes: number): Promise<MedicationReminder> {
@@ -1284,13 +1295,13 @@ export const useMedicationsStore = defineStore('medications', {
 
       const newScheduledAt = new Date(currentReminder.scheduledAt.getTime() + minutes * 60 * 1000);
       return this.updateMedicationReminder(id, {
-        status: 'SNOOZED',
+        status: ReminderStatus.SNOOZED,
         scheduledAt: newScheduledAt,
       });
     },
 
     async dismissReminder(id: string): Promise<MedicationReminder> {
-      return this.updateMedicationReminder(id, { status: 'DISMISSED' });
+      return this.updateMedicationReminder(id, { status: ReminderStatus.DISMISSED });
     },
 
     // Local state management methods for reminders

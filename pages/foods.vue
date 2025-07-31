@@ -101,7 +101,7 @@ const confirmDelete = async () => {
 
   try {
     await $fetch(`/api/foods/${foodToDelete.value.id}`, {
-      method: 'DELETE',
+      method: 'DELETE' as any,
     });
 
     // Remove from local state
@@ -148,7 +148,7 @@ const handleEditSubmit = async (data: FoodInput) => {
     const updatedFood = await $fetch<Food>(
       `/api/foods/${editingFood.value.id}`,
       {
-        method: 'PUT',
+        method: 'PUT' as any,
         body: data,
       },
     );
@@ -447,8 +447,9 @@ onMounted(() => {
         </div>
         <div class="modal-body">
           <FoodManagementForm
-            @submit="handleAddSubmit"
-            @cancel="handleAddCancel"
+            :is-open="showAddModal"
+            @close="handleAddCancel"
+            @save="handleAddSubmit"
           />
         </div>
       </div>
@@ -478,15 +479,10 @@ onMounted(() => {
         </div>
         <div class="modal-body">
           <FoodManagementForm
-            :initial-data="{
-              name: editingFood.name,
-              type: editingFood.type,
-              brand: editingFood.brand,
-              caloriesPerGram: editingFood.caloriesPerGram,
-              pricePerUnit: editingFood.pricePerUnit,
-              unit: editingFood.unit,
-            }"
-            @submit="handleEditSubmit"
+            :food="editingFood"
+            :is-open="showEditModal"
+            @close="handleEditCancel"
+            @save="handleEditSubmit"
             @cancel="handleEditCancel"
           />
         </div>

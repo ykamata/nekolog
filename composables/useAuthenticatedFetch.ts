@@ -10,7 +10,8 @@ export const useAuthenticatedFetch = () => {
   const authenticatedFetch = async <T>(url: string, options: any = {}): Promise<T> => {
     try {
       // First attempt
-      return await $fetch<T>(url, options);
+      const result = await $fetch<T>(url, options);
+      return result as T;
     }
     catch (error: any) {
       // If 401 error, try to refresh token and retry
@@ -20,7 +21,8 @@ export const useAuthenticatedFetch = () => {
           await refreshAuthToken();
 
           // Retry the original request
-          return await $fetch<T>(url, options);
+          const result = await $fetch<T>(url, options);
+          return result as T;
         }
         catch (refreshError) {
           // Refresh failed, redirect to login

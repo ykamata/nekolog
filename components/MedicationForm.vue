@@ -81,7 +81,10 @@ const debouncedValidate = createDebouncedValidator((data: MedicationInput) => {
 
       // Only update field errors, preserve submit errors
       Object.keys(validationErrors).forEach((key) => {
-        errors.value[key] = validationErrors[key];
+        const errorMessage = validationErrors[key];
+        if (errorMessage) {
+          errors.value[key] = errorMessage;
+        }
       });
     }
   }

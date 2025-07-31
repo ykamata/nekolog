@@ -202,7 +202,7 @@ const handleDateRangeShortcut = async (days: number) => {
 };
 
 const handleFoodTypeFilter = async (foodType: 'DRY' | 'WET' | undefined) => {
-  filter.value.foodType = foodType;
+  filter.value.foodType = foodType as any;
   await applyFilter();
 };
 
@@ -216,7 +216,7 @@ const handleDelete = (record: MealRecord) => {
 
 const formatMealTime = (date: Date) => {
   try {
-    return new Intl.DateTimeFormatter('ja-JP', {
+    return new Intl.DateTimeFormat('ja-JP', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -433,10 +433,10 @@ watch(
             <div class="card-header">
               <div class="meal-info">
                 <div class="cat-name">
-                  {{ record.cat?.name }}
+                  {{ (record as MealRecord).cat?.name }}
                 </div>
                 <div class="meal-time">
-                  {{ formatMealTime(record.mealTime) }}
+                  {{ formatMealTime((record as MealRecord).mealTime) }}
                 </div>
               </div>
               <div class="card-actions">
@@ -444,7 +444,7 @@ watch(
                   type="button"
                   class="action-button edit-button"
                   title="編集"
-                  @click="handleEdit(record)"
+                  @click="handleEdit(record as MealRecord)"
                 >
                   ✏️
                 </button>
@@ -452,7 +452,7 @@ watch(
                   type="button"
                   class="action-button delete-button"
                   title="削除"
-                  @click="handleDelete(record)"
+                  @click="handleDelete(record as MealRecord)"
                 >
                   🗑️
                 </button>
@@ -463,23 +463,23 @@ watch(
             <div class="card-body">
               <div class="food-info">
                 <div class="food-name">
-                  {{ record.food?.name }}
+                  {{ (record as MealRecord).food?.name }}
                   <span
-                    v-if="record.food?.brand"
+                    v-if="(record as MealRecord).food?.brand"
                     class="food-brand"
                   >
-                    ({{ record.food.brand }})
+                    ({{ (record as MealRecord).food?.brand }})
                   </span>
                 </div>
                 <div class="food-type">
                   <span
                     class="food-type-badge"
                     :class="{
-                      'food-type-badge--dry': record.food?.type === 'DRY',
-                      'food-type-badge--wet': record.food?.type === 'WET',
+                      'food-type-badge--dry': (record as MealRecord).food?.type === 'DRY',
+                      'food-type-badge--wet': (record as MealRecord).food?.type === 'WET',
                     }"
                   >
-                    {{ record.food?.type === "DRY" ? "ドライ" : "ウェット" }}
+                    {{ (record as MealRecord).food?.type === "DRY" ? "ドライ" : "ウェット" }}
                   </span>
                 </div>
               </div>
@@ -487,27 +487,27 @@ watch(
               <div class="quantity-info">
                 <div class="quantity">
                   <span class="quantity-value">{{
-                    formatQuantity(record.quantity)
+                    formatQuantity((record as MealRecord).quantity)
                   }}</span>
                   <span class="quantity-unit">g</span>
                 </div>
                 <div class="calories">
                   <span class="calories-value">{{
-                    formatQuantity(record.calories)
+                    formatQuantity((record as MealRecord).calories)
                   }}</span>
                   <span class="calories-unit">kcal</span>
                 </div>
               </div>
 
               <div
-                v-if="record.notes"
+                v-if="(record as MealRecord).notes"
                 class="notes"
               >
                 <div class="notes-label">
                   メモ:
                 </div>
                 <div class="notes-content">
-                  {{ record.notes }}
+                  {{ (record as MealRecord).notes }}
                 </div>
               </div>
             </div>

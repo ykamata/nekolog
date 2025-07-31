@@ -75,4 +75,19 @@ export default defineNuxtConfig({
       '/index': { redirect: '/' },
     },
   },
+
+  // Vite configuration
+  vite: {
+    define: {
+      global: 'globalThis',
+    },
+    optimizeDeps: {
+      include: ['@prisma/client'],
+    },
+    build: {
+      rollupOptions: {
+        external: ['@prisma/client'],
+      },
+    },
+  },
 });

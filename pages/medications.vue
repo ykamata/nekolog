@@ -102,7 +102,7 @@ const confirmDelete = async () => {
 
   try {
     await $fetch(`/api/medications/${medicationToDelete.value.id}`, {
-      method: 'DELETE',
+      method: 'DELETE' as any,
     });
 
     // Remove from local state
@@ -149,7 +149,7 @@ const handleEditSubmit = async (data: MedicationInput) => {
     const updatedMedication = await $fetch<Medication>(
       `/api/medications/${editingMedication.value.id}`,
       {
-        method: 'PUT',
+        method: 'PUT' as any,
         body: data,
       },
     );
@@ -462,7 +462,7 @@ onMounted(() => {
     <!-- Edit Medication Modal -->
     <MedicationForm
       :is-open="showEditModal"
-      :medication="editingMedication"
+      :medication="editingMedication || undefined"
       @close="handleEditCancel"
       @save="handleEditSubmit"
     />

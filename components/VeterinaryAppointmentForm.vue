@@ -374,13 +374,14 @@ onMounted(() => {
         <!-- Doctor Selection -->
         <div class="form-group">
           <VeterinaryMasterSelector
-            v-model="formData.doctorName || ''"
+            :model-value="formData.doctorName || ''"
             :items="doctors"
             :loading="loadingDoctors"
             :disabled="isSubmitting"
             :error="errors.doctorName"
             label="先生"
             placeholder="先生を選択または入力してください（任意）"
+            @update:model-value="formData.doctorName = $event"
             @create="handleDoctorCreate"
           />
         </div>

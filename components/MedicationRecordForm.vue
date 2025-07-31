@@ -5,9 +5,10 @@ import MedicationStatusBadge from './MedicationStatusBadge.vue';
 import type {
   MedicationRecord,
   MedicationRecordInput,
-  MedicationStatus,
   Medication,
 } from '~/types/medication';
+
+import { MedicationStatus } from '~/types/medication';
 import type { Cat } from '~/types/cat-meal';
 import { MedicationRecordInputSchema } from '~/lib/validations/medication';
 
@@ -157,7 +158,7 @@ const handleSubmit = async () => {
         if (data.enabled) {
           const [hours, minutes] = data.time.split(':').map(Number);
           const recordDate = new Date(baseDate);
-          recordDate.setHours(hours, minutes, 0, 0);
+          recordDate.setHours(hours || 0, minutes || 0, 0, 0);
 
           records.push({
             catId: formData.catId,
@@ -455,7 +456,7 @@ const selectedMedicationName = computed(() => {
               </option>
             </select>
             <MedicationStatusBadge
-              :status="formData.status"
+              :status="formData.status || MedicationStatus.PENDING"
               size="md"
             />
           </div>

@@ -511,14 +511,15 @@ export class OfflineStorage {
       case 'cat': {
         const catIndex = this.data.cats.findIndex(c => c.id === id);
         if (catIndex !== -1) {
-          this.data.cats[catIndex] = {
+          const updatedCat = {
             ...this.data.cats[catIndex],
             ...updates,
             updatedAt: now,
-          };
+          } as Cat;
+          this.data.cats[catIndex] = updatedCat;
           this.data.pendingSync.cats.push({
             action: 'update',
-            data: this.data.cats[catIndex],
+            data: updatedCat,
           });
         }
         break;
@@ -527,14 +528,15 @@ export class OfflineStorage {
       case 'food': {
         const foodIndex = this.data.foods.findIndex(f => f.id === id);
         if (foodIndex !== -1) {
-          this.data.foods[foodIndex] = {
+          const updatedFood = {
             ...this.data.foods[foodIndex],
             ...updates,
             updatedAt: now,
-          };
+          } as Food;
+          this.data.foods[foodIndex] = updatedFood;
           this.data.pendingSync.foods.push({
             action: 'update',
-            data: this.data.foods[foodIndex],
+            data: updatedFood,
           });
         }
         break;
@@ -543,14 +545,15 @@ export class OfflineStorage {
       case 'meal': {
         const mealIndex = this.data.meals.findIndex(m => m.id === id);
         if (mealIndex !== -1) {
-          this.data.meals[mealIndex] = {
+          const updatedMeal = {
             ...this.data.meals[mealIndex],
             ...updates,
             updatedAt: now,
-          };
+          } as MealRecord;
+          this.data.meals[mealIndex] = updatedMeal;
           this.data.pendingSync.meals.push({
             action: 'update',
-            data: this.data.meals[mealIndex],
+            data: updatedMeal,
           });
         }
         break;
@@ -561,14 +564,15 @@ export class OfflineStorage {
           m => m.id === id,
         );
         if (medicationIndex !== -1) {
-          this.data.medications[medicationIndex] = {
+          const updatedMedication = {
             ...this.data.medications[medicationIndex],
             ...updates,
             updatedAt: now,
-          };
+          } as Medication;
+          this.data.medications[medicationIndex] = updatedMedication;
           this.data.pendingSync.medications.push({
             action: 'update',
-            data: this.data.medications[medicationIndex],
+            data: updatedMedication,
           });
         }
         break;
@@ -579,14 +583,15 @@ export class OfflineStorage {
           r => r.id === id,
         );
         if (recordIndex !== -1) {
-          this.data.medicationRecords[recordIndex] = {
+          const updatedRecord = {
             ...this.data.medicationRecords[recordIndex],
             ...updates,
             updatedAt: now,
-          };
+          } as MedicationRecord;
+          this.data.medicationRecords[recordIndex] = updatedRecord;
           this.data.pendingSync.medicationRecords.push({
             action: 'update',
-            data: this.data.medicationRecords[recordIndex],
+            data: updatedRecord,
           });
         }
         break;
@@ -597,14 +602,15 @@ export class OfflineStorage {
           s => s.id === id,
         );
         if (scheduleIndex !== -1) {
-          this.data.medicationSchedules[scheduleIndex] = {
+          const updatedSchedule = {
             ...this.data.medicationSchedules[scheduleIndex],
             ...updates,
             updatedAt: now,
-          };
+          } as MedicationSchedule;
+          this.data.medicationSchedules[scheduleIndex] = updatedSchedule;
           this.data.pendingSync.medicationSchedules.push({
             action: 'update',
-            data: this.data.medicationSchedules[scheduleIndex],
+            data: updatedSchedule,
           });
         }
         break;
@@ -615,14 +621,15 @@ export class OfflineStorage {
           r => r.id === id,
         );
         if (reminderIndex !== -1) {
-          this.data.medicationReminders[reminderIndex] = {
+          const updatedReminder = {
             ...this.data.medicationReminders[reminderIndex],
             ...updates,
             updatedAt: now,
-          };
+          } as MedicationReminder;
+          this.data.medicationReminders[reminderIndex] = updatedReminder;
           this.data.pendingSync.medicationReminders.push({
             action: 'update',
-            data: this.data.medicationReminders[reminderIndex],
+            data: updatedReminder,
           });
         }
         break;
@@ -644,11 +651,13 @@ export class OfflineStorage {
         const catIndex = this.data.cats.findIndex(c => c.id === id);
         if (catIndex !== -1) {
           const cat = this.data.cats[catIndex];
-          this.data.cats.splice(catIndex, 1);
-          this.data.pendingSync.cats.push({
-            action: 'delete',
-            data: cat,
-          });
+          if (cat) {
+            this.data.cats.splice(catIndex, 1);
+            this.data.pendingSync.cats.push({
+              action: 'delete',
+              data: cat,
+            });
+          }
         }
         break;
       }
@@ -657,11 +666,13 @@ export class OfflineStorage {
         const foodIndex = this.data.foods.findIndex(f => f.id === id);
         if (foodIndex !== -1) {
           const food = this.data.foods[foodIndex];
-          this.data.foods.splice(foodIndex, 1);
-          this.data.pendingSync.foods.push({
-            action: 'delete',
-            data: food,
-          });
+          if (food) {
+            this.data.foods.splice(foodIndex, 1);
+            this.data.pendingSync.foods.push({
+              action: 'delete',
+              data: food,
+            });
+          }
         }
         break;
       }
@@ -670,11 +681,13 @@ export class OfflineStorage {
         const mealIndex = this.data.meals.findIndex(m => m.id === id);
         if (mealIndex !== -1) {
           const meal = this.data.meals[mealIndex];
-          this.data.meals.splice(mealIndex, 1);
-          this.data.pendingSync.meals.push({
-            action: 'delete',
-            data: meal,
-          });
+          if (meal) {
+            this.data.meals.splice(mealIndex, 1);
+            this.data.pendingSync.meals.push({
+              action: 'delete',
+              data: meal,
+            });
+          }
         }
         break;
       }
@@ -685,11 +698,13 @@ export class OfflineStorage {
         );
         if (medicationIndex !== -1) {
           const medication = this.data.medications[medicationIndex];
-          this.data.medications.splice(medicationIndex, 1);
-          this.data.pendingSync.medications.push({
-            action: 'delete',
-            data: medication,
-          });
+          if (medication) {
+            this.data.medications.splice(medicationIndex, 1);
+            this.data.pendingSync.medications.push({
+              action: 'delete',
+              data: medication,
+            });
+          }
         }
         break;
       }
@@ -700,11 +715,13 @@ export class OfflineStorage {
         );
         if (recordIndex !== -1) {
           const record = this.data.medicationRecords[recordIndex];
-          this.data.medicationRecords.splice(recordIndex, 1);
-          this.data.pendingSync.medicationRecords.push({
-            action: 'delete',
-            data: record,
-          });
+          if (record) {
+            this.data.medicationRecords.splice(recordIndex, 1);
+            this.data.pendingSync.medicationRecords.push({
+              action: 'delete',
+              data: record,
+            });
+          }
         }
         break;
       }
@@ -715,11 +732,13 @@ export class OfflineStorage {
         );
         if (scheduleIndex !== -1) {
           const schedule = this.data.medicationSchedules[scheduleIndex];
-          this.data.medicationSchedules.splice(scheduleIndex, 1);
-          this.data.pendingSync.medicationSchedules.push({
-            action: 'delete',
-            data: schedule,
-          });
+          if (schedule) {
+            this.data.medicationSchedules.splice(scheduleIndex, 1);
+            this.data.pendingSync.medicationSchedules.push({
+              action: 'delete',
+              data: schedule,
+            });
+          }
         }
         break;
       }
@@ -730,11 +749,13 @@ export class OfflineStorage {
         );
         if (reminderIndex !== -1) {
           const reminder = this.data.medicationReminders[reminderIndex];
-          this.data.medicationReminders.splice(reminderIndex, 1);
-          this.data.pendingSync.medicationReminders.push({
-            action: 'delete',
-            data: reminder,
-          });
+          if (reminder) {
+            this.data.medicationReminders.splice(reminderIndex, 1);
+            this.data.pendingSync.medicationReminders.push({
+              action: 'delete',
+              data: reminder,
+            });
+          }
         }
         break;
       }
@@ -822,7 +843,7 @@ export class OfflineStorage {
     switch (type) {
       case 'cat': {
         const catIndex = this.data.cats.findIndex(c => c.id === localId);
-        if (catIndex !== -1) {
+        if (catIndex !== -1 && this.data.cats[catIndex]) {
           this.data.cats[catIndex].id = serverId;
         }
         break;
@@ -830,7 +851,7 @@ export class OfflineStorage {
 
       case 'food': {
         const foodIndex = this.data.foods.findIndex(f => f.id === localId);
-        if (foodIndex !== -1) {
+        if (foodIndex !== -1 && this.data.foods[foodIndex]) {
           this.data.foods[foodIndex].id = serverId;
         }
         break;
@@ -838,7 +859,7 @@ export class OfflineStorage {
 
       case 'meal': {
         const mealIndex = this.data.meals.findIndex(m => m.id === localId);
-        if (mealIndex !== -1) {
+        if (mealIndex !== -1 && this.data.meals[mealIndex]) {
           this.data.meals[mealIndex].id = serverId;
           // 関連するcatIdやfoodIdもローカルIDの場合は更新が必要
         }
@@ -849,7 +870,7 @@ export class OfflineStorage {
         const medicationIndex = this.data.medications.findIndex(
           m => m.id === localId,
         );
-        if (medicationIndex !== -1) {
+        if (medicationIndex !== -1 && this.data.medications[medicationIndex]) {
           this.data.medications[medicationIndex].id = serverId;
         }
         break;
@@ -859,7 +880,7 @@ export class OfflineStorage {
         const recordIndex = this.data.medicationRecords.findIndex(
           r => r.id === localId,
         );
-        if (recordIndex !== -1) {
+        if (recordIndex !== -1 && this.data.medicationRecords[recordIndex]) {
           this.data.medicationRecords[recordIndex].id = serverId;
           // 関連するcatIdやmedicationIdもローカルIDの場合は更新が必要
         }
@@ -870,7 +891,7 @@ export class OfflineStorage {
         const scheduleIndex = this.data.medicationSchedules.findIndex(
           s => s.id === localId,
         );
-        if (scheduleIndex !== -1) {
+        if (scheduleIndex !== -1 && this.data.medicationSchedules[scheduleIndex]) {
           this.data.medicationSchedules[scheduleIndex].id = serverId;
           // 関連するcatIdやmedicationIdもローカルIDの場合は更新が必要
         }
@@ -881,7 +902,7 @@ export class OfflineStorage {
         const reminderIndex = this.data.medicationReminders.findIndex(
           r => r.id === localId,
         );
-        if (reminderIndex !== -1) {
+        if (reminderIndex !== -1 && this.data.medicationReminders[reminderIndex]) {
           this.data.medicationReminders[reminderIndex].id = serverId;
           // 関連するscheduleId、catId、medicationIdもローカルIDの場合は更新が必要
         }

@@ -145,7 +145,7 @@ export const useVeterinaryVisits = () => {
 
     try {
       const updatedVisit = await $fetch<VeterinaryVisitWithRelations>(`/api/veterinary-visits/${data.id}`, {
-        method: 'PUT',
+        method: 'PUT' as any,
         body: data,
       });
 
@@ -178,7 +178,7 @@ export const useVeterinaryVisits = () => {
 
     try {
       await $fetch(`/api/veterinary-visits/${id}`, {
-        method: 'DELETE',
+        method: 'DELETE' as any,
       });
 
       // 既存のリストから該当記録を削除

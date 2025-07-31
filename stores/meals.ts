@@ -315,7 +315,7 @@ export const useMealsStore = defineStore('meals', {
             catId: mealInput.catId,
             foodId: mealInput.foodId,
             quantity: mealInput.quantity,
-            calories: mealInput.calories,
+            calories: mealInput.calories || 0,
             mealTime: new Date(mealInput.mealTime),
             notes: mealInput.notes,
           });
@@ -325,7 +325,7 @@ export const useMealsStore = defineStore('meals', {
             catId: mealInput.catId,
             foodId: mealInput.foodId,
             quantity: mealInput.quantity,
-            calories: mealInput.calories,
+            calories: mealInput.calories || 0,
             mealTime: new Date(mealInput.mealTime),
             notes: mealInput.notes,
             createdAt: new Date(),
@@ -361,7 +361,7 @@ export const useMealsStore = defineStore('meals', {
         if (syncStatus.value.isOnline) {
           // Online: Update on server
           const data = await $fetch<MealRecord>(`/api/meals/${id}`, {
-            method: 'PUT',
+            method: 'PUT' as any,
             body: mealUpdate,
           });
 
@@ -397,12 +397,16 @@ export const useMealsStore = defineStore('meals', {
               ...mealUpdate,
               mealTime: mealUpdate.mealTime
                 ? new Date(mealUpdate.mealTime)
-                : this.meals[index].mealTime,
+                : this.meals[index]?.mealTime,
               updatedAt: new Date(),
             };
-            this.meals[index] = updatedMeal;
+            const validatedMeal = {
+              ...updatedMeal,
+              id: updatedMeal.id || this.meals[index]?.id || '',
+            };
+            this.meals[index] = validatedMeal as MealRecord;
             this.lastUpdate = new Date();
-            return updatedMeal;
+            return validatedMeal as MealRecord;
           }
 
           throw new Error('Meal not found');
@@ -427,7 +431,7 @@ export const useMealsStore = defineStore('meals', {
         if (syncStatus.value.isOnline) {
           // Online: Delete on server
           await $fetch(`/api/meals/${id}`, {
-            method: 'DELETE',
+            method: 'DELETE' as any,
           });
         }
         else {
@@ -558,7 +562,7 @@ export const useMealsStore = defineStore('meals', {
       try {
         if (syncStatus.value.isOnline) {
           await $fetch('/api/meals/bulk-delete', {
-            method: 'POST',
+            method: 'POST' as any,
             body: { ids },
           });
         }

@@ -385,7 +385,7 @@ onMounted(async () => {
               <input
                 :checked="!formData.endDate"
                 type="checkbox"
-                @change="formData.endDate = $event.target.checked ? undefined : new Date(formData.startDate.getTime() + 24 * 60 * 60 * 1000)"
+                @change="formData.endDate = ($event.target as HTMLInputElement)?.checked ? undefined : new Date(formData.startDate.getTime() + 24 * 60 * 60 * 1000)"
               >
               無期限
             </label>
