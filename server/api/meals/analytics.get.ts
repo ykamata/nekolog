@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
-import { generateMealAnalytics } from '~/utils/cat-meal';
+import { generateMealAnalytics, calculateDailyCaloriesWithFoodType, fillMissingDatesForFoodType } from '~/utils/cat-meal';
 
 const querySchema = z.object({
   catId: z.string().cuid().optional(),
@@ -20,22 +20,64 @@ const querySchema = z.object({
     .pipe(z.number().int().positive().max(365))
     .optional()
     .default('30'),
+  chartType: z
+    .enum(['line', 'bar'])
+    .optional()
+    .default('line'),
+  foodTypeFilter: z
+    .enum(['all', 'DRY', 'WET'])
+    .optional()
+    .default('all'),
 });
 
 export default defineEventHandler(async (event) => {
+  const startTime = Date.now();
+
   try {
     // Only allow GET method
     assertMethod(event, 'GET');
 
     // Parse and validate query parameters
     const query = getQuery(event);
-    const { catId, startDate, endDate, days } = querySchema.parse(query);
+    let parsedQuery;
+
+    try {
+      parsedQuery = querySchema.parse(query);
+    }
+    catch (validationError) {
+      // より詳細なバリデーションエラーメッセージ
+      if (validationError instanceof z.ZodError) {
+        const errorMessages = validationError.errors.map(err =>
+          `${err.path.join('.')}: ${err.message}`,
+        ).join(', ');
+
+        throw createError({
+          statusCode: 400,
+          statusMessage: 'Invalid query parameters',
+          data: {
+            message: 'クエリパラメータが無効です',
+            details: errorMessages,
+            errors: validationError.errors,
+          },
+        });
+      }
+      throw validationError;
+    }
+
+    const { catId, startDate, endDate, days, chartType, foodTypeFilter } = parsedQuery;
 
     // Build where clause
     const where: Record<string, any> = {};
 
     if (catId) {
       where.catId = catId;
+    }
+
+    // Apply food type filter
+    if (foodTypeFilter !== 'all') {
+      where.food = {
+        type: foodTypeFilter,
+      };
     }
 
     // Set date range - either from parameters or last N days
@@ -62,36 +104,143 @@ export default defineEventHandler(async (event) => {
       };
     }
 
-    // Get meal records for analytics with optimized query
-    const mealRecords = await prisma.mealRecord.findMany({
-      where,
-      orderBy: { mealTime: 'asc' },
-      select: {
-        id: true,
-        catId: true,
-        foodId: true,
-        quantity: true,
-        calories: true,
-        mealTime: true,
-        notes: true,
-        createdAt: true,
-        updatedAt: true,
-        cat: {
+    // パフォーマンス最適化：大量データ時のクエリ最適化（要件6.1, 6.2対応）
+    let recordCount: number;
+    let isLargeDataset: boolean;
+
+    try {
+      recordCount = await prisma.mealRecord.count({ where });
+      isLargeDataset = recordCount > 1000;
+    }
+    catch (dbError) {
+      // データベース接続エラーの詳細なハンドリング
+      console.error('Database count query failed:', dbError);
+      throw createError({
+        statusCode: 503,
+        statusMessage: 'Database connection error',
+        data: {
+          message: 'データベースに接続できません。しばらく待ってから再試行してください。',
+          code: 'DATABASE_CONNECTION_ERROR',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    // 大量データの場合はページネーションを使用
+    let mealRecords;
+
+    try {
+      if (isLargeDataset) {
+        // 大量データの場合は最新のデータを優先して取得
+        mealRecords = await prisma.mealRecord.findMany({
+          where,
+          orderBy: { mealTime: 'desc' },
+          take: 2000, // 最大2000件に制限
           select: {
             id: true,
-            name: true,
+            catId: true,
+            foodId: true,
+            quantity: true,
+            calories: true,
+            mealTime: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true,
+            cat: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            food: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                brand: true,
+              },
+            },
           },
-        },
-        food: {
+        });
+
+        // 時系列順に並び替え
+        mealRecords.reverse();
+      }
+      else {
+        // 通常のクエリ
+        mealRecords = await prisma.mealRecord.findMany({
+          where,
+          orderBy: { mealTime: 'asc' },
           select: {
             id: true,
-            name: true,
-            type: true,
-            brand: true,
+            catId: true,
+            foodId: true,
+            quantity: true,
+            calories: true,
+            mealTime: true,
+            notes: true,
+            createdAt: true,
+            updatedAt: true,
+            cat: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            food: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                brand: true,
+              },
+            },
           },
+        });
+      }
+    }
+    catch (dbError) {
+      // データベースクエリエラーの詳細なハンドリング
+      console.error('Database query failed:', dbError);
+
+      // エラーの種類に応じて適切なレスポンスを返す
+      if (dbError instanceof Error) {
+        if (dbError.message.includes('timeout')) {
+          throw createError({
+            statusCode: 504,
+            statusMessage: 'Database query timeout',
+            data: {
+              message: 'データベースの応答が遅すぎます。しばらく待ってから再試行してください。',
+              code: 'DATABASE_TIMEOUT',
+              timestamp: new Date().toISOString(),
+            },
+          });
+        }
+
+        if (dbError.message.includes('connection')) {
+          throw createError({
+            statusCode: 503,
+            statusMessage: 'Database connection error',
+            data: {
+              message: 'データベースに接続できません。しばらく待ってから再試行してください。',
+              code: 'DATABASE_CONNECTION_ERROR',
+              timestamp: new Date().toISOString(),
+            },
+          });
+        }
+      }
+
+      // その他のデータベースエラー
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Database query error',
+        data: {
+          message: 'データの取得中にエラーが発生しました。',
+          code: 'DATABASE_QUERY_ERROR',
+          timestamp: new Date().toISOString(),
         },
-      },
-    });
+      });
+    }
 
     // Transform data for analytics utility
     const transformedRecords = mealRecords.map(record => ({
@@ -130,19 +279,157 @@ export default defineEventHandler(async (event) => {
         : undefined,
     }));
 
+    // データの妥当性チェック（要件7.3, 7.4対応）
+    const validRecords = transformedRecords.filter((record) => {
+      // 基本的なデータ妥当性チェック
+      if (!record.id || !record.catId || !record.foodId) {
+        console.warn('Invalid record found: missing required fields', record.id);
+        return false;
+      }
+
+      // カロリー値の妥当性チェック
+      if (record.calories < 0 || record.calories > 10000) {
+        console.warn('Invalid calorie value found:', record.calories, 'for record:', record.id);
+        return false;
+      }
+
+      // 数量の妥当性チェック
+      if (record.quantity < 0 || record.quantity > 10000) {
+        console.warn('Invalid quantity value found:', record.quantity, 'for record:', record.id);
+        return false;
+      }
+
+      // 日付の妥当性チェック
+      if (!record.mealTime || isNaN(record.mealTime.getTime())) {
+        console.warn('Invalid meal time found:', record.mealTime, 'for record:', record.id);
+        return false;
+      }
+
+      return true;
+    });
+
+    // 無効なレコードが多い場合は警告
+    const invalidRecordCount = transformedRecords.length - validRecords.length;
+    if (invalidRecordCount > 0) {
+      console.warn(`${invalidRecordCount} invalid records were filtered out of ${transformedRecords.length} total records`);
+    }
+
+    // データが空の場合の処理
+    if (validRecords.length === 0) {
+      // 空のデータでも正常なレスポンスを返す
+      const emptyAnalytics = {
+        dailyCalories: [],
+        weeklyAverage: 0,
+        foodTypeBreakdown: [
+          { type: 'DRY' as const, percentage: 0, totalCalories: 0, totalWeight: 0 },
+          { type: 'WET' as const, percentage: 0, totalCalories: 0, totalWeight: 0 },
+        ],
+        totalMeals: 0,
+        averageCaloriesPerMeal: 0,
+      };
+
+      const endTime = Date.now();
+
+      return {
+        analytics: emptyAnalytics,
+        chartData: {
+          chartType,
+          dailyCalories: [],
+          dailyCaloriesByFoodType: [],
+        },
+        summary: {
+          totalMeals: 0,
+          totalCalories: 0,
+          averageCaloriesPerMeal: 0,
+          dateRange: {
+            startDate: where.mealTime?.gte || startDate,
+            endDate: where.mealTime?.lte || endDate,
+          },
+        },
+        performanceInfo: {
+          recordCount: 0,
+          isLargeDataset: false,
+          processedRecords: 0,
+          queryOptimized: false,
+          processingTime: endTime - startTime,
+          invalidRecordCount,
+        },
+        dataQuality: {
+          totalRecords: transformedRecords.length,
+          validRecords: validRecords.length,
+          invalidRecords: invalidRecordCount,
+          dataCompleteness: 0,
+        },
+      };
+    }
+
     // Generate analytics
-    const analytics = generateMealAnalytics(transformedRecords.map(record => ({
-      ...record,
-      notes: record.notes || undefined,
-      food: record.food
-        ? {
-            ...record.food,
-            type: record.food.type as 'DRY' | 'WET',
-            pricePerUnit: record.food.pricePerUnit || undefined,
-            brand: record.food.brand || undefined,
-          }
-        : undefined,
-    })) as any[]);
+    let analytics;
+    try {
+      analytics = generateMealAnalytics(validRecords.map(record => ({
+        ...record,
+        notes: record.notes || undefined,
+        food: record.food
+          ? {
+              ...record.food,
+              type: record.food.type as 'DRY' | 'WET',
+              pricePerUnit: record.food.pricePerUnit || undefined,
+              brand: record.food.brand || undefined,
+            }
+          : undefined,
+      })) as any[]);
+    }
+    catch (analyticsError) {
+      console.error('Analytics generation failed:', analyticsError);
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Analytics processing error',
+        data: {
+          message: 'データの分析中にエラーが発生しました。',
+          code: 'ANALYTICS_PROCESSING_ERROR',
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    // Generate chart-specific data based on chart type
+    let chartData = {};
+    if (chartType === 'bar') {
+      // For bar chart, provide daily calories by food type for stacked bar chart
+      const dailyCaloriesByFoodType = calculateDailyCaloriesWithFoodType(
+        transformedRecords.map(record => ({
+          ...record,
+          notes: record.notes || undefined,
+          food: record.food
+            ? {
+                ...record.food,
+                type: record.food.type as 'DRY' | 'WET',
+                pricePerUnit: record.food.pricePerUnit || undefined,
+                brand: record.food.brand || undefined,
+              }
+            : undefined,
+        })) as any[],
+      );
+
+      // Fill missing dates with zero values to show data gaps
+      const filledData = fillMissingDatesForFoodType(
+        dailyCaloriesByFoodType,
+        where.mealTime?.gte || startDate,
+        where.mealTime?.lte || endDate,
+      );
+
+      chartData = {
+        chartType: 'bar',
+        dailyCaloriesByFoodType: filledData,
+      };
+    }
+    else {
+      // For line chart, use existing daily calories data
+      chartData = {
+        chartType: 'line',
+        dailyCalories: analytics.dailyCalories,
+      };
+    }
 
     // Get additional summary data
     const totalMeals = mealRecords.length;
@@ -182,11 +469,36 @@ export default defineEventHandler(async (event) => {
       }));
     }
 
+    // パフォーマンス情報を追加
+    const endTime = Date.now();
+    const performanceInfo = {
+      recordCount,
+      isLargeDataset,
+      processedRecords: mealRecords.length,
+      queryOptimized: isLargeDataset,
+      processingTime: endTime - startTime,
+      invalidRecordCount,
+    };
+
+    // データ品質情報を追加
+    const dataQuality = {
+      totalRecords: transformedRecords.length,
+      validRecords: validRecords.length,
+      invalidRecords: invalidRecordCount,
+      dataCompleteness: transformedRecords.length > 0
+        ? Math.round((validRecords.length / transformedRecords.length) * 100 * 100) / 100
+        : 100,
+    };
+
     // Add caching headers for analytics data
-    setHeader(event, 'Cache-Control', 'public, max-age=300, s-maxage=600');
+    // 大量データの場合はキャッシュ時間を延長
+    const cacheMaxAge = isLargeDataset ? 600 : 300;
+    const cacheSharedMaxAge = isLargeDataset ? 1200 : 600;
+    setHeader(event, 'Cache-Control', `public, max-age=${cacheMaxAge}, s-maxage=${cacheSharedMaxAge}`);
 
     return {
       analytics,
+      chartData,
       summary: {
         totalMeals,
         totalCalories: Math.round(totalCalories * 100) / 100,
@@ -196,23 +508,102 @@ export default defineEventHandler(async (event) => {
           endDate: where.mealTime?.lte || endDate,
         },
       },
+      performanceInfo,
+      dataQuality,
       ...(catBreakdown && { catBreakdown }),
     };
   }
   catch (error) {
+    const endTime = Date.now();
+    const processingTime = endTime - startTime;
+
+    // すでにcreateErrorで作成されたエラーはそのまま再スローする
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error;
+    }
+
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Invalid query parameters',
-        data: error.errors,
+        data: {
+          message: 'クエリパラメータが無効です',
+          code: 'VALIDATION_ERROR',
+          errors: error.errors,
+          timestamp: new Date().toISOString(),
+          processingTime,
+        },
       });
     }
 
+    // Prisma specific errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      const prismaError = error as any;
+
+      switch (prismaError.code) {
+        case 'P2002':
+          throw createError({
+            statusCode: 409,
+            statusMessage: 'Unique constraint violation',
+            data: {
+              message: 'データの重複エラーが発生しました',
+              code: 'UNIQUE_CONSTRAINT_ERROR',
+              timestamp: new Date().toISOString(),
+              processingTime,
+            },
+          });
+
+        case 'P2025':
+          throw createError({
+            statusCode: 404,
+            statusMessage: 'Record not found',
+            data: {
+              message: '指定されたデータが見つかりません',
+              code: 'RECORD_NOT_FOUND',
+              timestamp: new Date().toISOString(),
+              processingTime,
+            },
+          });
+
+        case 'P1001':
+          throw createError({
+            statusCode: 503,
+            statusMessage: 'Database connection error',
+            data: {
+              message: 'データベースに接続できません',
+              code: 'DATABASE_CONNECTION_ERROR',
+              timestamp: new Date().toISOString(),
+              processingTime,
+            },
+          });
+
+        default:
+          console.error('Prisma error:', prismaError);
+          throw createError({
+            statusCode: 500,
+            statusMessage: 'Database error',
+            data: {
+              message: 'データベースエラーが発生しました',
+              code: 'DATABASE_ERROR',
+              timestamp: new Date().toISOString(),
+              processingTime,
+            },
+          });
+      }
+    }
+
     // Handle unexpected errors
+    console.error('Unexpected error in analytics API:', error);
     throw createError({
       statusCode: 500,
       statusMessage: 'Internal server error',
+      data: {
+        message: '予期しないエラーが発生しました',
+        code: 'INTERNAL_SERVER_ERROR',
+        timestamp: new Date().toISOString(),
+        processingTime,
+      },
     });
   }
 });

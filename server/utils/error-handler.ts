@@ -4,6 +4,7 @@
 
 import { z } from 'zod';
 import type { H3Event } from 'h3';
+import { getHeaders } from 'h3';
 import { logger } from '~/lib/pino-logger';
 
 export interface ErrorContext {

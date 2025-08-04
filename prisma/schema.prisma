@@ -25,6 +25,7 @@ model Cat {
   medicationReminders MedicationReminder[]
   veterinaryVisits   VeterinaryVisit[]
   veterinaryAppointments VeterinaryAppointment[]
+  excretionRecords   ExcretionRecord[]
 
   @@map("cats")
 }
@@ -265,4 +266,31 @@ enum AppointmentStatus {
   SCHEDULED
   COMPLETED
   CANCELLED
+}
+
+model ExcretionRecord {
+  id         String        @id @default(cuid())
+  catId      String
+  type       ExcretionType
+  recordedAt DateTime
+  notes      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  cat        Cat           @relation(fields: [catId], references: [id], onDelete: Cascade)
+
+  // パフォーマンス最適化のためのインデックス
+  @@index([catId])                           // 猫別フィルタリング用
+  @@index([recordedAt])                      // 日付範囲検索用
+  @@index([type])                            // 排泄タイプフィルタリング用
+  @@index([catId, recordedAt])               // 猫別 + 日付範囲の複合検索用
+  @@index([catId, type])                     // 猫別 + タイプの複合検索用
+  @@index([recordedAt, type])                // 日付範囲 + タイプの複合検索用
+  @@index([catId, recordedAt, type])         // 全フィルタ条件の複合検索用
+  @@map("excretion_records")
+}
+
+enum ExcretionType {
+  URINE  // おしっこ
+  FECES  // うんち
 }

@@ -29,6 +29,9 @@ export interface Food {
   unit: string;
   createdAt: Date;
   updatedAt: Date;
+  _count?: {
+    meals: number;
+  };
 }
 
 export interface MealRecord {
@@ -83,13 +86,25 @@ export interface DailyCalorieData {
   type: FoodType;
 }
 
+export interface DailyCalorieByFoodType {
+  date: string;
+  dryCalories: number;
+  wetCalories: number;
+  totalCalories: number;
+}
+
+export interface FoodTypeBreakdown {
+  type: FoodType;
+  percentage: number;
+  totalCalories: number;
+  totalWeight: number;
+}
+
 export interface MealAnalytics {
   dailyCalories: DailyCalorieData[];
+  dailyCaloriesByFoodType: DailyCalorieByFoodType[];
   weeklyAverage: number;
-  foodTypeBreakdown: {
-    type: FoodType;
-    percentage: number;
-  }[];
+  foodTypeBreakdown: FoodTypeBreakdown[];
 }
 
 // Filter interfaces

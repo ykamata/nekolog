@@ -89,7 +89,7 @@ describe('useCatsStore', () => {
   describe('fetchCats', () => {
     it('should fetch cats successfully', async () => {
       const store = useCatsStore();
-      mockFetch.mockResolvedValueOnce({ data: [mockCat] });
+      mockFetch.mockResolvedValueOnce([mockCat]);
 
       const result = await store.fetchCats();
 
@@ -116,7 +116,7 @@ describe('useCatsStore', () => {
       const store = useCatsStore();
       store.cats = [mockCat];
       store.cache.lastFetch = new Date();
-      mockFetch.mockResolvedValueOnce({ data: [mockCat] });
+      mockFetch.mockResolvedValueOnce([mockCat]);
 
       await store.fetchCats(undefined, true);
 
@@ -135,7 +135,7 @@ describe('useCatsStore', () => {
 
     it('should apply filters', async () => {
       const store = useCatsStore();
-      mockFetch.mockResolvedValueOnce({ data: [mockCat] });
+      mockFetch.mockResolvedValueOnce([mockCat]);
 
       await store.fetchCats({ name: 'test', limit: 10, offset: 5 });
 
@@ -148,7 +148,7 @@ describe('useCatsStore', () => {
   describe('createCat', () => {
     it('should create cat successfully', async () => {
       const store = useCatsStore();
-      mockFetch.mockResolvedValueOnce({ data: mockCat });
+      mockFetch.mockResolvedValueOnce(mockCat);
 
       const result = await store.createCat(mockCatInput);
 
@@ -178,7 +178,7 @@ describe('useCatsStore', () => {
       const store = useCatsStore();
       store.cats = [mockCat];
       const updatedCat = { ...mockCat, name: 'Updated Cat' };
-      mockFetch.mockResolvedValueOnce({ data: updatedCat });
+      mockFetch.mockResolvedValueOnce(updatedCat);
 
       const catUpdate: CatUpdate = { name: 'Updated Cat' };
       const result = await store.updateCat('1', catUpdate);

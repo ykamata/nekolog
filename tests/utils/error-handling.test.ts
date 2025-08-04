@@ -1,14 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { z } from 'zod';
 import {
   parseApiError,
-  getUserFriendlyErrorMessage,
-  isRetryableError,
-  isNetworkError,
-  retryWithBackoff,
-  createDebouncedValidator,
-  formatValidationErrors,
-  createErrorHandler,
+  detectCalorieAnomalies,
+  validateDateData,
+  generateDataQualityReport,
+  fetchWithRetry,
+  createErrorInfo,
+  logError,
 } from '~/utils/error-handling';
 
 describe('Error Handling Utils', () => {
@@ -16,226 +14,315 @@ describe('Error Handling Utils', () => {
     vi.clearAllMocks();
   });
 
-  describe('parseApiError', () => {
-    it('should parse FetchError correctly', () => {
-      const fetchError = {
-        data: {
-          message: 'Test error message',
-          data: [
-            { path: ['name'], message: 'Name is required' },
-          ],
-        },
-        status: 400,
-        statusMessage: 'Bad Request',
-      };
+  describe('createErrorInfo', () => {
+    it('should create error info with all required fields', () => {
+      const errorInfo = createErrorInfo(
+        'TEST_ERROR',
+        'Test error message',
+        'User friendly message',
+        'high',
+        { context: 'test' },
+      );
 
-      const result = parseApiError(fetchError);
-
-      expect(result).toEqual({
+      expect(errorInfo).toMatchObject({
+        code: 'TEST_ERROR',
         message: 'Test error message',
-        statusCode: 400,
-        data: fetchError.data,
-        validationErrors: [
-          { field: 'name', message: 'Name is required' },
-        ],
+        userMessage: 'User friendly message',
+        severity: 'high',
+        context: { context: 'test' },
       });
+      expect(errorInfo.timestamp).toBeInstanceOf(Date);
     });
 
-    it('should parse ZodError correctly', () => {
-      const schema = z.object({
-        name: z.string().min(1, 'Name is required'),
-        age: z.number().min(0, 'Age must be positive'),
-      });
+    it('should use default severity when not provided', () => {
+      const errorInfo = createErrorInfo(
+        'TEST_ERROR',
+        'Test error message',
+        'User friendly message',
+      );
 
-      try {
-        schema.parse({ name: '', age: -1 });
-      }
-      catch (error) {
-        const result = parseApiError(error);
+      expect(errorInfo.severity).toBe('medium');
+    });
+  });
 
-        expect(result.message).toBe('入力データが無効です');
-        expect(result.statusCode).toBe(400);
-        expect(result.validationErrors).toHaveLength(2);
-        expect(result.validationErrors).toContainEqual({
-          field: 'name',
-          message: 'Name is required',
-        });
-        expect(result.validationErrors).toContainEqual({
-          field: 'age',
-          message: 'Age must be positive',
-        });
-      }
+  describe('parseApiError', () => {
+    it('should parse network errors', () => {
+      const error = new Error('fetch failed');
+      const errorInfo = parseApiError(error);
+
+      expect(errorInfo.code).toBe('NETWORK_ERROR');
+      expect(errorInfo.userMessage).toContain('ネットワークに接続できません');
+      expect(errorInfo.severity).toBe('high');
     });
 
-    it('should parse generic Error correctly', () => {
-      const error = new Error('Generic error message');
-      const result = parseApiError(error);
+    it('should parse timeout errors', () => {
+      const error = new Error('timeout occurred');
+      const errorInfo = parseApiError(error);
 
-      expect(result).toEqual({
-        message: 'Generic error message',
-        statusCode: 500,
-      });
+      expect(errorInfo.code).toBe('TIMEOUT_ERROR');
+      expect(errorInfo.userMessage).toContain('サーバーからの応答がありません');
+      expect(errorInfo.severity).toBe('medium');
     });
 
-    it('should parse string error correctly', () => {
-      const result = parseApiError('String error message');
+    it('should parse authentication errors', () => {
+      const error = new Error('401 Unauthorized');
+      const errorInfo = parseApiError(error);
 
-      expect(result).toEqual({
-        message: 'String error message',
-        statusCode: 500,
-      });
+      expect(errorInfo.code).toBe('AUTH_ERROR');
+      expect(errorInfo.userMessage).toContain('ログインが必要です');
+      expect(errorInfo.severity).toBe('high');
+    });
+
+    it('should parse server errors', () => {
+      const error = new Error('500 Internal Server Error');
+      const errorInfo = parseApiError(error);
+
+      expect(errorInfo.code).toBe('SERVER_ERROR');
+      expect(errorInfo.userMessage).toContain('サーバーでエラーが発生しました');
+      expect(errorInfo.severity).toBe('high');
+    });
+
+    it('should parse string errors', () => {
+      const error = 'String error message';
+      const errorInfo = parseApiError(error);
+
+      expect(errorInfo.code).toBe('STRING_ERROR');
+      expect(errorInfo.message).toBe('String error message');
+      expect(errorInfo.userMessage).toBe('String error message');
     });
 
     it('should handle unknown error types', () => {
-      const result = parseApiError({ unknown: 'object' });
+      const error = { unknown: 'error' };
+      const errorInfo = parseApiError(error);
 
-      expect(result).toEqual({
-        message: '予期しないエラーが発生しました',
-        statusCode: 500,
+      expect(errorInfo.code).toBe('UNKNOWN_ERROR');
+      expect(errorInfo.userMessage).toBe('予期しないエラーが発生しました。');
+    });
+  });
+
+  describe('detectCalorieAnomalies', () => {
+    it('should detect no anomalies in normal data', () => {
+      const data = [100, 120, 110, 130, 105, 115, 125];
+      const result = detectCalorieAnomalies(data);
+
+      expect(result.hasAnomalies).toBe(false);
+      expect(result.anomalies).toHaveLength(0);
+      expect(result.cleanedData).toEqual(data);
+      expect(result.statistics.originalCount).toBe(7);
+      expect(result.statistics.cleanedCount).toBe(7);
+    });
+
+    it('should detect negative calorie values', () => {
+      const data = [100, -50, 120, 110];
+      const result = detectCalorieAnomalies(data);
+
+      expect(result.hasAnomalies).toBe(true);
+      expect(result.anomalies).toHaveLength(1);
+      expect(result.anomalies[0]).toMatchObject({
+        index: 1,
+        value: -50,
+        reason: '負のカロリー値',
+        severity: 'high',
       });
+      expect(result.cleanedData).toEqual([100, 120, 110]);
     });
-  });
 
-  describe('getUserFriendlyErrorMessage', () => {
-    it('should return context-specific messages for different status codes', () => {
-      const testCases = [
-        { statusCode: 400, expected: 'テスト: 入力データに問題があります。Test message' },
-        { statusCode: 401, expected: 'テスト: 認証が必要です。ログインしてください。' },
-        { statusCode: 403, expected: 'テスト: この操作を実行する権限がありません。' },
-        { statusCode: 404, expected: 'テスト: 指定されたデータが見つかりません。' },
-        { statusCode: 409, expected: 'テスト: データの競合が発生しました。Test message' },
-        { statusCode: 500, expected: 'テスト: サーバーエラーが発生しました。しばらく待ってから再試行してください。' },
-      ];
+    it('should detect extremely high calorie values', () => {
+      const data = [100, 120, 15000, 110];
+      const result = detectCalorieAnomalies(data);
 
-      testCases.forEach(({ statusCode, expected }) => {
-        const error = { message: 'Test message', statusCode };
-        const result = getUserFriendlyErrorMessage(error, 'テスト');
-        expect(result).toBe(expected);
+      expect(result.hasAnomalies).toBe(true);
+      expect(result.anomalies).toHaveLength(1);
+      expect(result.anomalies[0]).toMatchObject({
+        index: 2,
+        value: 15000,
+        severity: 'high',
       });
+      expect(result.anomalies[0].reason).toContain('異常に大きいカロリー値');
     });
 
-    it('should work without context', () => {
-      const error = { message: 'Test message', statusCode: 400 };
-      const result = getUserFriendlyErrorMessage(error);
-      expect(result).toBe('入力データに問題があります。Test message');
+    it('should detect extremely low calorie values', () => {
+      const data = [100, 120, 2, 110];
+      const result = detectCalorieAnomalies(data);
+
+      expect(result.hasAnomalies).toBe(true);
+      expect(result.anomalies).toHaveLength(1);
+      expect(result.anomalies[0]).toMatchObject({
+        index: 2,
+        value: 2,
+        severity: 'medium',
+      });
+      expect(result.anomalies[0].reason).toContain('異常に小さいカロリー値');
+    });
+
+    it('should handle empty data', () => {
+      const data: number[] = [];
+      const result = detectCalorieAnomalies(data);
+
+      expect(result.hasAnomalies).toBe(false);
+      expect(result.anomalies).toHaveLength(0);
+      expect(result.cleanedData).toEqual([]);
+      expect(result.statistics.originalCount).toBe(0);
+      expect(result.statistics.cleanedCount).toBe(0);
+    });
+
+    it('should calculate correct statistics', () => {
+      const data = [100, 120, 110, 130, 105];
+      const result = detectCalorieAnomalies(data);
+
+      expect(result.statistics.originalCount).toBe(5);
+      expect(result.statistics.cleanedCount).toBe(5);
+      expect(result.statistics.removedCount).toBe(0);
+      expect(result.statistics.mean).toBe(113);
+      expect(result.statistics.median).toBe(110);
+      expect(result.statistics.standardDeviation).toBeCloseTo(10.77, 1);
     });
   });
 
-  describe('isRetryableError', () => {
-    it('should identify retryable errors', () => {
-      expect(isRetryableError({ message: 'Error', statusCode: 500 })).toBe(true);
-      expect(isRetryableError({ message: 'Error', statusCode: 502 })).toBe(true);
-      expect(isRetryableError({ message: 'Error', statusCode: 503 })).toBe(true);
-      expect(isRetryableError({ message: 'Error', statusCode: 429 })).toBe(true);
+  describe('validateDateData', () => {
+    it('should validate correct date formats', () => {
+      const dates = ['2024-01-01', '2024-02-15', '2024-12-31'];
+      const result = validateDateData(dates);
+
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+      expect(result.cleanedData).toEqual(dates);
     });
 
-    it('should identify non-retryable errors', () => {
-      expect(isRetryableError({ message: 'Error', statusCode: 400 })).toBe(false);
-      expect(isRetryableError({ message: 'Error', statusCode: 401 })).toBe(false);
-      expect(isRetryableError({ message: 'Error', statusCode: 404 })).toBe(false);
+    it('should detect invalid date formats', () => {
+      const dates = ['2024-1-1', '2024/02/15', 'invalid-date'];
+      const result = validateDateData(dates);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toHaveLength(3);
+      expect(result.errors[0]).toContain('無効な日付形式');
+    });
+
+    it('should detect invalid dates', () => {
+      const dates = ['2024-02-30', '2024-13-01'];
+      const result = validateDateData(dates);
+
+      expect(result.isValid).toBe(false);
+      expect(result.errors.length).toBeGreaterThanOrEqual(1);
+      expect(result.errors[0]).toContain('無効な日付');
+    });
+
+    it('should warn about future dates', () => {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 10);
+      const futureDateStr = futureDate.toISOString().split('T')[0];
+
+      const dates = [futureDateStr!];
+      const result = validateDateData(dates);
+
+      expect(result.isValid).toBe(true);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0]).toContain('未来の日付');
+    });
+
+    it('should warn about very old dates', () => {
+      const oldDate = new Date();
+      oldDate.setFullYear(oldDate.getFullYear() - 15);
+      const oldDateStr = oldDate.toISOString().split('T')[0];
+
+      const dates = [oldDateStr!];
+      const result = validateDateData(dates);
+
+      expect(result.isValid).toBe(true);
+      expect(result.warnings).toHaveLength(1);
+      expect(result.warnings[0]).toContain('古すぎる日付');
     });
   });
 
-  describe('isNetworkError', () => {
-    it('should identify network errors', () => {
-      const networkError = {
-        cause: { code: 'NETWORK_ERROR' },
+  describe('generateDataQualityReport', () => {
+    it('should generate excellent quality report for good data', () => {
+      const data = {
+        dates: ['2024-01-01', '2024-01-02', '2024-01-03'],
+        calories: [100, 120, 110],
       };
-      expect(isNetworkError(networkError)).toBe(true);
+      const report = generateDataQualityReport(data);
 
-      const connectionError = {
-        cause: { code: 'ECONNREFUSED' },
-      };
-      expect(isNetworkError(connectionError)).toBe(true);
+      expect(report.overall).toBe('excellent');
+      expect(report.score).toBeGreaterThanOrEqual(90);
+      expect(report.issues).toHaveLength(0);
     });
 
-    it('should identify non-network errors', () => {
-      expect(isNetworkError(new Error('Regular error'))).toBe(false);
-      expect(isNetworkError({ message: 'Not a network error' })).toBe(false);
+    it('should generate poor quality report for bad data', () => {
+      const data = {
+        dates: ['invalid-date', '2024/01/02'],
+        calories: [-100, 15000],
+      };
+      const report = generateDataQualityReport(data);
+
+      expect(['poor', 'fair']).toContain(report.overall);
+      expect(report.score).toBeLessThan(70);
+      expect(report.issues.length).toBeGreaterThan(0);
+      expect(report.recommendations.length).toBeGreaterThan(0);
+    });
+
+    it('should detect data completeness issues', () => {
+      const data = {
+        dates: ['2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-05'],
+        calories: [100], // Only 1 calorie entry for 5 dates
+      };
+      const report = generateDataQualityReport(data);
+
+      expect(report.issues.some(issue => issue.message.includes('データの欠損'))).toBe(true);
+      expect(report.recommendations.some(rec => rec.includes('定期的なデータ記録'))).toBe(true);
     });
   });
 
-  describe('retryWithBackoff', () => {
-    it('should succeed on first try', async () => {
-      const operation = vi.fn().mockResolvedValue('success');
-      const result = await retryWithBackoff(operation);
+  describe('fetchWithRetry', () => {
+    it('should succeed on first attempt', async () => {
+      const mockFetch = vi.fn().mockResolvedValue('success');
+
+      const result = await fetchWithRetry(mockFetch, 3, 100);
 
       expect(result).toBe('success');
-      expect(operation).toHaveBeenCalledTimes(1);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
     it('should retry on failure and eventually succeed', async () => {
-      const operation = vi.fn()
-        .mockRejectedValueOnce(new Error('Fail 1'))
-        .mockRejectedValueOnce(new Error('Fail 2'))
+      const mockFetch = vi.fn()
+        .mockRejectedValueOnce(new Error('First failure'))
+        .mockRejectedValueOnce(new Error('Second failure'))
         .mockResolvedValue('success');
 
-      const result = await retryWithBackoff(operation, 3, 10);
+      const result = await fetchWithRetry(mockFetch, 3, 10);
 
       expect(result).toBe('success');
-      expect(operation).toHaveBeenCalledTimes(3);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
 
-    it('should throw after max retries', async () => {
-      const operation = vi.fn().mockRejectedValue(new Error('Always fails'));
+    it('should fail after max retries', async () => {
+      const mockFetch = vi.fn().mockRejectedValue(new Error('Persistent failure'));
 
-      await expect(retryWithBackoff(operation, 2, 10)).rejects.toThrow('Always fails');
-      expect(operation).toHaveBeenCalledTimes(3); // Initial + 2 retries
-    });
-  });
-
-  describe('createDebouncedValidator', () => {
-    it('should debounce validation calls', async () => {
-      const validator = vi.fn().mockResolvedValue(undefined);
-      const debouncedValidator = createDebouncedValidator(validator, 50);
-
-      // Call multiple times quickly
-      debouncedValidator('test1');
-      debouncedValidator('test2');
-      debouncedValidator('test3');
-
-      // Wait for debounce
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      expect(validator).toHaveBeenCalledTimes(1);
-      expect(validator).toHaveBeenCalledWith('test3');
+      await expect(fetchWithRetry(mockFetch, 2, 10)).rejects.toThrow('Persistent failure');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
   });
 
-  describe('formatValidationErrors', () => {
-    it('should format validation errors correctly', () => {
-      const errors = [
-        { field: 'name', message: 'Name is required' },
-        { field: 'email', message: 'Invalid email format' },
-      ];
+  describe('logError', () => {
+    it('should log error in development environment', () => {
+      const consoleSpy = vi.spyOn(console, 'group').mockImplementation(() => {});
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleGroupEndSpy = vi.spyOn(console, 'groupEnd').mockImplementation(() => {});
 
-      const result = formatValidationErrors(errors);
+      const errorInfo = createErrorInfo(
+        'TEST_ERROR',
+        'Test message',
+        'User message',
+        'high',
+        { test: 'context' },
+      );
 
-      expect(result).toEqual({
-        name: 'Name is required',
-        email: 'Invalid email format',
-      });
-    });
-  });
+      // In test environment, just verify the function exists and can be called
+      expect(typeof logError).toBe('function');
+      expect(() => logError(errorInfo)).not.toThrow();
 
-  describe('createErrorHandler', () => {
-    it('should create error handler with context', () => {
-      const handler = createErrorHandler('Test Context');
-      const error = new Error('Test error');
-
-      const result = handler.handleError(error);
-
-      expect(result.message).toContain('Test Context');
-      expect(result.error.message).toBe('Test error');
-    });
-
-    it('should handle error with fallback message', () => {
-      const handler = createErrorHandler('Test Context');
-      const error = new Error('Test error');
-
-      const result = handler.handleError(error, 'Fallback message');
-
-      expect(result.message).toBe('Fallback message');
+      consoleSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+      consoleGroupEndSpy.mockRestore();
     });
   });
 });

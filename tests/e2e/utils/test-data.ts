@@ -29,6 +29,13 @@ export interface TestMealRecord {
   notes?: string;
 }
 
+export interface TestExcretionRecord {
+  catName: string;
+  type: 'URINE' | 'FECES';
+  recordedAt: string;
+  notes?: string;
+}
+
 // Test cats data
 export const testCats: TestCat[] = [
   {
@@ -116,6 +123,33 @@ export const testMealRecords: TestMealRecord[] = [
   },
 ];
 
+// Test excretion records data
+export const testExcretionRecords: TestExcretionRecord[] = [
+  {
+    catName: 'みけ',
+    type: 'URINE',
+    recordedAt: '2024-01-15T09:00:00',
+    notes: '朝のおしっこ',
+  },
+  {
+    catName: 'みけ',
+    type: 'FECES',
+    recordedAt: '2024-01-15T10:30:00',
+    notes: '健康的なうんち',
+  },
+  {
+    catName: 'しろ',
+    type: 'URINE',
+    recordedAt: '2024-01-15T09:15:00',
+  },
+  {
+    catName: 'しろ',
+    type: 'FECES',
+    recordedAt: '2024-01-15T11:00:00',
+    notes: '少し軟便',
+  },
+];
+
 // Generate test data for different scenarios
 export const generateTestData = {
   // Generate multiple cats for pagination testing
@@ -180,6 +214,53 @@ export const generateTestData = {
 
     return records;
   },
+
+  // Generate excretion records for testing
+  excretionRecordsForTesting: (
+    catName: string,
+    days: number,
+  ): TestExcretionRecord[] => {
+    const records: TestExcretionRecord[] = [];
+    const now = new Date();
+
+    for (let i = 0; i < days; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+
+      // Morning urine
+      const morningTime = new Date(date);
+      morningTime.setHours(8, Math.floor(Math.random() * 60), 0, 0);
+      records.push({
+        catName,
+        type: 'URINE',
+        recordedAt: morningTime.toISOString(),
+        notes: i % 3 === 0 ? '朝のおしっこ' : undefined,
+      });
+
+      // Afternoon feces (not every day)
+      if (i % 2 === 0) {
+        const afternoonTime = new Date(date);
+        afternoonTime.setHours(14, Math.floor(Math.random() * 60), 0, 0);
+        records.push({
+          catName,
+          type: 'FECES',
+          recordedAt: afternoonTime.toISOString(),
+          notes: i % 4 === 0 ? '健康的なうんち' : undefined,
+        });
+      }
+
+      // Evening urine
+      const eveningTime = new Date(date);
+      eveningTime.setHours(20, Math.floor(Math.random() * 60), 0, 0);
+      records.push({
+        catName,
+        type: 'URINE',
+        recordedAt: eveningTime.toISOString(),
+      });
+    }
+
+    return records;
+  },
 };
 
 // Validation helpers
@@ -204,6 +285,14 @@ export const validateTestData = {
       && record.foodName
       && record.quantity > 0
       && record.mealTime
+    );
+  },
+
+  excretionRecord: (record: TestExcretionRecord): boolean => {
+    return !!(
+      record.catName
+      && ['URINE', 'FECES'].includes(record.type)
+      && record.recordedAt
     );
   },
 };

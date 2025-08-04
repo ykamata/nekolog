@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "name": "ビルドエラー自動修正",
+  "description": "タスク完了後にnpm run buildを実行し、エラーが発生した場合は自動的に修正を行います",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.ts",
+      "**/*.vue",
+      "**/*.js",
+      "package.json",
+      "nuxt.config.ts",
+      "tsconfig.json"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "タスクが完了しました。npm run buildを実行してビルドエラーがないか確認し、エラーが発生している場合は以下の手順で修正してください：\n\n1. まずnpm run buildを実行してエラー内容を確認\n2. エラーの種類を特定（TypeScript型エラー、構文エラー、依存関係エラーなど）\n3. エラーの原因となっているファイルを特定\n4. 適切な修正を実施：\n   - TypeScript型エラー: 型定義の修正、インポートの追加\n   - 構文エラー: コードの修正\n   - 依存関係エラー: package.jsonの更新、npm install実行\n5. 修正後、再度npm run buildを実行して成功を確認\n6. 修正内容を簡潔に報告\n\nNuxt 3プロジェクトの特性を考慮し、以下の点も確認してください：\n- auto-importの設定\n- Nitroの設定\n- TypeScriptの厳密モード\n- Prismaスキーマとの整合性"
+  }
+}

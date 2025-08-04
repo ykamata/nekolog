@@ -6,7 +6,7 @@ import type {
   MedicationType,
 } from '~/types/medication';
 import { MedicationInputSchema } from '~/lib/validations/medication';
-import { parseApiError, formatValidationErrors, createDebouncedValidator } from '~/utils/error-handling';
+import { parseApiError, formatValidationErrors, createDebouncedValidator, errorInfoToApiError } from '~/utils/error-handling';
 import { useToast } from '~/composables/useToast';
 
 interface Props {
@@ -174,7 +174,8 @@ const handleSubmit = async () => {
     retryCount.value = 0;
   }
   catch (error) {
-    const apiError = parseApiError(error);
+    const errorInfo = parseApiError(error);
+    const apiError = errorInfoToApiError(errorInfo);
 
     // Handle validation errors from server
     if (apiError.validationErrors) {

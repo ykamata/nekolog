@@ -21,9 +21,12 @@ import {
   getLastNDaysRange,
   groupMealRecordsByDate,
   calculateDailyCalories,
+  calculateDailyCaloriesWithFoodType,
   calculateFoodTypeBreakdown,
   calculateWeeklyAverage,
   generateMealAnalytics,
+  generateDateRange,
+  fillMissingDatesForFoodType,
   createErrorResponse,
   isValidationError,
 } from '~/utils/cat-meal';
@@ -454,14 +457,74 @@ describe('Analytics Functions', () => {
     });
   });
 
+  describe('calculateDailyCaloriesWithFoodType', () => {
+    it('should calculate daily calories with food type breakdown', () => {
+      const result = calculateDailyCaloriesWithFoodType(mockMealRecords);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        date: '2023/01/01',
+        dryCalories: 175,
+        wetCalories: 90,
+        totalCalories: 265,
+      });
+    });
+  });
+
+  describe('generateDateRange', () => {
+    it('should generate date range correctly', () => {
+      const startDate = new Date('2023-01-01');
+      const endDate = new Date('2023-01-03');
+
+      const result = generateDateRange(startDate, endDate);
+
+      expect(result).toEqual(['2023/01/01', '2023/01/02', '2023/01/03']);
+    });
+  });
+
+  describe('fillMissingDatesForFoodType', () => {
+    it('should fill missing dates with zero values', () => {
+      const data = [
+        { date: '2023/01/01', dryCalories: 100, wetCalories: 50, totalCalories: 150 },
+        { date: '2023/01/03', dryCalories: 120, wetCalories: 80, totalCalories: 200 },
+      ];
+      const startDate = new Date('2023-01-01');
+      const endDate = new Date('2023-01-03');
+
+      const result = fillMissingDatesForFoodType(data, startDate, endDate);
+
+      expect(result).toHaveLength(3);
+      expect(result[0]).toEqual({
+        date: '2023/01/01',
+        dryCalories: 100,
+        wetCalories: 50,
+        totalCalories: 150,
+      });
+      expect(result[1]).toEqual({
+        date: '2023/01/02',
+        dryCalories: 0,
+        wetCalories: 0,
+        totalCalories: 0,
+      });
+      expect(result[2]).toEqual({
+        date: '2023/01/03',
+        dryCalories: 120,
+        wetCalories: 80,
+        totalCalories: 200,
+      });
+    });
+  });
+
   describe('generateMealAnalytics', () => {
     it('should generate complete analytics', () => {
       const result = generateMealAnalytics(mockMealRecords);
 
       expect(result).toHaveProperty('dailyCalories');
+      expect(result).toHaveProperty('dailyCaloriesByFoodType');
       expect(result).toHaveProperty('weeklyAverage');
       expect(result).toHaveProperty('foodTypeBreakdown');
       expect(result.dailyCalories).toHaveLength(1);
+      expect(result.dailyCaloriesByFoodType).toHaveLength(1);
       expect(result.foodTypeBreakdown).toHaveLength(2);
     });
   });

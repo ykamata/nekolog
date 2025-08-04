@@ -7,7 +7,7 @@ import type {
   VeterinaryTreatment,
 } from '~/types/veterinary-visit';
 import { ConvertAppointmentToVisitSchema } from '~/lib/validations/veterinary-visit';
-import { parseApiError, formatValidationErrors, createDebouncedValidator, isRetryableError } from '~/utils/error-handling';
+import { parseApiError, formatValidationErrors, createDebouncedValidator, isRetryableError, errorInfoToApiError } from '~/utils/error-handling';
 import { useToast } from '~/composables/useToast';
 
 interface Props {
@@ -139,7 +139,8 @@ const validateField = async (field: keyof ConvertAppointmentToVisitInput) => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      const apiError = parseApiError(error);
+      const errorInfo = parseApiError(error);
+      const apiError = errorInfoToApiError(errorInfo);
       if (apiError.validationErrors) {
         const fieldErrors = formatValidationErrors(apiError.validationErrors);
         if (fieldErrors[field]) {
@@ -169,14 +170,16 @@ const handleSubmit = async () => {
   }
   catch (error) {
     if (error instanceof z.ZodError) {
-      const apiError = parseApiError(error);
+      const errorInfo = parseApiError(error);
+      const apiError = errorInfoToApiError(errorInfo);
       if (apiError.validationErrors) {
         errors.value = formatValidationErrors(apiError.validationErrors);
       }
       submitError.value = '入力内容に誤りがあります。確認してください。';
     }
     else {
-      const apiError = parseApiError(error);
+      const errorInfo = parseApiError(error);
+      const apiError = errorInfoToApiError(errorInfo);
       submitError.value = apiError.message;
 
       if (isRetryableError(apiError) && retryCount.value < 3) {

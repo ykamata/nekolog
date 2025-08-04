@@ -448,7 +448,10 @@ watch(
 </script>
 
 <template>
-  <div class="veterinary-calendar">
+  <div
+    class="veterinary-calendar"
+    data-testid="calendar-container"
+  >
     <!-- Calendar Header -->
     <div class="calendar-header">
       <div class="calendar-navigation">
@@ -530,6 +533,7 @@ watch(
           <button
             class="toggle-btn"
             :class="{ 'toggle-btn--active': internalViewMode === 'list' }"
+            data-testid="list-view"
             @click="handleViewModeChange('list')"
           >
             <svg
@@ -646,7 +650,10 @@ watch(
       v-if="loading"
       class="calendar-loading"
     >
-      <div class="loading-spinner" />
+      <div
+        class="loading-spinner"
+        data-testid="loading-spinner"
+      />
       <p>カレンダーを読み込み中...</p>
     </div>
 
@@ -654,6 +661,7 @@ watch(
     <div
       v-else
       class="calendar-grid"
+      data-testid="calendar-grid"
     >
       <!-- Week Header -->
       <div class="calendar-week-header">
@@ -741,6 +749,7 @@ watch(
           <div
             v-if="selectedDateEvents.length === 0"
             class="empty-events"
+            data-testid="no-data-message"
           >
             <p>この日の記録はありません</p>
           </div>

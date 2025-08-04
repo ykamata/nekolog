@@ -124,7 +124,7 @@ describe('useFoodsStore', () => {
   describe('fetchFoods', () => {
     it('should fetch foods successfully', async () => {
       const store = useFoodsStore();
-      mockFetch.mockResolvedValueOnce({ data: [mockDryFood, mockWetFood] });
+      mockFetch.mockResolvedValueOnce([mockDryFood, mockWetFood]);
 
       const result = await store.fetchFoods();
 
@@ -148,7 +148,7 @@ describe('useFoodsStore', () => {
 
     it('should apply filters in API call', async () => {
       const store = useFoodsStore();
-      mockFetch.mockResolvedValueOnce({ data: [mockDryFood] });
+      mockFetch.mockResolvedValueOnce([mockDryFood]);
 
       await store.fetchFoods({
         name: 'test',
@@ -205,7 +205,7 @@ describe('useFoodsStore', () => {
       const store = useFoodsStore();
       store.foods = [mockDryFood];
       const updatedFood = { ...mockDryFood, name: 'Updated Food' };
-      mockFetch.mockResolvedValueOnce({ data: updatedFood });
+      mockFetch.mockResolvedValueOnce(updatedFood);
 
       const foodUpdate: FoodUpdate = { name: 'Updated Food' };
       const result = await store.updateFood('1', foodUpdate);

@@ -353,6 +353,14 @@ const clearFilters = () => {
               <span class="food-card__info-label">単位:</span>
               <span class="food-card__info-value">{{ food.unit }}</span>
             </div>
+
+            <div
+              v-if="food._count?.meals !== undefined"
+              class="food-card__info-item"
+            >
+              <span class="food-card__info-label">使用回数:</span>
+              <span class="food-card__info-value">{{ food._count.meals }}回</span>
+            </div>
           </div>
 
           <div

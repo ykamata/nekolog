@@ -13,7 +13,7 @@
     "lint:fix": "eslint . --fix",
     "format": "eslint . --fix",
     "typecheck": "nuxt typecheck",
-    "test": "vitest",
+    "test": "vitest run",
     "test:run": "vitest run",
     "test:components": "vitest run tests/components",
     "test:performance": "vitest run tests/performance --reporter=verbose",
@@ -53,6 +53,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
     "@nuxt/test-utils": "^3.19.2",
     "@nuxtjs/tailwindcss": "^6.12.1",
     "@playwright/test": "^1.47.2",

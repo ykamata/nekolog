@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, provide, onErrorCaptured } from 'vue';
-import { parseApiError, getUserFriendlyErrorMessage, isRetryableError } from '~/utils/error-handling';
+import { parseApiError, getUserFriendlyErrorMessage, isRetryableError, errorInfoToApiError } from '~/utils/error-handling';
 
 interface Props {
   fallback?: boolean;
@@ -58,12 +58,14 @@ const parsedError = computed(() => {
 
 const errorMessage = computed(() => {
   if (!parsedError.value) return '';
-  return getUserFriendlyErrorMessage(parsedError.value, props.context);
+  const apiError = errorInfoToApiError(parsedError.value);
+  return getUserFriendlyErrorMessage(apiError, props.context);
 });
 
 const canRetry = computed(() => {
   if (!parsedError.value) return false;
-  return props.showRetry && isRetryableError(parsedError.value);
+  const apiError = errorInfoToApiError(parsedError.value);
+  return props.showRetry && isRetryableError(apiError);
 });
 
 const isDevelopment = computed(() => {

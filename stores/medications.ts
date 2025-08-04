@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
 import type {
   Medication,
   MedicationInput,
@@ -18,1309 +19,694 @@ import {
   MedicationStatus,
   ReminderStatus,
 } from '~/types/medication';
-import { OfflineStorage } from '~/utils/offline-storage';
-import { useSync } from '~/composables/useSync';
-import {
-  parseApiError,
-  getUserFriendlyErrorMessage,
-  retryWithBackoff,
-  isRetryableError,
-  createErrorHandler,
-} from '~/utils/error-handling';
 
-interface MedicationsState {
-  medications: Medication[];
-  records: MedicationRecord[];
-  schedules: MedicationSchedule[];
-  reminders: MedicationReminder[];
-  loading: boolean;
-  error: string | null;
-  lastError: any | null;
-  retryCount: number;
-  cache: {
-    lastFetch: Date | null;
-    recordsLastFetch: Date | null;
-    schedulesLastFetch: Date | null;
-    remindersLastFetch: Date | null;
-    ttl: number; // Time to live in milliseconds
+export const useMedicationsStore = defineStore('medications', () => {
+  // State
+  const medications = ref<Medication[]>([]);
+  const medicationRecords = ref<MedicationRecord[]>([]);
+  const medicationSchedules = ref<MedicationSchedule[]>([]);
+  const medicationReminders = ref<MedicationReminder[]>([]);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+  const cache = ref({
+    lastFetch: null as Date | null,
+    recordsLastFetch: null as Date | null,
+    schedulesLastFetch: null as Date | null,
+    remindersLastFetch: null as Date | null,
+  });
+  const retryCount = ref(0);
+  const lastErrorTime = ref<Date | null>(null);
+
+  // Basic getters
+  const isLoading = computed((): boolean => loading.value);
+  const hasError = computed((): boolean => !!error.value);
+
+  const isCacheValid = computed((): boolean => {
+    if (!cache.value.lastFetch) return false;
+    const now = new Date();
+    return now.getTime() - cache.value.lastFetch.getTime() < 5 * 60 * 1000; // 5 minutes
+  });
+
+  const isRecordsCacheValid = computed((): boolean => {
+    if (!cache.value.recordsLastFetch) return false;
+    const now = new Date();
+    return now.getTime() - cache.value.recordsLastFetch.getTime() < 5 * 60 * 1000;
+  });
+
+  const isSchedulesCacheValid = computed((): boolean => {
+    if (!cache.value.schedulesLastFetch) return false;
+    const now = new Date();
+    return now.getTime() - cache.value.schedulesLastFetch.getTime() < 5 * 60 * 1000;
+  });
+
+  const isRemindersCacheValid = computed((): boolean => {
+    if (!cache.value.remindersLastFetch) return false;
+    const now = new Date();
+    return now.getTime() - cache.value.remindersLastFetch.getTime() < 5 * 60 * 1000;
+  });
+
+  // Medication getters
+  const getMedicationById = computed(() => (id: string): Medication | undefined => {
+    return medications.value.find(med => med.id === id);
+  });
+
+  const getMedicationsByType = computed(() => (type: string): Medication[] => {
+    return medications.value.filter(med => med.type === type);
+  });
+
+  const activeMedications = computed((): Medication[] => {
+    return medications.value.filter(med => med.type === 'MEDICINE');
+  });
+
+  const sortedMedications = computed((): Medication[] => {
+    return [...medications.value].sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  // Record getters
+  const getMedicationRecordById = computed(() => (id: string): MedicationRecord | undefined => {
+    return medicationRecords.value.find(record => record.id === id);
+  });
+
+  const getMedicationRecordsByCat = computed(() => (catId: string): MedicationRecord[] => {
+    return medicationRecords.value.filter(record => record.catId === catId);
+  });
+
+  const getMedicationRecordsByCatAndMedication = computed(() =>
+    (catId: string, medicationId: string): MedicationRecord[] => {
+      return medicationRecords.value.filter(
+        record => record.catId === catId && record.medicationId === medicationId,
+      );
+    },
+  );
+
+  const getMedicationRecordsByCatAndStatus = computed(() =>
+    (catId: string, status: MedicationStatus): MedicationRecord[] => {
+      return medicationRecords.value.filter(
+        record => record.catId === catId && record.status === status,
+      );
+    },
+  );
+
+  const getMedicationRecordsByCatAndDateRange = computed(() =>
+    (catId: string, startDate: Date, endDate: Date): MedicationRecord[] => {
+      return medicationRecords.value.filter((record) => {
+        const recordDate = new Date(record.administeredAt);
+        return record.catId === catId && recordDate >= startDate && recordDate <= endDate;
+      });
+    },
+  );
+
+  const getCatMedicationSummary = computed(() => (catId: string) => {
+    const records = medicationRecords.value.filter(r => r.catId === catId);
+    const reminders = medicationReminders.value.filter(r => r.catId === catId);
+    const pendingRecords = records.filter(r => r.status === MedicationStatus.PENDING);
+    const lastRecord = records.sort((a, b) => new Date(b.administeredAt).getTime() - new Date(a.administeredAt).getTime())[0];
+
+    return {
+      totalRecords: records.length,
+      pendingRecords: pendingRecords.length,
+      pendingReminders: reminders.filter(r => r.status === ReminderStatus.PENDING).length,
+      lastAdministered: lastRecord?.administeredAt || null,
+    };
+  });
+
+  const getMedicationRecordsByMedication = computed(() =>
+    (medicationId: string): MedicationRecord[] => {
+      return medicationRecords.value.filter(record => record.medicationId === medicationId);
+    },
+  );
+
+  const getMedicationRecordsByDateRange = computed(() =>
+    (startDate: Date, endDate: Date): MedicationRecord[] => {
+      return medicationRecords.value.filter((record) => {
+        const recordDate = new Date(record.administeredAt);
+        return recordDate >= startDate && recordDate <= endDate;
+      });
+    },
+  );
+
+  const sortedMedicationRecords = computed((): MedicationRecord[] => {
+    return [...medicationRecords.value].sort((a, b) =>
+      new Date(b.administeredAt).getTime() - new Date(a.administeredAt).getTime(),
+    );
+  });
+
+  const getTodaysMedicationRecords = computed((): MedicationRecord[] => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return medicationRecords.value.filter((record) => {
+      const recordDate = new Date(record.administeredAt);
+      return recordDate >= today && recordDate < tomorrow;
+    });
+  });
+
+  const getPendingMedicationRecords = computed((): MedicationRecord[] => {
+    return medicationRecords.value.filter(record => record.status === MedicationStatus.PENDING);
+  });
+
+  const getAdministeredMedicationRecords = computed((): MedicationRecord[] => {
+    return medicationRecords.value.filter(record => record.status === MedicationStatus.ADMINISTERED);
+  });
+
+  const getOverdueMedicationRecords = computed((): MedicationRecord[] => {
+    const now = new Date();
+    return medicationRecords.value.filter((record) => {
+      const recordDate = new Date(record.administeredAt);
+      return recordDate < now && record.status === MedicationStatus.PENDING;
+    });
+  });
+
+  const getMissedMedicationRecords = computed((): MedicationRecord[] => {
+    return medicationRecords.value.filter(record => record.status === MedicationStatus.MISSED);
+  });
+
+  const getSkippedMedicationRecords = computed((): MedicationRecord[] => {
+    return medicationRecords.value.filter(record => record.status === MedicationStatus.SKIPPED);
+  });
+
+  const getMedicationRecordsByStatus = computed(() =>
+    (status: MedicationStatus): MedicationRecord[] => {
+      return medicationRecords.value.filter(record => record.status === status);
+    },
+  );
+
+  const getPendingMedicationRecordsByCat = computed(() =>
+    (catId: string): MedicationRecord[] => {
+      return medicationRecords.value.filter(
+        record => record.catId === catId && record.status === MedicationStatus.PENDING,
+      );
+    },
+  );
+
+  const getOverdueMedicationRecordsByCat = computed(() =>
+    (catId: string): MedicationRecord[] => {
+      const now = new Date();
+      return medicationRecords.value.filter((record) => {
+        const recordDate = new Date(record.administeredAt);
+        return record.catId === catId && recordDate < now && record.status === MedicationStatus.PENDING;
+      });
+    },
+  );
+
+  // Schedule getters
+  const getMedicationScheduleById = computed(() => (id: string): MedicationSchedule | undefined => {
+    return medicationSchedules.value.find(schedule => schedule.id === id);
+  });
+
+  const getMedicationSchedulesByCat = computed(() => (catId: string): MedicationSchedule[] => {
+    return medicationSchedules.value.filter(schedule => schedule.catId === catId);
+  });
+
+  const getMedicationSchedulesByMedication = computed(() =>
+    (medicationId: string): MedicationSchedule[] => {
+      return medicationSchedules.value.filter(schedule => schedule.medicationId === medicationId);
+    },
+  );
+
+  const getActiveMedicationSchedules = computed((): MedicationSchedule[] => {
+    return medicationSchedules.value.filter(schedule => schedule.isActive);
+  });
+
+  const getInactiveMedicationSchedules = computed((): MedicationSchedule[] => {
+    return medicationSchedules.value.filter(schedule => !schedule.isActive);
+  });
+
+  const getMedicationSchedulesByFrequency = computed(() =>
+    (frequency: string): MedicationSchedule[] => {
+      return medicationSchedules.value.filter(schedule => schedule.frequency === frequency);
+    },
+  );
+
+  const sortedMedicationSchedules = computed((): MedicationSchedule[] => {
+    return [...medicationSchedules.value].sort((a, b) => {
+      // Sort by active status first, then by creation date
+      if (a.isActive !== b.isActive) {
+        return a.isActive ? -1 : 1;
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  });
+
+  // Reminder getters
+  const getMedicationReminderById = computed(() => (id: string): MedicationReminder | undefined => {
+    return medicationReminders.value.find(reminder => reminder.id === id);
+  });
+
+  const getMedicationRemindersByCat = computed(() => (catId: string): MedicationReminder[] => {
+    return medicationReminders.value.filter(reminder => reminder.catId === catId);
+  });
+
+  const getPendingRemindersByCat = computed(() => (catId: string): MedicationReminder[] => {
+    return medicationReminders.value.filter(reminder =>
+      reminder.catId === catId && reminder.status === ReminderStatus.PENDING,
+    );
+  });
+
+  const getTodaysRemindersByCat = computed(() => (catId: string): MedicationReminder[] => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return medicationReminders.value.filter((reminder) => {
+      const reminderDate = new Date(reminder.scheduledAt);
+      return reminderDate >= today && reminderDate < tomorrow && reminder.catId === catId;
+    });
+  });
+
+  const getUpcomingRemindersByCat = computed(() =>
+    (catId: string, hours = 24): MedicationReminder[] => {
+      const now = new Date();
+      const futureTime = new Date(now.getTime() + hours * 60 * 60 * 1000);
+
+      return medicationReminders.value.filter((reminder) => {
+        const reminderTime = new Date(reminder.scheduledAt);
+        return reminder.catId === catId
+          && reminderTime > now
+          && reminderTime <= futureTime
+          && reminder.status === ReminderStatus.PENDING;
+      });
+    },
+  );
+
+  const getMedicationRemindersByMedication = computed(() =>
+    (medicationId: string): MedicationReminder[] => {
+      return medicationReminders.value.filter(reminder => reminder.medicationId === medicationId);
+    },
+  );
+
+  const getMedicationRemindersBySchedule = computed(() =>
+    (scheduleId: string): MedicationReminder[] => {
+      return medicationReminders.value.filter(reminder => reminder.scheduleId === scheduleId);
+    },
+  );
+
+  const getMedicationRemindersByStatus = computed(() =>
+    (status: ReminderStatus): MedicationReminder[] => {
+      return medicationReminders.value.filter(reminder => reminder.status === status);
+    },
+  );
+
+  const getPendingReminders = computed((): MedicationReminder[] => {
+    return medicationReminders.value.filter(reminder => reminder.status === ReminderStatus.PENDING);
+  });
+
+  const getAcknowledgedReminders = computed((): MedicationReminder[] => {
+    return medicationReminders.value.filter(reminder => reminder.status === ReminderStatus.ACKNOWLEDGED);
+  });
+
+  const getSnoozedReminders = computed((): MedicationReminder[] => {
+    return medicationReminders.value.filter(reminder => reminder.status === ReminderStatus.SNOOZED);
+  });
+
+  const getDismissedReminders = computed((): MedicationReminder[] => {
+    return medicationReminders.value.filter(reminder => reminder.status === ReminderStatus.DISMISSED);
+  });
+
+  const getTodaysReminders = computed((): MedicationReminder[] => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    return medicationReminders.value.filter((reminder) => {
+      const reminderDate = new Date(reminder.scheduledAt);
+      return reminderDate >= today && reminderDate < tomorrow;
+    });
+  });
+
+  const getUpcomingReminders = computed((): MedicationReminder[] => {
+    const now = new Date();
+    const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    return medicationReminders.value.filter((reminder) => {
+      const reminderTime = new Date(reminder.scheduledAt);
+      return reminderTime > now && reminderTime <= next24Hours && reminder.status === ReminderStatus.PENDING;
+    });
+  });
+
+  const getOverdueReminders = computed((): MedicationReminder[] => {
+    const now = new Date();
+    return medicationReminders.value.filter((reminder) => {
+      const reminderTime = new Date(reminder.scheduledAt);
+      return reminderTime < now && reminder.status === ReminderStatus.PENDING;
+    });
+  });
+
+  const sortedMedicationReminders = computed((): MedicationReminder[] => {
+    return [...medicationReminders.value].sort((a, b) =>
+      new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime(),
+    );
+  });
+
+  // Compatibility getters for components
+  const records = computed(() => medicationRecords.value);
+  const reminders = computed(() => medicationReminders.value);
+
+  // Actions
+  const fetchMedications = async (filter?: MedicationFilter) => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const params = new URLSearchParams();
+      if (filter?.type) params.append('type', filter.type);
+
+      const response = await $fetch<{ medications: Medication[]; total: number }>(`/api/medications?${params.toString()}`);
+      medications.value = response.medications;
+      cache.value.lastFetch = new Date();
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch medications';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
   };
-}
 
-export const useMedicationsStore = defineStore('medications', {
-  state: (): MedicationsState => ({
-    medications: [],
-    records: [],
-    schedules: [],
-    reminders: [],
-    loading: false,
-    error: null,
-    lastError: null,
-    retryCount: 0,
-    cache: {
-      lastFetch: null,
-      recordsLastFetch: null,
-      schedulesLastFetch: null,
-      remindersLastFetch: null,
-      ttl: 5 * 60 * 1000, // 5 minutes
-    },
-  }),
+  const createMedication = async (data: MedicationInput): Promise<Medication> => {
+    loading.value = true;
+    error.value = null;
 
-  getters: {
-    getMedicationById:
-      state =>
-        (id: string): Medication | undefined => {
-          return state.medications.find(medication => medication.id === id);
-        },
-
-    getMedicationsByName:
-      state =>
-        (name: string): Medication[] => {
-          return state.medications.filter(medication =>
-            medication.name.toLowerCase().includes(name.toLowerCase()),
-          );
-        },
-
-    getMedicationsByType:
-      state =>
-        (type: string): Medication[] => {
-          return state.medications.filter(
-            medication => medication.type === type,
-          );
-        },
-
-    sortedMedications: (state): Medication[] => {
-      return [...state.medications].sort((a, b) =>
-        a.name.localeCompare(b.name),
-      );
-    },
-
-    medicationsByType: (state): Record<string, Medication[]> => {
-      return state.medications.reduce((acc, medication) => {
-        if (!acc[medication.type]) {
-          acc[medication.type] = [];
-        }
-        acc[medication.type]?.push(medication);
-        return acc;
-      }, {} as Record<string, Medication[]>);
-    },
-
-    isLoading: (state): boolean => state.loading,
-
-    hasError: (state): boolean => !!state.error,
-
-    isCacheValid: (state): boolean => {
-      if (!state.cache.lastFetch) return false;
-      const now = new Date();
-      const timeDiff = now.getTime() - state.cache.lastFetch.getTime();
-      return timeDiff < state.cache.ttl;
-    },
-
-    isRecordsCacheValid: (state): boolean => {
-      if (!state.cache.recordsLastFetch) return false;
-      const now = new Date();
-      const timeDiff = now.getTime() - state.cache.recordsLastFetch.getTime();
-      return timeDiff < state.cache.ttl;
-    },
-
-    isSchedulesCacheValid: (state): boolean => {
-      if (!state.cache.schedulesLastFetch) return false;
-      const now = new Date();
-      const timeDiff = now.getTime() - state.cache.schedulesLastFetch.getTime();
-      return timeDiff < state.cache.ttl;
-    },
-
-    isRemindersCacheValid: (state): boolean => {
-      if (!state.cache.remindersLastFetch) return false;
-      const now = new Date();
-      const timeDiff = now.getTime() - state.cache.remindersLastFetch.getTime();
-      return timeDiff < state.cache.ttl;
-    },
-
-    // Medication Record Getters
-    getMedicationRecordById:
-      state =>
-        (id: string): MedicationRecord | undefined => {
-          return state.records.find(record => record.id === id);
-        },
-
-    getMedicationRecordsByCat:
-      state =>
-        (catId: string): MedicationRecord[] => {
-          return state.records.filter(record => record.catId === catId);
-        },
-
-    getMedicationRecordsByCatAndMedication:
-      state =>
-        (catId: string, medicationId: string): MedicationRecord[] => {
-          return state.records.filter(
-            record => record.catId === catId && record.medicationId === medicationId,
-          );
-        },
-
-    getMedicationRecordsByCatAndStatus:
-      state =>
-        (catId: string, status: string): MedicationRecord[] => {
-          return state.records.filter(
-            record => record.catId === catId && record.status === status,
-          );
-        },
-
-    getMedicationRecordsByCatAndDateRange:
-      state =>
-        (catId: string, startDate: Date, endDate: Date): MedicationRecord[] => {
-          return state.records.filter((record) => {
-            if (record.catId !== catId) return false;
-            const recordDate = new Date(record.administeredAt);
-            return recordDate >= startDate && recordDate <= endDate;
-          });
-        },
-
-    getCatMedicationSummary:
-      state =>
-        (catId: string): {
-          totalRecords: number;
-          pendingRecords: number;
-          administeredRecords: number;
-          lastAdministered?: Date;
-          activeMedications: string[];
-        } => {
-          const catRecords = state.records.filter(record => record.catId === catId);
-          const pendingRecords = catRecords.filter(record => record.status === 'PENDING');
-          const administeredRecords = catRecords.filter(record => record.status === 'ADMINISTERED');
-
-          const lastAdministered = administeredRecords.length > 0
-            ? new Date(Math.max(...administeredRecords.map(r => new Date(r.administeredAt).getTime())))
-            : undefined;
-
-          const activeMedications = [...new Set(catRecords.map(record => record.medicationId))];
-
-          return {
-            totalRecords: catRecords.length,
-            pendingRecords: pendingRecords.length,
-            administeredRecords: administeredRecords.length,
-            lastAdministered,
-            activeMedications,
-          };
-        },
-
-    getMedicationRecordsByMedication:
-      state =>
-        (medicationId: string): MedicationRecord[] => {
-          return state.records.filter(
-            record => record.medicationId === medicationId,
-          );
-        },
-
-    getMedicationRecordsByDateRange:
-      state =>
-        (startDate: Date, endDate: Date): MedicationRecord[] => {
-          return state.records.filter((record) => {
-            const recordDate = new Date(record.administeredAt);
-            return recordDate >= startDate && recordDate <= endDate;
-          });
-        },
-
-    sortedMedicationRecords: (state): MedicationRecord[] => {
-      return [...state.records].sort(
-        (a, b) =>
-          new Date(b.administeredAt).getTime()
-            - new Date(a.administeredAt).getTime(),
-      );
-    },
-
-    getTodaysMedicationRecords: (state): MedicationRecord[] => {
-      const today = new Date();
-      const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-      const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-
-      return state.records.filter((record) => {
-        const recordDate = new Date(record.administeredAt);
-        return recordDate >= startOfDay && recordDate <= endOfDay;
+    try {
+      const medication = await $fetch<Medication>('/api/medications', {
+        method: 'POST',
+        body: data,
       });
-    },
 
-    getPendingMedicationRecords: (state): MedicationRecord[] => {
-      return state.records.filter(record => record.status === 'PENDING');
-    },
+      medications.value.push(medication);
+      return medication;
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to create medication';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
 
-    getAdministeredMedicationRecords: (state): MedicationRecord[] => {
-      return state.records.filter(record => record.status === 'ADMINISTERED');
-    },
+  const updateMedication = async (id: string, data: MedicationUpdate): Promise<Medication> => {
+    loading.value = true;
+    error.value = null;
 
-    getOverdueMedicationRecords: (state): MedicationRecord[] => {
-      const now = new Date();
-      return state.records.filter((record) => {
-        if (record.status !== 'PENDING') return false;
-        const recordDate = new Date(record.administeredAt);
-        return recordDate < now;
+    try {
+      const medication = await $fetch<Medication>(`/api/medications/${id}`, {
+        method: 'PUT',
+        body: data,
       });
-    },
 
-    getMissedMedicationRecords: (state): MedicationRecord[] => {
-      return state.records.filter(record => record.status === 'MISSED');
-    },
+      const index = medications.value.findIndex(m => m.id === id);
+      if (index !== -1) {
+        medications.value[index] = medication;
+      }
 
-    getSkippedMedicationRecords: (state): MedicationRecord[] => {
-      return state.records.filter(record => record.status === 'SKIPPED');
-    },
+      return medication;
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to update medication';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
 
-    getMedicationRecordsByStatus:
-      state =>
-        (status: string): MedicationRecord[] => {
-          return state.records.filter(record => record.status === status);
-        },
+  const deleteMedication = async (id: string) => {
+    loading.value = true;
+    error.value = null;
 
-    getPendingMedicationRecordsByCat:
-      state =>
-        (catId: string): MedicationRecord[] => {
-          return state.records.filter(
-            record => record.catId === catId && record.status === 'PENDING',
-          );
-        },
-
-    getOverdueMedicationRecordsByCat:
-      state =>
-        (catId: string): MedicationRecord[] => {
-          const now = new Date();
-          return state.records.filter((record) => {
-            if (record.catId !== catId || record.status !== 'PENDING') return false;
-            const recordDate = new Date(record.administeredAt);
-            return recordDate < now;
-          });
-        },
-
-    // Medication Schedule Getters
-    getMedicationScheduleById:
-      state =>
-        (id: string): MedicationSchedule | undefined => {
-          return state.schedules.find(schedule => schedule.id === id);
-        },
-
-    getMedicationSchedulesByCat:
-      state =>
-        (catId: string): MedicationSchedule[] => {
-          return state.schedules.filter(schedule => schedule.catId === catId);
-        },
-
-    getMedicationSchedulesByMedication:
-      state =>
-        (medicationId: string): MedicationSchedule[] => {
-          return state.schedules.filter(
-            schedule => schedule.medicationId === medicationId,
-          );
-        },
-
-    getActiveMedicationSchedules: (state): MedicationSchedule[] => {
-      return state.schedules.filter(schedule => schedule.isActive);
-    },
-
-    getInactiveMedicationSchedules: (state): MedicationSchedule[] => {
-      return state.schedules.filter(schedule => !schedule.isActive);
-    },
-
-    getMedicationSchedulesByFrequency:
-      state =>
-        (frequency: string): MedicationSchedule[] => {
-          return state.schedules.filter(
-            schedule => schedule.frequency === frequency,
-          );
-        },
-
-    sortedMedicationSchedules: (state): MedicationSchedule[] => {
-      return [...state.schedules].sort((a, b) => {
-        // Sort by active status first, then by start date
-        if (a.isActive !== b.isActive) {
-          return a.isActive ? -1 : 1;
-        }
-        return (
-          new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
-        );
+    try {
+      await $fetch(`/api/medications/${id}`, {
+        method: 'DELETE',
       });
-    },
 
-    // Medication Reminder Getters
-    getMedicationReminderById:
-      state =>
-        (id: string): MedicationReminder | undefined => {
-          return state.reminders.find(reminder => reminder.id === id);
-        },
+      medications.value = medications.value.filter(m => m.id !== id);
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to delete medication';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
 
-    getMedicationRemindersByCat:
-      state =>
-        (catId: string): MedicationReminder[] => {
-          return state.reminders.filter(reminder => reminder.catId === catId);
-        },
+  // Record actions
+  const fetchMedicationRecords = async (filter?: MedicationRecordFilter) => {
+    loading.value = true;
+    error.value = null;
 
-    getPendingRemindersByCat:
-      state =>
-        (catId: string): MedicationReminder[] => {
-          return state.reminders.filter(
-            reminder => reminder.catId === catId && reminder.status === 'PENDING',
-          );
-        },
+    try {
+      const params = new URLSearchParams();
+      if (filter?.catId) params.append('catId', filter.catId);
+      if (filter?.medicationId) params.append('medicationId', filter.medicationId);
+      if (filter?.status) params.append('status', filter.status);
+      if (filter?.startDate) params.append('startDate', filter.startDate.toISOString());
+      if (filter?.endDate) params.append('endDate', filter.endDate.toISOString());
 
-    getTodaysRemindersByCat:
-      state =>
-        (catId: string): MedicationReminder[] => {
-          const today = new Date();
-          const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-          const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+      const response = await $fetch<{ records: MedicationRecord[]; total: number }>(`/api/medication-records?${params.toString()}`);
+      medicationRecords.value = response.records;
+      cache.value.recordsLastFetch = new Date();
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch medication records';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
 
-          return state.reminders.filter((reminder) => {
-            if (reminder.catId !== catId) return false;
-            const reminderDate = new Date(reminder.scheduledAt);
-            return reminderDate >= startOfDay && reminderDate <= endOfDay;
-          });
-        },
+  const createMedicationRecord = async (data: MedicationRecordInput): Promise<MedicationRecord> => {
+    loading.value = true;
+    error.value = null;
 
-    getUpcomingRemindersByCat:
-      state =>
-        (catId: string): MedicationReminder[] => {
-          const now = new Date();
-          const nextHour = new Date(now.getTime() + 60 * 60 * 1000);
-
-          return state.reminders.filter((reminder) => {
-            if (reminder.catId !== catId || reminder.status !== 'PENDING') return false;
-            const reminderDate = new Date(reminder.scheduledAt);
-            return reminderDate >= now && reminderDate <= nextHour;
-          });
-        },
-
-    getMedicationRemindersByMedication:
-      state =>
-        (medicationId: string): MedicationReminder[] => {
-          return state.reminders.filter(
-            reminder => reminder.medicationId === medicationId,
-          );
-        },
-
-    getMedicationRemindersBySchedule:
-      state =>
-        (scheduleId: string): MedicationReminder[] => {
-          return state.reminders.filter(
-            reminder => reminder.scheduleId === scheduleId,
-          );
-        },
-
-    getMedicationRemindersByStatus:
-      state =>
-        (status: ReminderStatus): MedicationReminder[] => {
-          return state.reminders.filter(reminder => reminder.status === status);
-        },
-
-    getPendingReminders: (state): MedicationReminder[] => {
-      return state.reminders.filter(reminder => reminder.status === 'PENDING');
-    },
-
-    getAcknowledgedReminders: (state): MedicationReminder[] => {
-      return state.reminders.filter(reminder => reminder.status === 'ACKNOWLEDGED');
-    },
-
-    getSnoozedReminders: (state): MedicationReminder[] => {
-      return state.reminders.filter(reminder => reminder.status === 'SNOOZED');
-    },
-
-    getDismissedReminders: (state): MedicationReminder[] => {
-      return state.reminders.filter(reminder => reminder.status === 'DISMISSED');
-    },
-
-    getTodaysReminders: (state): MedicationReminder[] => {
-      const today = new Date();
-      const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-      const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-
-      return state.reminders.filter((reminder) => {
-        const reminderDate = new Date(reminder.scheduledAt);
-        return reminderDate >= startOfDay && reminderDate <= endOfDay;
+    try {
+      const record = await $fetch<MedicationRecord>('/api/medication-records', {
+        method: 'POST',
+        body: data,
       });
-    },
 
-    getUpcomingReminders: (state): MedicationReminder[] => {
-      const now = new Date();
-      const nextHour = new Date(now.getTime() + 60 * 60 * 1000); // Next hour
+      medicationRecords.value.push(record);
+      return record;
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to create medication record';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
 
-      return state.reminders.filter((reminder) => {
-        const reminderDate = new Date(reminder.scheduledAt);
-        return reminderDate >= now && reminderDate <= nextHour && reminder.status === 'PENDING';
+  const updateMedicationRecord = async (id: string, data: MedicationRecordUpdate): Promise<MedicationRecord> => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const record = await $fetch<MedicationRecord>(`/api/medication-records/${id}`, {
+        method: 'PUT',
+        body: data,
       });
-    },
 
-    getOverdueReminders: (state): MedicationReminder[] => {
-      const now = new Date();
+      const index = medicationRecords.value.findIndex(r => r.id === id);
+      if (index !== -1) {
+        medicationRecords.value[index] = record;
+      }
 
-      return state.reminders.filter((reminder) => {
-        const reminderDate = new Date(reminder.scheduledAt);
-        return reminderDate < now && reminder.status === 'PENDING';
+      return record;
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to update medication record';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
+
+  // Reminder actions
+  const fetchMedicationReminders = async (filter?: MedicationReminderFilter) => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const params = new URLSearchParams();
+      if (filter?.catId) params.append('catId', filter.catId);
+      if (filter?.status) params.append('status', filter.status);
+      if (filter?.startDate) params.append('startDate', filter.startDate.toISOString());
+      if (filter?.endDate) params.append('endDate', filter.endDate.toISOString());
+
+      const response = await $fetch<{ reminders: MedicationReminder[]; total: number }>(`/api/medication-reminders?${params.toString()}`);
+      medicationReminders.value = response.reminders;
+      cache.value.remindersLastFetch = new Date();
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch medication reminders';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
+
+  const createMedicationReminder = async (data: MedicationReminderInput): Promise<MedicationReminder> => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const reminder = await $fetch<MedicationReminder>('/api/medication-reminders', {
+        method: 'POST',
+        body: data,
       });
-    },
 
-    sortedMedicationReminders: (state): MedicationReminder[] => {
-      return [...state.reminders].sort(
-        (a, b) =>
-          new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime(),
-      );
-    },
-  },
-
-  actions: {
-    async fetchMedications(filter?: MedicationFilter, forceRefresh = false) {
-      const { syncStatus } = useSync();
-      const offlineStorage = OfflineStorage.getInstance();
-
-      // If offline, load from local storage
-      if (!syncStatus.value.isOnline) {
-        this.loading = true;
-        try {
-          const localMedications = offlineStorage.getMedications();
-          this.medications = localMedications;
-          this.clearError();
-          return this.medications;
-        }
-        catch (error) {
-          this.setError(error, 'オフラインデータの読み込み');
-          throw error;
-        }
-        finally {
-          this.loading = false;
-        }
-      }
-
-      // Use cache if valid and not forcing refresh
-      if (!forceRefresh && this.isCacheValid && this.medications.length > 0) {
-        return this.medications;
-      }
-
-      this.loading = true;
-      this.clearError();
-
-      try {
-        const operation = async () => {
-          const query = new URLSearchParams();
-          if (filter?.name) query.append('name', filter.name);
-          if (filter?.type) query.append('type', filter.type);
-          if (filter?.limit) query.append('limit', filter.limit.toString());
-          if (filter?.offset) query.append('offset', filter.offset.toString());
-
-          const queryString = query.toString();
-          const url = `/api/medications${queryString ? `?${queryString}` : ''}`;
-
-          return await $fetch<{
-            medications: Medication[];
-            total: number;
-            limit: number;
-            offset: number;
-          }>(url);
-        };
-
-        const response = await retryWithBackoff(operation, 3);
-
-        this.medications = response.medications.map(medication => ({
-          ...medication,
-          createdAt: new Date(medication.createdAt),
-          updatedAt: new Date(medication.updatedAt),
-        }));
-
-        this.cache.lastFetch = new Date();
-        this.retryCount = 0;
-        return this.medications;
-      }
-      catch (error) {
-        // Fallback to offline data if available
-        try {
-          const localMedications = offlineStorage.getMedications();
-          if (localMedications.length > 0) {
-            this.medications = localMedications;
-            this.setError(error, 'オンラインデータの取得に失敗しました。オフラインデータを使用しています');
-            return this.medications;
-          }
-        }
-        catch {
-          // Ignore offline error, use original error
-        }
-
-        this.setError(error, '薬データの取得');
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async createMedication(
-      medicationInput: MedicationInput,
-    ): Promise<Medication> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.clearError();
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Create on server with retry
-          const operation = async () => {
-            return await $fetch<{
-              medication: Medication;
-              message: string;
-            }>('/api/medications', {
-              method: 'POST',
-              body: medicationInput,
-            });
-          };
-
-          const response = await retryWithBackoff(operation, 2);
-
-          const newMedication = {
-            ...response.medication,
-            createdAt: new Date(response.medication.createdAt),
-            updatedAt: new Date(response.medication.updatedAt),
-          };
-
-          this.medications.push(newMedication);
-          this.retryCount = 0;
-          return newMedication;
-        }
-        else {
-          // Offline: Create locally with temporary ID
-          const localId = offlineOperations.addMedication({
-            name: medicationInput.name,
-            type: medicationInput.type,
-            description: medicationInput.description,
-            dosage: medicationInput.dosage,
-          });
-
-          const newMedication: Medication = {
-            id: localId,
-            name: medicationInput.name,
-            type: medicationInput.type,
-            description: medicationInput.description,
-            dosage: medicationInput.dosage,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
-          this.medications.push(newMedication);
-          return newMedication;
-        }
-      }
-      catch (error) {
-        this.setError(error, '薬の作成');
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async updateMedication(
-      id: string,
-      medicationUpdate: MedicationUpdate,
-    ): Promise<Medication> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Update on server
-          const response = await $fetch<{
-            medication: Medication;
-            message: string;
-          }>(`/api/medications/${id}`, {
-            method: 'PUT' as any,
-            body: medicationUpdate,
-          });
-
-          const updatedMedication = {
-            ...response.medication,
-            createdAt: new Date(response.medication.createdAt),
-            updatedAt: new Date(response.medication.updatedAt),
-          };
-
-          const index = this.medications.findIndex(
-            medication => medication.id === id,
-          );
-          if (index !== -1) {
-            this.medications[index] = updatedMedication;
-          }
-
-          return updatedMedication;
-        }
-        else {
-          // Offline: Update locally
-          offlineOperations.updateMedication(id, medicationUpdate);
-
-          const index = this.medications.findIndex(
-            medication => medication.id === id,
-          );
-          if (index !== -1) {
-            const updatedMedication = {
-              ...this.medications[index],
-              ...medicationUpdate,
-              updatedAt: new Date(),
-            };
-            const validatedMedication = {
-              ...updatedMedication,
-              id: updatedMedication.id || this.medications[index]?.id || '',
-            };
-            this.medications[index] = validatedMedication as Medication;
-            return validatedMedication as Medication;
-          }
-
-          throw new Error('Medication not found');
-        }
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error
-            ? error.message
-            : 'Failed to update medication';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async deleteMedication(id: string, cascade = false): Promise<void> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Delete on server
-          const query = cascade ? '?cascade=true' : '';
-          await $fetch(`/api/medications/${id}${query}`, {
-            method: 'DELETE' as any,
-          });
-        }
-        else {
-          // Offline: Mark for deletion
-          offlineOperations.deleteMedication(id);
-        }
-
-        this.medications = this.medications.filter(
-          medication => medication.id !== id,
-        );
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error
-            ? error.message
-            : 'Failed to delete medication';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    clearError() {
-      this.error = null;
-      this.lastError = null;
-      this.retryCount = 0;
-    },
-
-    setError(error: unknown, context?: string) {
-      const errorHandler = createErrorHandler(context || 'Medications Store');
-      const { error: parsedError, message } = errorHandler.handleError(error);
-
-      this.error = message;
-      this.lastError = parsedError;
-    },
-
-    canRetry(): boolean {
-      return this.lastError ? isRetryableError(this.lastError) : false;
-    },
-
-    async retryLastOperation() {
-      if (!this.canRetry() || this.retryCount >= 3) {
-        return false;
-      }
-
-      this.retryCount++;
-      this.clearError();
-
-      // This would need to be implemented based on the last failed operation
-      // For now, we'll just clear the error and let the user retry manually
-      return true;
-    },
-
-    invalidateCache() {
-      this.cache.lastFetch = null;
-    },
-
-    // Local state management methods
-    addMedicationToState(medication: Medication) {
-      const existingIndex = this.medications.findIndex(
-        m => m.id === medication.id,
-      );
-      if (existingIndex !== -1) {
-        this.medications[existingIndex] = medication;
-      }
-      else {
-        this.medications.push(medication);
-      }
-    },
-
-    removeMedicationFromState(id: string) {
-      this.medications = this.medications.filter(
-        medication => medication.id !== id,
-      );
-    },
-
-    // Load offline data into state
-    loadOfflineData() {
-      const offlineStorage = OfflineStorage.getInstance();
-      this.medications = offlineStorage.getMedications();
-    },
-
-    // Medication Record Actions
-    async fetchMedicationRecords(
-      filter?: MedicationRecordFilter,
-      forceRefresh = false,
-    ) {
-      const { syncStatus } = useSync();
-      const offlineStorage = OfflineStorage.getInstance();
-
-      // If offline, load from local storage
-      if (!syncStatus.value.isOnline) {
-        this.loading = true;
-        try {
-          const localRecords = offlineStorage.getMedicationRecords();
-          this.records = localRecords;
-          return this.records;
-        }
-        catch (error) {
-          this.error = 'Failed to load offline medication records';
-          throw error;
-        }
-        finally {
-          this.loading = false;
-        }
-      }
-
-      // Use cache if valid and not forcing refresh
-      if (
-        !forceRefresh
-        && this.isRecordsCacheValid
-        && this.records.length > 0
-      ) {
-        return this.records;
-      }
-
-      this.loading = true;
-      this.error = null;
-
-      try {
-        const query = new URLSearchParams();
-        if (filter?.catId) query.append('catId', filter.catId);
-        if (filter?.medicationId)
-          query.append('medicationId', filter.medicationId);
-        if (filter?.startDate)
-          query.append('startDate', filter.startDate.toISOString());
-        if (filter?.endDate)
-          query.append('endDate', filter.endDate.toISOString());
-        if (filter?.status) query.append('status', filter.status);
-        if (filter?.limit) query.append('limit', filter.limit.toString());
-        if (filter?.offset) query.append('offset', filter.offset.toString());
-
-        const queryString = query.toString();
-        const url = `/api/medication-records${
-          queryString ? `?${queryString}` : ''
-        }`;
-
-        const response = await $fetch<{
-          records: MedicationRecord[];
-          total: number;
-          limit: number;
-          offset: number;
-        }>(url);
-
-        this.records = response.records.map(record => ({
-          ...record,
-          administeredAt: new Date(record.administeredAt),
-          createdAt: new Date(record.createdAt),
-          updatedAt: new Date(record.updatedAt),
-        }));
-
-        this.cache.recordsLastFetch = new Date();
-        return this.records;
-      }
-      catch (error) {
-        // Fallback to offline data if available
-        try {
-          const localRecords = offlineStorage.getMedicationRecords();
-          if (localRecords.length > 0) {
-            this.records = localRecords;
-            this.error = 'Using offline medication records data';
-            return this.records;
-          }
-        }
-        catch {
-          // Ignore offline error, use original error
-        }
-
-        this.error
-          = error instanceof Error
-            ? error.message
-            : 'Failed to fetch medication records';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async createMedicationRecord(
-      recordInput: MedicationRecordInput,
-    ): Promise<MedicationRecord> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Create on server
-          const response = await $fetch<{
-            record: MedicationRecord;
-            message: string;
-          }>('/api/medication-records', {
-            method: 'POST',
-            body: recordInput,
-          });
-
-          const newRecord = {
-            ...response.record,
-            administeredAt: new Date(response.record.administeredAt),
-            createdAt: new Date(response.record.createdAt),
-            updatedAt: new Date(response.record.updatedAt),
-          };
-
-          this.records.push(newRecord);
-          return newRecord;
-        }
-        else {
-          // Offline: Create locally with temporary ID
-          const localId = offlineOperations.addMedicationRecord({
-            catId: recordInput.catId,
-            medicationId: recordInput.medicationId,
-            quantity: recordInput.quantity,
-            administeredAt: recordInput.administeredAt,
-            status: recordInput.status || MedicationStatus.PENDING,
-            notes: recordInput.notes,
-          });
-
-          const newRecord: MedicationRecord = {
-            id: localId,
-            catId: recordInput.catId,
-            medicationId: recordInput.medicationId,
-            quantity: recordInput.quantity,
-            administeredAt: recordInput.administeredAt,
-            status: recordInput.status || MedicationStatus.PENDING,
-            notes: recordInput.notes,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
-          this.records.push(newRecord);
-          return newRecord;
-        }
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error
-            ? error.message
-            : 'Failed to create medication record';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async updateMedicationRecord(
-      id: string,
-      recordUpdate: MedicationRecordUpdate,
-    ): Promise<MedicationRecord> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Update on server
-          const response = await $fetch<{
-            record: MedicationRecord;
-            message: string;
-          }>(`/api/medication-records/${id}`, {
-            method: 'PUT' as any,
-            body: recordUpdate,
-          });
-
-          const updatedRecord = {
-            ...response.record,
-            administeredAt: new Date(response.record.administeredAt),
-            createdAt: new Date(response.record.createdAt),
-            updatedAt: new Date(response.record.updatedAt),
-          };
-
-          const index = this.records.findIndex(record => record.id === id);
-          if (index !== -1) {
-            this.records[index] = updatedRecord;
-          }
-
-          return updatedRecord;
-        }
-        else {
-          // Offline: Update locally
-          offlineOperations.updateMedicationRecord(id, recordUpdate);
-
-          const index = this.records.findIndex(record => record.id === id);
-          if (index !== -1) {
-            const updatedRecord = {
-              ...this.records[index],
-              ...recordUpdate,
-              updatedAt: new Date(),
-            };
-            const validatedRecord = {
-              ...updatedRecord,
-              id: updatedRecord.id || this.records[index]?.id || '',
-            };
-            this.records[index] = validatedRecord as MedicationRecord;
-            return validatedRecord as MedicationRecord;
-          }
-
-          throw new Error('Medication record not found');
-        }
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error
-            ? error.message
-            : 'Failed to update medication record';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async deleteMedicationRecord(id: string): Promise<void> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Delete on server
-          await $fetch(`/api/medication-records/${id}`, {
-            method: 'DELETE' as any,
-          });
-        }
-        else {
-          // Offline: Mark for deletion
-          offlineOperations.deleteMedicationRecord(id);
-        }
-
-        this.records = this.records.filter(record => record.id !== id);
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error
-            ? error.message
-            : 'Failed to delete medication record';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    // Local state management methods for records
-    addMedicationRecordToState(record: MedicationRecord) {
-      const existingIndex = this.records.findIndex(r => r.id === record.id);
-      if (existingIndex !== -1) {
-        this.records[existingIndex] = record;
-      }
-      else {
-        this.records.push(record);
-      }
-    },
-
-    removeMedicationRecordFromState(id: string) {
-      this.records = this.records.filter(record => record.id !== id);
-    },
-
-    invalidateRecordsCache() {
-      this.cache.recordsLastFetch = null;
-    },
-
-    // Medication Reminder Actions
-    async fetchMedicationReminders(
-      filter?: MedicationReminderFilter,
-      forceRefresh = false,
-    ) {
-      const { syncStatus } = useSync();
-      const offlineStorage = OfflineStorage.getInstance();
-
-      // If offline, load from local storage
-      if (!syncStatus.value.isOnline) {
-        this.loading = true;
-        try {
-          const localReminders = offlineStorage.getMedicationReminders?.() || [];
-          this.reminders = localReminders;
-          return this.reminders;
-        }
-        catch (error) {
-          this.error = 'Failed to load offline medication reminders';
-          throw error;
-        }
-        finally {
-          this.loading = false;
-        }
-      }
-
-      // Use cache if valid and not forcing refresh
-      if (
-        !forceRefresh
-        && this.isRemindersCacheValid
-        && this.reminders.length > 0
-      ) {
-        return this.reminders;
-      }
-
-      this.loading = true;
-      this.error = null;
-
-      try {
-        const query = new URLSearchParams();
-        if (filter?.catId) query.append('catId', filter.catId);
-        if (filter?.medicationId)
-          query.append('medicationId', filter.medicationId);
-        if (filter?.scheduleId) query.append('scheduleId', filter.scheduleId);
-        if (filter?.status) query.append('status', filter.status);
-        if (filter?.startDate)
-          query.append('startDate', filter.startDate.toISOString());
-        if (filter?.endDate)
-          query.append('endDate', filter.endDate.toISOString());
-        if (filter?.limit) query.append('limit', filter.limit.toString());
-        if (filter?.offset) query.append('offset', filter.offset.toString());
-
-        const queryString = query.toString();
-        const url = `/api/medication-reminders${
-          queryString ? `?${queryString}` : ''
-        }`;
-
-        const response = await $fetch<{
-          data: MedicationReminder[];
-          pagination: {
-            total: number;
-            limit: number;
-            offset: number;
-            hasMore: boolean;
-          };
-        }>(url);
-
-        this.reminders = response.data.map(reminder => ({
-          ...reminder,
-          scheduledAt: new Date(reminder.scheduledAt),
-          createdAt: new Date(reminder.createdAt),
-          updatedAt: new Date(reminder.updatedAt),
-        }));
-
-        this.cache.remindersLastFetch = new Date();
-        return this.reminders;
-      }
-      catch (error) {
-        // Fallback to offline data if available
-        try {
-          const localReminders = offlineStorage.getMedicationReminders?.() || [];
-          if (localReminders.length > 0) {
-            this.reminders = localReminders;
-            this.error = 'Using offline medication reminders data';
-            return this.reminders;
-          }
-        }
-        catch {
-          // Ignore offline error, use original error
-        }
-
-        this.error
-          = error instanceof Error
-            ? error.message
-            : 'Failed to fetch medication reminders';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async createMedicationReminder(
-      reminderInput: MedicationReminderInput,
-    ): Promise<MedicationReminder> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Create on server
-          const response = await $fetch<MedicationReminder>('/api/medication-reminders', {
-            method: 'POST',
-            body: reminderInput,
-          });
-
-          const newReminder = {
-            ...response,
-            scheduledAt: new Date(response.scheduledAt),
-            createdAt: new Date(response.createdAt),
-            updatedAt: new Date(response.updatedAt),
-          };
-
-          this.reminders.push(newReminder);
-          return newReminder;
-        }
-        else {
-          // Offline: Create locally with temporary ID
-          const localId = offlineOperations.addMedicationReminder?.({
-            scheduleId: reminderInput.scheduleId,
-            catId: reminderInput.catId,
-            medicationId: reminderInput.medicationId,
-            scheduledAt: reminderInput.scheduledAt,
-            status: ReminderStatus.PENDING,
-          }) || `temp-reminder-${Date.now()}`;
-
-          const newReminder: MedicationReminder = {
-            id: localId,
-            scheduleId: reminderInput.scheduleId,
-            catId: reminderInput.catId,
-            medicationId: reminderInput.medicationId,
-            scheduledAt: reminderInput.scheduledAt,
-            status: ReminderStatus.PENDING,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
-          this.reminders.push(newReminder);
-          return newReminder;
-        }
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error
-            ? error.message
-            : 'Failed to create medication reminder';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async updateMedicationReminder(
-      id: string,
-      updates: { status: ReminderStatus; scheduledAt?: Date },
-    ): Promise<MedicationReminder> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Update on server
-          const response = await $fetch<MedicationReminder>(`/api/medication-reminders/${id}`, {
-            method: 'PUT' as any,
-            body: updates,
-          });
-
-          const updatedReminder = {
-            ...response,
-            scheduledAt: new Date(response.scheduledAt),
-            createdAt: new Date(response.createdAt),
-            updatedAt: new Date(response.updatedAt),
-          };
-
-          const index = this.reminders.findIndex(reminder => reminder.id === id);
-          if (index !== -1) {
-            this.reminders[index] = updatedReminder;
-          }
-
-          return updatedReminder;
-        }
-        else {
-          // Offline: Update locally
-          offlineOperations.updateMedicationReminder?.(id, updates);
-
-          const index = this.reminders.findIndex(reminder => reminder.id === id);
-          if (index !== -1) {
-            const updatedReminder = {
-              ...this.reminders[index],
-              status: updates.status,
-              ...(updates.scheduledAt && { scheduledAt: updates.scheduledAt }),
-              updatedAt: new Date(),
-            };
-            const validatedReminder = {
-              ...updatedReminder,
-              id: updatedReminder.id || this.reminders[index]?.id || '',
-            };
-            this.reminders[index] = validatedReminder as MedicationReminder;
-            return validatedReminder as MedicationReminder;
-          }
-
-          throw new Error('Medication reminder not found');
-        }
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error
-            ? error.message
-            : 'Failed to update medication reminder';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async acknowledgeReminder(id: string): Promise<MedicationReminder> {
-      return this.updateMedicationReminder(id, { status: ReminderStatus.ACKNOWLEDGED });
-    },
-
-    async snoozeReminder(id: string, minutes: number): Promise<MedicationReminder> {
-      const currentReminder = this.getMedicationReminderById(id);
-      if (!currentReminder) {
-        throw new Error('Reminder not found');
-      }
-
-      const newScheduledAt = new Date(currentReminder.scheduledAt.getTime() + minutes * 60 * 1000);
-      return this.updateMedicationReminder(id, {
-        status: ReminderStatus.SNOOZED,
-        scheduledAt: newScheduledAt,
+      medicationReminders.value.push(reminder);
+      return reminder;
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to create medication reminder';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
+
+  const updateReminderStatus = async (id: string, status: ReminderStatus): Promise<MedicationReminder> => {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const reminder = await $fetch<MedicationReminder>(`/api/medication-reminders/${id}`, {
+        method: 'PUT',
+        body: { status },
       });
-    },
 
-    async dismissReminder(id: string): Promise<MedicationReminder> {
-      return this.updateMedicationReminder(id, { status: ReminderStatus.DISMISSED });
-    },
-
-    // Local state management methods for reminders
-    addMedicationReminderToState(reminder: MedicationReminder) {
-      const existingIndex = this.reminders.findIndex(r => r.id === reminder.id);
-      if (existingIndex !== -1) {
-        this.reminders[existingIndex] = reminder;
+      const index = medicationReminders.value.findIndex(r => r.id === id);
+      if (index !== -1) {
+        medicationReminders.value[index] = reminder;
       }
-      else {
-        this.reminders.push(reminder);
-      }
-    },
 
-    removeMedicationReminderFromState(id: string) {
-      this.reminders = this.reminders.filter(reminder => reminder.id !== id);
-    },
+      return reminder;
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to update reminder status';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
 
-    invalidateRemindersCache() {
-      this.cache.remindersLastFetch = null;
-    },
-  },
+  // Utility actions
+  const clearError = () => {
+    error.value = null;
+    retryCount.value = 0;
+    lastErrorTime.value = null;
+  };
+
+  const refreshAll = async () => {
+    await Promise.all([
+      fetchMedications(),
+      fetchMedicationRecords(),
+      fetchMedicationReminders(),
+    ]);
+  };
+
+  return {
+    // State
+    medications,
+    medicationRecords,
+    medicationSchedules,
+    medicationReminders,
+    loading,
+    error,
+    cache,
+    retryCount,
+    lastErrorTime,
+
+    // Basic getters
+    isLoading,
+    hasError,
+    isCacheValid,
+    isRecordsCacheValid,
+    isSchedulesCacheValid,
+    isRemindersCacheValid,
+
+    // Medication getters
+    getMedicationById,
+    getMedicationsByType,
+    activeMedications,
+    sortedMedications,
+
+    // Record getters
+    getMedicationRecordById,
+    getMedicationRecordsByCat,
+    getMedicationRecordsByCatAndMedication,
+    getMedicationRecordsByCatAndStatus,
+    getMedicationRecordsByCatAndDateRange,
+    getCatMedicationSummary,
+    getMedicationRecordsByMedication,
+    getMedicationRecordsByDateRange,
+    sortedMedicationRecords,
+    getTodaysMedicationRecords,
+    getPendingMedicationRecords,
+    getAdministeredMedicationRecords,
+    getOverdueMedicationRecords,
+    getMissedMedicationRecords,
+    getSkippedMedicationRecords,
+    getMedicationRecordsByStatus,
+    getPendingMedicationRecordsByCat,
+    getOverdueMedicationRecordsByCat,
+
+    // Schedule getters
+    getMedicationScheduleById,
+    getMedicationSchedulesByCat,
+    getMedicationSchedulesByMedication,
+    getActiveMedicationSchedules,
+    getInactiveMedicationSchedules,
+    getMedicationSchedulesByFrequency,
+    sortedMedicationSchedules,
+
+    // Reminder getters
+    getMedicationReminderById,
+    getMedicationRemindersByCat,
+    getPendingRemindersByCat,
+    getTodaysRemindersByCat,
+    getUpcomingRemindersByCat,
+    getMedicationRemindersByMedication,
+    getMedicationRemindersBySchedule,
+    getMedicationRemindersByStatus,
+    getPendingReminders,
+    getAcknowledgedReminders,
+    getSnoozedReminders,
+    getDismissedReminders,
+    getTodaysReminders,
+    getUpcomingReminders,
+    getOverdueReminders,
+    sortedMedicationReminders,
+
+    // Compatibility getters
+    records,
+    reminders,
+
+    // Actions
+    fetchMedications,
+    createMedication,
+    updateMedication,
+    deleteMedication,
+    fetchMedicationRecords,
+    createMedicationRecord,
+    updateMedicationRecord,
+    fetchMedicationReminders,
+    createMedicationReminder,
+    updateReminderStatus,
+    clearError,
+    refreshAll,
+  };
 });

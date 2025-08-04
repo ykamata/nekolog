@@ -823,7 +823,7 @@ describe('Medication API Database Integration', () => {
           catId: testCatId,
           medicationId: medication.id,
           frequency: 'daily',
-          times: ['08:00'],
+          times: JSON.stringify(['08:00']),
           startDate: new Date('2024-01-01'),
           isActive: true,
         },

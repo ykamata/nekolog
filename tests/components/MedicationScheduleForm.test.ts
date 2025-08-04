@@ -47,7 +47,7 @@ describe('MedicationScheduleForm', () => {
     catId: 'cat-1',
     medicationId: 'med-1',
     frequency: 'daily',
-    times: ['08:00'],
+    times: JSON.stringify(['08:00']),
     startDate: new Date('2024-01-01'),
     endDate: new Date('2024-12-31'),
     isActive: true,

@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect } from '@playwright/test';
-import type { TestCat, TestFood, TestMealRecord } from './test-data';
+import type { TestCat, TestFood, TestMealRecord, TestExcretionRecord } from './test-data';
 
 /**
  * Test setup and teardown utilities for E2E tests
@@ -14,6 +14,7 @@ export class TestSetup {
    */
   async setupCleanDatabase(): Promise<void> {
     // Clear all existing data via API calls
+    await this.clearAllExcretionRecords();
     await this.clearAllMealRecords();
     await this.clearAllCats();
     await this.clearAllFoods();
@@ -45,29 +46,36 @@ export class TestSetup {
    * Create test meal records via API
    */
   async createTestMealRecords(records: TestMealRecord[]): Promise<void> {
-    // First get cats and foods to map names to IDs
-    const catsResponse = await this.page.request.get('/api/cats');
-    const cats = await catsResponse.json();
+    try {
+      // First get cats and foods to map names to IDs
+      const catsResponse = await this.page.request.get('/api/cats');
+      const catsData = await catsResponse.json();
+      const cats = Array.isArray(catsData) ? catsData : catsData.cats || [];
 
-    const foodsResponse = await this.page.request.get('/api/foods');
-    const foods = await foodsResponse.json();
+      const foodsResponse = await this.page.request.get('/api/foods');
+      const foodsData = await foodsResponse.json();
+      const foods = Array.isArray(foodsData) ? foodsData : foodsData.foods || [];
 
-    for (const record of records) {
-      const cat = cats.find((c: any) => c.name === record.catName);
-      const food = foods.find((f: any) => f.name === record.foodName);
+      for (const record of records) {
+        const cat = cats.find((c: any) => c.name === record.catName);
+        const food = foods.find((f: any) => f.name === record.foodName);
 
-      if (cat && food) {
-        await this.page.request.post('/api/meals', {
-          data: {
-            catId: cat.id,
-            foodId: food.id,
-            quantity: record.quantity,
-            calories: record.calories || food.caloriesPerGram * record.quantity,
-            mealTime: record.mealTime,
-            notes: record.notes,
-          },
-        });
+        if (cat && food) {
+          await this.page.request.post('/api/meals', {
+            data: {
+              catId: cat.id,
+              foodId: food.id,
+              quantity: record.quantity,
+              calories: record.calories || food.caloriesPerGram * record.quantity,
+              mealTime: record.mealTime,
+              notes: record.notes,
+            },
+          });
+        }
       }
+    }
+    catch (error) {
+      console.warn('Failed to create meal records:', error);
     }
   }
 
@@ -75,12 +83,19 @@ export class TestSetup {
    * Clear all meal records
    */
   async clearAllMealRecords(): Promise<void> {
-    const response = await this.page.request.get('/api/meals');
-    if (response.ok()) {
-      const meals = await response.json();
-      for (const meal of meals) {
-        await this.page.request.delete(`/api/meals/${meal.id}`);
+    try {
+      const response = await this.page.request.get('/api/meals');
+      if (response.ok()) {
+        const data = await response.json();
+        const meals = Array.isArray(data) ? data : data.meals || [];
+        for (const meal of meals) {
+          await this.page.request.delete(`/api/meals/${meal.id}`);
+        }
       }
+    }
+    catch (error) {
+      // Ignore errors during cleanup
+      console.warn('Failed to clear meal records:', error);
     }
   }
 
@@ -88,12 +103,19 @@ export class TestSetup {
    * Clear all cats
    */
   async clearAllCats(): Promise<void> {
-    const response = await this.page.request.get('/api/cats');
-    if (response.ok()) {
-      const cats = await response.json();
-      for (const cat of cats) {
-        await this.page.request.delete(`/api/cats/${cat.id}`);
+    try {
+      const response = await this.page.request.get('/api/cats');
+      if (response.ok()) {
+        const data = await response.json();
+        const cats = Array.isArray(data) ? data : data.cats || [];
+        for (const cat of cats) {
+          await this.page.request.delete(`/api/cats/${cat.id}`);
+        }
       }
+    }
+    catch (error) {
+      // Ignore errors during cleanup
+      console.warn('Failed to clear cats:', error);
     }
   }
 
@@ -101,12 +123,69 @@ export class TestSetup {
    * Clear all foods
    */
   async clearAllFoods(): Promise<void> {
-    const response = await this.page.request.get('/api/foods');
-    if (response.ok()) {
-      const foods = await response.json();
-      for (const food of foods) {
-        await this.page.request.delete(`/api/foods/${food.id}`);
+    try {
+      const response = await this.page.request.get('/api/foods');
+      if (response.ok()) {
+        const data = await response.json();
+        const foods = Array.isArray(data) ? data : data.foods || [];
+        for (const food of foods) {
+          await this.page.request.delete(`/api/foods/${food.id}`);
+        }
       }
+    }
+    catch (error) {
+      // Ignore errors during cleanup
+      console.warn('Failed to clear foods:', error);
+    }
+  }
+
+  /**
+   * Clear all excretion records
+   */
+  async clearAllExcretionRecords(): Promise<void> {
+    try {
+      const response = await this.page.request.get('/api/excretion-records');
+      if (response.ok()) {
+        const data = await response.json();
+        const records = Array.isArray(data) ? data : data.records || [];
+        for (const record of records) {
+          await this.page.request.delete(`/api/excretion-records/${record.id}`);
+        }
+      }
+    }
+    catch (error) {
+      // Ignore errors during cleanup
+      console.warn('Failed to clear excretion records:', error);
+    }
+  }
+
+  /**
+   * Create test excretion records via API
+   */
+  async createTestExcretionRecords(records: TestExcretionRecord[]): Promise<void> {
+    try {
+      // First get cats to map names to IDs
+      const catsResponse = await this.page.request.get('/api/cats');
+      const catsData = await catsResponse.json();
+      const cats = Array.isArray(catsData) ? catsData : catsData.cats || [];
+
+      for (const record of records) {
+        const cat = cats.find((c: any) => c.name === record.catName);
+
+        if (cat) {
+          await this.page.request.post('/api/excretion-records', {
+            data: {
+              catId: cat.id,
+              type: record.type,
+              recordedAt: record.recordedAt,
+              notes: record.notes,
+            },
+          });
+        }
+      }
+    }
+    catch (error) {
+      console.warn('Failed to create excretion records:', error);
     }
   }
 

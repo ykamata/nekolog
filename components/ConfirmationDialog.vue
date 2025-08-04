@@ -39,17 +39,27 @@ const handleOverlayClick = (event: Event) => {
   <div
     v-if="isOpen"
     class="confirmation-overlay"
+    role="dialog"
+    aria-modal="true"
+    :aria-labelledby="`dialog-title-${$attrs.id || 'default'}`"
+    :aria-describedby="`dialog-message-${$attrs.id || 'default'}`"
     @click="handleOverlayClick"
   >
     <div class="confirmation-dialog">
       <div class="confirmation-header">
-        <h3 class="confirmation-title">
+        <h3
+          :id="`dialog-title-${$attrs.id || 'default'}`"
+          class="confirmation-title"
+        >
           {{ title }}
         </h3>
       </div>
 
       <div class="confirmation-content">
-        <p class="confirmation-message">
+        <p
+          :id="`dialog-message-${$attrs.id || 'default'}`"
+          class="confirmation-message"
+        >
           {{ message }}
         </p>
       </div>
@@ -63,6 +73,7 @@ const handleOverlayClick = (event: Event) => {
           {{ cancelText }}
         </button>
         <button
+          data-testid="confirm-delete-button"
           type="button"
           class="btn"
           :class="{

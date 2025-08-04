@@ -52,7 +52,7 @@ describe('OfflineStorage - Medication Management', () => {
     catId: 'cat-1',
     medicationId: 'med-1',
     frequency: 'daily',
-    times: ['08:00', '20:00'],
+    times: JSON.stringify(['08:00', '20:00']),
     startDate: new Date(),
     endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
     isActive: true,
@@ -328,7 +328,7 @@ describe('OfflineStorage - Medication Management', () => {
         catId: 'cat-1',
         medicationId: 'med-1',
         frequency: 'daily',
-        times: ['08:00'],
+        times: JSON.stringify(['08:00']),
         startDate: new Date(),
         isActive: true,
       });
@@ -336,7 +336,7 @@ describe('OfflineStorage - Medication Management', () => {
         catId: 'cat-1',
         medicationId: 'med-2',
         frequency: 'daily',
-        times: ['08:00'],
+        times: JSON.stringify(['08:00']),
         startDate: new Date(),
         isActive: false,
       });
@@ -355,7 +355,7 @@ describe('OfflineStorage - Medication Management', () => {
         catId: 'cat-1',
         medicationId: 'med-1',
         frequency: 'daily',
-        times: ['08:00'],
+        times: JSON.stringify(['08:00']),
         startDate: new Date(),
         isActive: true,
       });
@@ -363,7 +363,7 @@ describe('OfflineStorage - Medication Management', () => {
         catId: 'cat-2',
         medicationId: 'med-1',
         frequency: 'daily',
-        times: ['08:00'],
+        times: JSON.stringify(['08:00']),
         startDate: new Date(),
         isActive: true,
       });

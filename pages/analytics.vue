@@ -72,6 +72,62 @@ const handlePeriodChange = (period: number) => {
 // Lifecycle
 onMounted(() => {
   fetchCats();
+
+  // タッチデバイスの検出とレスポンシブ対応
+  if (import.meta.client) {
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    // タッチデバイス用のクラスを追加
+    if (isTouchDevice) {
+      document.documentElement.classList.add('touch-device');
+    }
+
+    // オリエンテーション変更時の処理
+    const handleOrientationChange = () => {
+      // オリエンテーション変更後の再描画を遅延実行
+      setTimeout(() => {
+        // チャートコンテナのサイズ調整をトリガー
+        if (chartContainerRef.value) {
+          const event = new Event('resize');
+          window.dispatchEvent(event);
+        }
+      }, 100);
+    };
+
+    if (isTouchDevice) {
+      window.addEventListener('orientationchange', handleOrientationChange);
+
+      onUnmounted(() => {
+        window.removeEventListener('orientationchange', handleOrientationChange);
+      });
+    }
+
+    // Intersection Observer for performance optimization
+    let observer: IntersectionObserver | null = null;
+    if ('IntersectionObserver' in window && chartContainerRef.value) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              // チャートが表示されている時のみ処理を実行
+              entry.target.classList.add('chart-visible');
+            }
+            else {
+              entry.target.classList.remove('chart-visible');
+            }
+          });
+        },
+        { threshold: 0.1 },
+      );
+      observer.observe(chartContainerRef.value);
+
+      onUnmounted(() => {
+        if (observer) {
+          observer.disconnect();
+        }
+      });
+    }
+  }
 });
 </script>
 
@@ -776,20 +832,30 @@ onMounted(() => {
 @media (max-width: 768px) {
   .analytics-page {
     padding: 0;
+    /* スクロール性能の向上 */
+    -webkit-overflow-scrolling: touch;
   }
 
   .page-header {
     border-radius: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     padding: 1.5rem 1rem;
+    /* モバイルでのタッチ操作改善 */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
   }
 
   .page-title {
     font-size: 1.6rem;
+    line-height: 1.2;
   }
 
   .page-description {
     font-size: 1rem;
+    line-height: 1.4;
   }
 
   .filters-section,
@@ -800,36 +866,73 @@ onMounted(() => {
     margin: 0;
     padding: 1.5rem 1rem;
     box-shadow: none;
-    border-top: 1px solid #e2e8f0;
     border-bottom: 1px solid #e2e8f0;
+  }
+
+  .filters-section {
+    /* フィルターセクションを固定化（オプション） */
+    position: sticky;
+    top: 120px; /* ヘッダーの高さに応じて調整 */
+    z-index: 9;
+    background: white;
+    border-top: 1px solid #e2e8f0;
   }
 
   .cat-selector {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .cat-button {
+    /* タッチターゲットサイズの確保 */
+    min-height: 60px;
+    padding: 1rem;
   }
 
   .period-selector {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
   }
 
   .period-button {
     text-align: center;
+    /* タッチターゲットサイズの確保 */
+    min-height: 48px;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.9rem;
   }
 
   .chart-container {
     min-height: 300px;
+    /* タッチ操作の改善 */
+    touch-action: pan-x pan-y;
   }
 
   .summary-grid {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .summary-card {
+    padding: 1rem;
+    /* タッチフィードバックの改善 */
+    transition: background-color 0.2s ease;
+  }
+
+  .summary-card:active {
+    background-color: #f1f5f9;
   }
 
   .action-buttons {
     grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
   }
 
   .action-button {
     padding: 1rem;
+    /* タッチターゲットサイズの確保 */
+    min-height: 80px;
   }
 
   .action-icon {
@@ -847,10 +950,20 @@ onMounted(() => {
 @media (max-width: 480px) {
   .page-header {
     padding: 1rem;
+    /* 小さな画面でのヘッダー最適化 */
+    position: sticky;
+    top: 0;
+    z-index: 10;
   }
 
   .page-title {
     font-size: 1.4rem;
+    line-height: 1.1;
+  }
+
+  .page-description {
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
   }
 
   .filters-section,
@@ -860,42 +973,152 @@ onMounted(() => {
     padding: 1rem;
   }
 
+  .filters-section {
+    /* 小さな画面でのフィルター最適化 */
+    top: 100px; /* ヘッダーの高さに応じて調整 */
+    gap: 1rem;
+  }
+
+  .filter-group {
+    gap: 0.5rem;
+  }
+
+  .filter-label {
+    font-size: 0.9rem;
+  }
+
   .cat-button {
     padding: 0.75rem;
+    /* タッチターゲットサイズの確保 */
+    min-height: 56px;
+  }
+
+  .cat-name {
+    font-size: 0.9rem;
+  }
+
+  .cat-weight {
+    font-size: 0.8rem;
+  }
+
+  .period-selector {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
 
   .period-button {
-    padding: 0.5rem 1rem;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    /* タッチターゲットサイズの確保 */
+    min-height: 48px;
+  }
+
+  .chart-header {
+    margin-bottom: 1rem;
+  }
+
+  .chart-title {
+    font-size: 1.2rem;
+  }
+
+  .chart-subtitle {
+    font-size: 0.9rem;
   }
 
   .chart-container {
     min-height: 250px;
+    /* 小さな画面でのチャート最適化 */
+    overflow: hidden;
+  }
+
+  .summary-section {
+    padding: 1rem;
+  }
+
+  .summary-title {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .summary-grid {
+    gap: 0.5rem;
   }
 
   .summary-card {
-    padding: 1rem;
+    padding: 0.75rem;
     flex-direction: column;
     text-align: center;
+    /* タッチフィードバックの改善 */
+    transition: all 0.2s ease;
+  }
+
+  .summary-card:active {
+    transform: scale(0.98);
+    background-color: #f1f5f9;
   }
 
   .summary-icon {
     font-size: 1.5rem;
     width: 40px;
     height: 40px;
+    margin-bottom: 0.5rem;
+  }
+
+  .summary-label {
+    font-size: 0.8rem;
+  }
+
+  .summary-value {
+    font-size: 1rem;
+  }
+
+  .quick-actions-title {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
   }
 
   .action-buttons {
     grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
 
   .action-button {
     flex-direction: row;
     justify-content: flex-start;
     padding: 0.75rem;
+    /* タッチターゲットサイズの確保 */
+    min-height: 56px;
+    gap: 0.75rem;
+  }
+
+  .action-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
   }
 
   .action-text {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
+    text-align: left;
+  }
+
+  .loading-container,
+  .error-container,
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+
+  .loading-text,
+  .error-message,
+  .empty-message {
+    font-size: 0.9rem;
+  }
+
+  .retry-button,
+  .empty-action {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    /* タッチターゲットサイズの確保 */
+    min-height: 48px;
   }
 }
 
@@ -924,6 +1147,55 @@ onMounted(() => {
   }
 }
 
+/* タッチデバイス最適化 */
+@media (hover: none) and (pointer: coarse) {
+  /* タッチデバイス専用のスタイル */
+  .cat-button:hover,
+  .period-button:hover,
+  .action-button:hover {
+    /* ホバー効果を無効化 */
+    background: inherit;
+    border-color: inherit;
+    color: inherit;
+    transform: none;
+  }
+
+  .cat-button:active,
+  .period-button:active,
+  .action-button:active {
+    /* タッチフィードバック */
+    transform: scale(0.98);
+    opacity: 0.8;
+  }
+
+  .retry-button:active,
+  .empty-action:active {
+    transform: scale(0.98);
+  }
+}
+
+/* フォーカス表示の改善（アクセシビリティ） */
+.cat-button:focus,
+.period-button:focus,
+.action-button:focus,
+.retry-button:focus,
+.empty-action:focus {
+  outline: 2px solid #4caf50;
+  outline-offset: 2px;
+}
+
+/* タッチターゲットサイズの確保 */
+@media (max-width: 768px) {
+  .cat-button,
+  .period-button,
+  .action-button,
+  .retry-button,
+  .empty-action {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
   .loading-spinner {
@@ -932,12 +1204,73 @@ onMounted(() => {
 
   .retry-button:hover,
   .empty-action:hover,
-  .action-button:hover {
-    transform: none;
+  .action-button:hover,
+  .cat-button,
+  .period-button,
+  .summary-card {
+    transform: none !important;
+    transition: none !important;
   }
 
   * {
     transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* CSS変数の定義 */
+:root {
+  --analytics-bg-primary: #ffffff;
+  --analytics-bg-secondary: #f8f9fa;
+  --analytics-text-primary: #333333;
+  --analytics-text-secondary: #666666;
+  --analytics-border: #e2e8f0;
+  --analytics-accent: #4caf50;
+  --analytics-accent-hover: #45a049;
+  --analytics-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --analytics-bg-primary: #1a1a1a;
+    --analytics-bg-secondary: #2d2d2d;
+    --analytics-text-primary: #ffffff;
+    --analytics-text-secondary: #cccccc;
+    --analytics-border: #404040;
+    --analytics-accent: #66bb6a;
+    --analytics-accent-hover: #5cb85c;
+    --analytics-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .page-header,
+  .filters-section,
+  .chart-section,
+  .summary-section,
+  .quick-actions {
+    background: var(--analytics-bg-primary);
+    color: var(--analytics-text-primary);
+    border-color: var(--analytics-border);
+  }
+
+  .summary-card,
+  .cat-button,
+  .period-button,
+  .action-button {
+    background: var(--analytics-bg-secondary);
+    color: var(--analytics-text-primary);
+    border-color: var(--analytics-border);
+  }
+
+  .cat-button--active,
+  .period-button--active {
+    background: var(--analytics-accent);
+    border-color: var(--analytics-accent);
+  }
+
+  .action-button--primary {
+    background: var(--analytics-accent);
+    border-color: var(--analytics-accent);
   }
 }
 
@@ -951,5 +1284,54 @@ onMounted(() => {
   .chart-section {
     break-inside: avoid;
   }
+
+  .page-header,
+  .chart-section,
+  .summary-section {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+}
+
+/* パフォーマンス最適化のためのCSS */
+.chart-container {
+  contain: layout style paint;
+}
+
+.summary-grid,
+.action-buttons {
+  contain: layout;
+}
+
+/* スクロール性能の向上 */
+.analytics-page {
+  will-change: scroll-position;
+}
+
+/* GPU加速の有効化 */
+.cat-button,
+.period-button,
+.action-button,
+.summary-card {
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* タッチデバイス用のスタイル */
+.touch-device .cat-button,
+.touch-device .period-button,
+.touch-device .action-button {
+  -webkit-tap-highlight-color: rgba(76, 175, 80, 0.2);
+}
+
+/* チャートの可視性最適化 */
+.chart-visible {
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.chart-container:not(.chart-visible) {
+  opacity: 0.8;
 }
 </style>

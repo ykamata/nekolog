@@ -190,7 +190,7 @@ const formatLastAdministered = (date?: Date): string => {
                 </div>
                 <div class="stat-item">
                   <span class="stat-label">最終投与:</span>
-                  <span class="stat-value">{{ formatLastAdministered(getCatMedicationSummary(cat).lastAdministered) }}</span>
+                  <span class="stat-value">{{ formatLastAdministered(getCatMedicationSummary(cat).lastAdministered || undefined) }}</span>
                 </div>
               </div>
 

@@ -126,12 +126,23 @@ describe('useAnalyticsStore', () => {
     it('should generate chart data for bar chart', () => {
       const store = useAnalyticsStore();
 
+      // テスト用の日付範囲を設定（データが存在する期間に限定）
+      store.setDateRange(new Date('2023-01-01'), new Date('2023-01-02'));
+
       const chartData = store.chartDataForBarChart;
 
       expect(chartData.labels).toHaveLength(2); // 2 unique dates
       expect(chartData.datasets).toHaveLength(2); // DRY and WET
       expect(chartData.datasets[0].label).toBe('ドライフード');
       expect(chartData.datasets[1].label).toBe('ウェットフード');
+
+      // データ欠損情報が含まれていることを確認
+      expect(chartData.missingDataDates).toBeDefined();
+      expect(Array.isArray(chartData.missingDataDates)).toBe(true);
+
+      // フィルター情報が含まれていることを確認
+      expect(chartData.appliedFilters).toBeDefined();
+      expect(chartData.appliedFilters.dateRange).toBeDefined();
     });
 
     it('should return empty data when no analytics', () => {
@@ -418,6 +429,71 @@ describe('useAnalyticsStore', () => {
       const summary = store.getAnalyticsSummary();
 
       expect(summary).toBe(null);
+    });
+  });
+
+  describe('enhanced bar chart data', () => {
+    it('should provide enhanced bar chart data with quality info', () => {
+      const store = useAnalyticsStore();
+      store.analytics = mockAnalytics;
+      store.setDateRange(new Date('2023-01-01'), new Date('2023-01-02'));
+
+      const enhancedData = store.getEnhancedBarChartData();
+
+      expect(enhancedData.qualityInfo).toBeDefined();
+      expect(enhancedData.statistics).toBeDefined();
+      expect(enhancedData.metadata).toBeDefined();
+      expect(enhancedData.statistics.totalCalories).toBeDefined();
+      expect(enhancedData.statistics.averageDaily).toBeDefined();
+      expect(enhancedData.statistics.peakDay).toBeDefined();
+    });
+  });
+
+  describe('data quality info', () => {
+    it('should provide data quality information', () => {
+      const store = useAnalyticsStore();
+      store.analytics = mockAnalytics;
+      store.setDateRange(new Date('2023-01-01'), new Date('2023-01-02'));
+
+      const qualityInfo = store.dataQualityInfo;
+
+      expect(qualityInfo).toBeDefined();
+      expect(qualityInfo?.totalDays).toBe(2);
+      expect(qualityInfo?.daysWithData).toBe(2);
+      expect(qualityInfo?.missingDays).toBe(0);
+      expect(qualityInfo?.dataCompleteness).toBe(100);
+    });
+
+    it('should return null when no analytics', () => {
+      const store = useAnalyticsStore();
+      store.analytics = null;
+
+      const qualityInfo = store.dataQualityInfo;
+
+      expect(qualityInfo).toBe(null);
+    });
+  });
+
+  describe('active filters info', () => {
+    it('should provide active filters information', () => {
+      const store = useAnalyticsStore();
+      store.setSelectedCat('cat1');
+      store.setSelectedFoodType('DRY' as FoodType);
+
+      const filtersInfo = store.activeFiltersInfo;
+
+      expect(filtersInfo.count).toBe(3); // cat, foodType, dateRange
+      expect(filtersInfo.hasActiveFilters).toBe(true);
+      expect(filtersInfo.filters).toHaveLength(3);
+    });
+
+    it('should indicate no active filters when none are set', () => {
+      const store = useAnalyticsStore();
+
+      const filtersInfo = store.activeFiltersInfo;
+
+      expect(filtersInfo.hasActiveFilters).toBe(false);
+      expect(filtersInfo.filters).toHaveLength(1); // only dateRange
     });
   });
 });

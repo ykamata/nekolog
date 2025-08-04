@@ -266,6 +266,43 @@ export function getLastNDaysRange(days: number): {
 }
 
 /**
+ * Generate all dates in a range
+ */
+export function generateDateRange(startDate: Date, endDate: Date): string[] {
+  const dates: string[] = [];
+  const currentDate = new Date(startDate);
+
+  while (currentDate <= endDate) {
+    dates.push(formatDate(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return dates;
+}
+
+/**
+ * Fill missing dates with zero values for daily calories by food type
+ */
+export function fillMissingDatesForFoodType(
+  data: { date: string; dryCalories: number; wetCalories: number; totalCalories: number }[],
+  startDate: Date,
+  endDate: Date,
+): { date: string; dryCalories: number; wetCalories: number; totalCalories: number }[] {
+  const allDates = generateDateRange(startDate, endDate);
+  const dataMap = new Map(data.map(item => [item.date, item]));
+
+  return allDates.map((date) => {
+    const existingData = dataMap.get(date);
+    return existingData || {
+      date,
+      dryCalories: 0,
+      wetCalories: 0,
+      totalCalories: 0,
+    };
+  });
+}
+
+/**
  * Analytics utilities
  */
 
@@ -283,6 +320,36 @@ export function groupMealRecordsByDate(
     groups[dateKey].push(record);
     return groups;
   }, {} as Record<string, MealRecord[]>);
+}
+
+/**
+ * Calculate daily calories from meal records with food type breakdown
+ */
+export function calculateDailyCaloriesWithFoodType(
+  mealRecords: MealRecord[],
+): { date: string; dryCalories: number; wetCalories: number; totalCalories: number }[] {
+  const groupedByDate = groupMealRecordsByDate(mealRecords);
+
+  return Object.entries(groupedByDate)
+    .map(([date, records]) => {
+      const dryCalories = records
+        .filter(record => record.food?.type === 'DRY')
+        .reduce((sum, record) => sum + record.calories, 0);
+
+      const wetCalories = records
+        .filter(record => record.food?.type === 'WET')
+        .reduce((sum, record) => sum + record.calories, 0);
+
+      const totalCalories = dryCalories + wetCalories;
+
+      return {
+        date,
+        dryCalories: Math.round(dryCalories * 100) / 100,
+        wetCalories: Math.round(wetCalories * 100) / 100,
+        totalCalories: Math.round(totalCalories * 100) / 100,
+      };
+    })
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 /**
@@ -315,39 +382,54 @@ export function calculateDailyCalories(
 }
 
 /**
- * Calculate food type breakdown
+ * Calculate food type breakdown with calories and weight
  */
 export function calculateFoodTypeBreakdown(
   mealRecords: MealRecord[],
-): { type: FoodType; percentage: number }[] {
+): { type: FoodType; percentage: number; totalCalories: number; totalWeight: number }[] {
   const totalCalories = mealRecords.reduce(
     (sum, record) => sum + record.calories,
     0,
   );
 
+  const dryRecords = mealRecords.filter(record => record.food?.type === 'DRY');
+  const wetRecords = mealRecords.filter(record => record.food?.type === 'WET');
+
+  const dryCalories = dryRecords.reduce((sum, record) => sum + record.calories, 0);
+  const wetCalories = wetRecords.reduce((sum, record) => sum + record.calories, 0);
+
+  const dryWeight = dryRecords.reduce((sum, record) => sum + record.quantity, 0);
+  const wetWeight = wetRecords.reduce((sum, record) => sum + record.quantity, 0);
+
   if (totalCalories === 0) {
     return [
-      { type: 'DRY' as FoodType, percentage: 0 },
-      { type: 'WET' as FoodType, percentage: 0 },
+      {
+        type: 'DRY' as FoodType,
+        percentage: 0,
+        totalCalories: 0,
+        totalWeight: 0,
+      },
+      {
+        type: 'WET' as FoodType,
+        percentage: 0,
+        totalCalories: 0,
+        totalWeight: 0,
+      },
     ];
   }
-
-  const dryCalories = mealRecords
-    .filter(record => record.food?.type === 'DRY')
-    .reduce((sum, record) => sum + record.calories, 0);
-
-  const wetCalories = mealRecords
-    .filter(record => record.food?.type === 'WET')
-    .reduce((sum, record) => sum + record.calories, 0);
 
   return [
     {
       type: 'DRY' as FoodType,
       percentage: Math.round((dryCalories / totalCalories) * 100),
+      totalCalories: Math.round(dryCalories * 100) / 100,
+      totalWeight: Math.round(dryWeight * 100) / 100,
     },
     {
       type: 'WET' as FoodType,
       percentage: Math.round((wetCalories / totalCalories) * 100),
+      totalCalories: Math.round(wetCalories * 100) / 100,
+      totalWeight: Math.round(wetWeight * 100) / 100,
     },
   ];
 }
@@ -370,17 +452,236 @@ export function calculateWeeklyAverage(
 }
 
 /**
+ * パフォーマンス最適化：データサンプリング機能（要件6.3対応）
+ */
+
+/**
+ * 大量データ時のサンプリング処理
+ */
+export function sampleMealRecords(
+  mealRecords: MealRecord[],
+  maxRecords: number = 2000,
+): {
+    sampledRecords: MealRecord[];
+    samplingInfo: { applied: boolean; originalCount: number; sampledCount: number };
+  } {
+  if (mealRecords.length <= maxRecords) {
+    return {
+      sampledRecords: mealRecords,
+      samplingInfo: {
+        applied: false,
+        originalCount: mealRecords.length,
+        sampledCount: mealRecords.length,
+      },
+    };
+  }
+
+  // 時系列順にソート
+  const sortedRecords = [...mealRecords].sort(
+    (a, b) => a.mealTime.getTime() - b.mealTime.getTime(),
+  );
+
+  // 重要なレコードを保持するためのインデックス
+  const importantIndices = new Set<number>();
+
+  // 最初と最後のレコードを保持
+  importantIndices.add(0);
+  if (sortedRecords.length > 1) {
+    importantIndices.add(sortedRecords.length - 1);
+  }
+
+  // 日付の境界（各日の最初と最後の記録）を保持
+  const dateGroups = groupMealRecordsByDate(sortedRecords);
+  for (const dayRecords of Object.values(dateGroups)) {
+    if (dayRecords.length > 0) {
+      const firstRecord = dayRecords[0];
+      const lastRecord = dayRecords[dayRecords.length - 1];
+
+      if (!firstRecord || !lastRecord) continue;
+
+      const firstIndex = sortedRecords.findIndex(r => r.id === firstRecord.id);
+      const lastIndex = sortedRecords.findIndex(r => r.id === lastRecord.id);
+      if (firstIndex !== -1) importantIndices.add(firstIndex);
+      if (lastIndex !== -1) importantIndices.add(lastIndex);
+    }
+  }
+
+  // 均等間隔でサンプリング
+  const step = Math.ceil(sortedRecords.length / maxRecords);
+  for (let i = 0; i < sortedRecords.length; i += step) {
+    importantIndices.add(i);
+  }
+
+  // インデックスをソートして対応するレコードを取得
+  const sortedIndices = Array.from(importantIndices).sort((a, b) => a - b);
+  const sampledRecords = sortedIndices.map(index => sortedRecords[index]).filter((record): record is MealRecord => record !== undefined);
+
+  return {
+    sampledRecords,
+    samplingInfo: {
+      applied: true,
+      originalCount: mealRecords.length,
+      sampledCount: sampledRecords.length,
+    },
+  };
+}
+
+/**
+ * 日別カロリーデータのサンプリング
+ */
+export function sampleDailyCalories(
+  dailyCalories: DailyCalorieData[],
+  maxDataPoints: number = 200,
+): {
+    sampledData: DailyCalorieData[];
+    samplingInfo: { applied: boolean; originalCount: number; sampledCount: number };
+  } {
+  if (dailyCalories.length <= maxDataPoints) {
+    return {
+      sampledData: dailyCalories,
+      samplingInfo: {
+        applied: false,
+        originalCount: dailyCalories.length,
+        sampledCount: dailyCalories.length,
+      },
+    };
+  }
+
+  // 時系列順にソート
+  const sortedData = [...dailyCalories].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  );
+
+  // 重要なデータポイントを保持
+  const importantIndices = new Set<number>();
+
+  // 最初と最後のデータポイントを保持
+  importantIndices.add(0);
+  if (sortedData.length > 1) {
+    importantIndices.add(sortedData.length - 1);
+  }
+
+  // 極値（ピークと谷）を検出して保持
+  for (let i = 1; i < sortedData.length - 1; i++) {
+    const prevData = sortedData[i - 1];
+    const currData = sortedData[i];
+    const nextData = sortedData[i + 1];
+
+    if (!prevData || !currData || !nextData) continue;
+
+    const prev = prevData.calories;
+    const curr = currData.calories;
+    const next = nextData.calories;
+
+    // ローカルピーク（極大値）またはローカル谷（極小値）
+    if ((curr > prev && curr > next) || (curr < prev && curr < next)) {
+      importantIndices.add(i);
+    }
+  }
+
+  // 月初や週末など重要な日付を保持（サンプリング対象が大量の場合は制限）
+  if (sortedData.length > maxDataPoints * 2) {
+    // 大量データの場合は月初のみ保持
+    sortedData.forEach((data, index) => {
+      const date = new Date(data.date);
+      const dayOfMonth = date.getDate();
+
+      if (dayOfMonth === 1) {
+        importantIndices.add(index);
+      }
+    });
+  }
+  else {
+    // 中程度のデータの場合は月初と週末を保持
+    sortedData.forEach((data, index) => {
+      const date = new Date(data.date);
+      const dayOfWeek = date.getDay();
+      const dayOfMonth = date.getDate();
+
+      if (dayOfWeek === 0 || dayOfWeek === 6 || dayOfMonth === 1) {
+        importantIndices.add(index);
+      }
+    });
+  }
+
+  // 均等間隔でサンプリング
+  const step = Math.ceil(sortedData.length / maxDataPoints);
+  for (let i = 0; i < sortedData.length; i += step) {
+    importantIndices.add(i);
+  }
+
+  // インデックスをソートして対応するデータを取得
+  let sortedIndices = Array.from(importantIndices).sort((a, b) => a - b);
+
+  // 最大データポイント数を超えている場合は、さらに間引く
+  if (sortedIndices.length > maxDataPoints) {
+    const finalIndices = new Set<number>();
+
+    // 最初と最後は必ず保持
+    const firstIndex = sortedIndices[0];
+    const lastIndex = sortedIndices[sortedIndices.length - 1];
+    if (firstIndex !== undefined) finalIndices.add(firstIndex);
+    if (lastIndex !== undefined) finalIndices.add(lastIndex);
+
+    // 極値のインデックスを優先的に保持
+    for (let i = 1; i < sortedData.length - 1; i++) {
+      const prevData = sortedData[i - 1];
+      const currData = sortedData[i];
+      const nextData = sortedData[i + 1];
+
+      if (!prevData || !currData || !nextData) continue;
+
+      const prev = prevData.calories;
+      const curr = currData.calories;
+      const next = nextData.calories;
+
+      if ((curr > prev && curr > next) || (curr < prev && curr < next)) {
+        finalIndices.add(i);
+      }
+    }
+
+    // 残りの枠を均等間隔で埋める
+    const remainingSlots = maxDataPoints - finalIndices.size;
+    if (remainingSlots > 0) {
+      const step = Math.ceil(sortedIndices.length / remainingSlots);
+      for (let i = 0; i < sortedIndices.length; i += step) {
+        const index = sortedIndices[i];
+        if (index !== undefined) {
+          finalIndices.add(index);
+        }
+        if (finalIndices.size >= maxDataPoints) break;
+      }
+    }
+
+    sortedIndices = Array.from(finalIndices).sort((a, b) => a - b);
+  }
+
+  const sampledData = sortedIndices.map(index => sortedData[index]).filter((data): data is DailyCalorieData => data !== undefined);
+
+  return {
+    sampledData,
+    samplingInfo: {
+      applied: true,
+      originalCount: dailyCalories.length,
+      sampledCount: sampledData.length,
+    },
+  };
+}
+
+/**
  * Generate meal analytics
  */
 export function generateMealAnalytics(
   mealRecords: MealRecord[],
 ): MealAnalytics {
   const dailyCalories = calculateDailyCalories(mealRecords);
+  const dailyCaloriesByFoodType = calculateDailyCaloriesWithFoodType(mealRecords);
   const weeklyAverage = calculateWeeklyAverage(dailyCalories);
   const foodTypeBreakdown = calculateFoodTypeBreakdown(mealRecords);
 
   return {
     dailyCalories,
+    dailyCaloriesByFoodType,
     weeklyAverage,
     foodTypeBreakdown,
   };

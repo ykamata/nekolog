@@ -15,8 +15,12 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'select' | 'edit' | 'delete', visit: VeterinaryVisitWithRelations): void;
+  (e: 'select' | 'edit' | 'delete' | 'view', visit: VeterinaryVisitWithRelations): void;
   (e: 'add'): void;
+  (e: 'catFilterChanged', catId: string): void;
+  (e: 'bloodTestFilterChanged', hasBloodTest: boolean | string): void;
+  (e: 'search', query: string): void;
+  (e: 'sortChanged', field: string, order: string): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -39,24 +43,88 @@ const hasBloodTestFilter = ref<boolean | ''>('');
 const sortBy = ref<'visitDate' | 'hospitalName' | 'cost' | 'createdAt'>('visitDate');
 const sortOrder = ref<'asc' | 'desc'>('desc');
 
+// Pagination state
+const currentPage = ref(1);
+const itemsPerPage = ref(10); // 通常の値に戻す
+
+// Responsive state
+const isMobile = ref(false);
+const isTablet = ref(false);
+
+// Check screen size with debouncing to prevent excessive updates
+const checkScreenSize = () => {
+  if (typeof window !== 'undefined') {
+    const width = window.innerWidth;
+    const newIsMobile = width <= 768;
+    const newIsTablet = width > 768 && width <= 1024;
+
+    // Only update if values actually changed to prevent infinite loops
+    if (isMobile.value !== newIsMobile) {
+      isMobile.value = newIsMobile;
+    }
+    if (isTablet.value !== newIsTablet) {
+      isTablet.value = newIsTablet;
+    }
+  }
+};
+
+// Debounced version to prevent excessive calls
+let resizeTimeout: NodeJS.Timeout;
+const debouncedCheckScreenSize = () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(checkScreenSize, 100);
+};
+
+// Initialize responsive state
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    checkScreenSize();
+    window.addEventListener('resize', debouncedCheckScreenSize);
+  }
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', debouncedCheckScreenSize);
+    clearTimeout(resizeTimeout);
+  }
+});
+
 // Computed properties
-const catOptions = computed(() => [
-  { value: '', label: 'すべての猫' },
-  ...props.cats.map(cat => ({ value: cat.id, label: cat.name })),
-]);
+const catOptions = computed(() => {
+  if (!props.cats || !Array.isArray(props.cats)) {
+    return [{ value: '', label: 'すべての猫' }];
+  }
+
+  return [
+    { value: '', label: 'すべての猫' },
+    ...props.cats
+      .filter(cat => cat && cat.id && cat.name) // Filter out invalid cats
+      .map(cat => ({ value: cat.id, label: cat.name })),
+  ];
+});
 
 const hospitalOptions = computed(() => {
+  if (!props.visits || !Array.isArray(props.visits)) {
+    return [{ value: '', label: 'すべての病院' }];
+  }
+
   const hospitals = new Map<string, VeterinaryHospital>();
+
   props.visits.forEach((visit) => {
-    hospitals.set(visit.hospital.id, visit.hospital);
+    if (visit?.hospital?.id && visit.hospital.name) {
+      hospitals.set(visit.hospital.id, visit.hospital);
+    }
   });
 
   return [
     { value: '', label: 'すべての病院' },
-    ...Array.from(hospitals.values()).map(hospital => ({
-      value: hospital.id,
-      label: hospital.name,
-    })),
+    ...Array.from(hospitals.values())
+      .filter(hospital => hospital && hospital.id && hospital.name)
+      .map(hospital => ({
+        value: hospital.id,
+        label: hospital.name,
+      })),
   ];
 });
 
@@ -67,93 +135,213 @@ const bloodTestOptions = [
 ];
 
 const filteredAndSortedVisits = computed(() => {
-  let filtered = props.visits;
-
-  // Filter by search query
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(visit =>
-      visit.hospital.name.toLowerCase().includes(query)
-      || (visit.doctor?.name && visit.doctor.name.toLowerCase().includes(query))
-      || (visit.notes && visit.notes.toLowerCase().includes(query))
-      || visit.treatments.some(t => t.treatment.name.toLowerCase().includes(query)),
-    );
+  // Input validation
+  if (!props.visits || !Array.isArray(props.visits)) {
+    return [];
   }
 
-  // Filter by cat
-  if (selectedCatId.value) {
-    filtered = filtered.filter(visit => visit.catId === selectedCatId.value);
-  }
+  let filtered = [...props.visits]; // Create a copy to avoid mutating props
 
-  // Filter by hospital
-  if (selectedHospitalId.value) {
-    filtered = filtered.filter(visit => visit.hospitalId === selectedHospitalId.value);
-  }
+  // Filter by search query with null safety
+  if (searchQuery.value && typeof searchQuery.value === 'string') {
+    const query = searchQuery.value.toLowerCase().trim();
+    if (query) {
+      filtered = filtered.filter((visit) => {
+        if (!visit) return false;
 
-  // Filter by blood test
-  if (hasBloodTestFilter.value !== '') {
-    filtered = filtered.filter(visit => visit.hasBloodTest === hasBloodTestFilter.value);
-  }
+        try {
+          const hospitalName = visit.hospital?.name?.toLowerCase() || '';
+          const doctorName = visit.doctor?.name?.toLowerCase() || '';
+          const notes = visit.notes?.toLowerCase() || '';
+          const treatmentNames = visit.treatments?.map(t => t?.treatment?.name?.toLowerCase() || '').join(' ') || '';
 
-  // Sort
-  filtered.sort((a, b) => {
-    let aValue: string | number | Date;
-    let bValue: string | number | Date;
-
-    switch (sortBy.value) {
-      case 'visitDate':
-        aValue = new Date(a.visitDate);
-        bValue = new Date(b.visitDate);
-        break;
-      case 'hospitalName':
-        aValue = a.hospital.name;
-        bValue = b.hospital.name;
-        break;
-      case 'cost':
-        aValue = a.cost;
-        bValue = b.cost;
-        break;
-      case 'createdAt':
-        aValue = new Date(a.createdAt);
-        bValue = new Date(b.createdAt);
-        break;
-      default:
-        aValue = new Date(a.visitDate);
-        bValue = new Date(b.visitDate);
+          return hospitalName.includes(query)
+            || doctorName.includes(query)
+            || notes.includes(query)
+            || treatmentNames.includes(query);
+        }
+        catch (error) {
+          console.warn('Error filtering visit:', error);
+          return false;
+        }
+      });
     }
+  }
 
-    if (aValue < bValue) {
-      return sortOrder.value === 'asc' ? -1 : 1;
-    }
-    if (aValue > bValue) {
-      return sortOrder.value === 'asc' ? 1 : -1;
-    }
-    return 0;
-  });
+  // Filter by cat with validation
+  if (selectedCatId.value && typeof selectedCatId.value === 'string') {
+    filtered = filtered.filter(visit => visit?.catId === selectedCatId.value);
+  }
+
+  // Filter by hospital with validation
+  if (selectedHospitalId.value && typeof selectedHospitalId.value === 'string') {
+    filtered = filtered.filter(visit => visit?.hospitalId === selectedHospitalId.value);
+  }
+
+  // Filter by blood test with validation
+  if (hasBloodTestFilter.value !== '' && hasBloodTestFilter.value !== null && hasBloodTestFilter.value !== undefined) {
+    const filterValue = hasBloodTestFilter.value === true || String(hasBloodTestFilter.value) === 'true';
+    filtered = filtered.filter(visit => visit?.hasBloodTest === filterValue);
+  }
+
+  // Sort with error handling
+  try {
+    filtered.sort((a, b) => {
+      if (!a || !b) return 0;
+
+      let aValue: string | number | Date;
+      let bValue: string | number | Date;
+
+      switch (sortBy.value) {
+        case 'visitDate':
+          aValue = new Date(a.visitDate || 0);
+          bValue = new Date(b.visitDate || 0);
+          break;
+        case 'hospitalName':
+          aValue = a.hospital?.name || '';
+          bValue = b.hospital?.name || '';
+          break;
+        case 'cost':
+          aValue = a.cost || 0;
+          bValue = b.cost || 0;
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt || 0);
+          bValue = new Date(b.createdAt || 0);
+          break;
+        default:
+          aValue = new Date(a.visitDate || 0);
+          bValue = new Date(b.visitDate || 0);
+      }
+
+      if (aValue < bValue) {
+        return sortOrder.value === 'asc' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortOrder.value === 'asc' ? 1 : -1;
+      }
+      return 0;
+    });
+  }
+  catch (error) {
+    console.warn('Error sorting visits:', error);
+  }
 
   return filtered;
 });
 
+const paginatedVisits = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredAndSortedVisits.value.slice(start, end);
+});
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredAndSortedVisits.value.length / itemsPerPage.value);
+});
+
+const showPagination = computed(() => {
+  return filteredAndSortedVisits.value.length > itemsPerPage.value;
+});
+
 // Methods
 const handleSelectVisit = (visit: VeterinaryVisitWithRelations) => {
-  emit('select', visit);
+  try {
+    if (!visit || !visit.id) {
+      console.warn('Invalid visit data for select:', visit);
+      return;
+    }
+    emit('select', visit);
+  }
+  catch (error) {
+    console.error('Error handling visit selection:', error);
+  }
 };
 
 const handleEditVisit = (visit: VeterinaryVisitWithRelations) => {
-  emit('edit', visit);
+  try {
+    if (!visit || !visit.id) {
+      console.warn('Invalid visit data for edit:', visit);
+      return;
+    }
+    emit('edit', visit);
+  }
+  catch (error) {
+    console.error('Error handling visit edit:', error);
+  }
+};
+
+const handleViewVisit = (visit: VeterinaryVisitWithRelations) => {
+  try {
+    if (!visit || !visit.id) {
+      console.warn('Invalid visit data for view:', visit);
+      return;
+    }
+    emit('view', visit);
+  }
+  catch (error) {
+    console.error('Error handling visit view:', error);
+  }
 };
 
 const handleDeleteVisit = (visit: VeterinaryVisitWithRelations) => {
-  visitToDelete.value = visit;
-  showDeleteConfirmation.value = true;
+  try {
+    if (!visit || !visit.id) {
+      console.warn('Invalid visit data for delete:', visit);
+      return;
+    }
+    visitToDelete.value = visit;
+    showDeleteConfirmation.value = true;
+  }
+  catch (error) {
+    console.error('Error handling visit delete:', error);
+  }
+};
+
+const handleCatFilterChange = () => {
+  try {
+    const value = selectedCatId.value;
+    if (typeof value === 'string' || value === '') {
+      emit('catFilterChanged', value);
+    }
+    else {
+      console.warn('Invalid cat filter value:', value);
+      emit('catFilterChanged', '');
+    }
+  }
+  catch (error) {
+    console.warn('Error handling cat filter change:', error);
+    emit('catFilterChanged', '');
+  }
+};
+
+const handleBloodTestFilterChange = () => {
+  try {
+    const value = hasBloodTestFilter.value;
+
+    // Convert string values to boolean for proper filtering
+    if (value === true || String(value) === 'true') {
+      emit('bloodTestFilterChanged', true);
+    }
+    else if (value === false || String(value) === 'false') {
+      emit('bloodTestFilterChanged', false);
+    }
+    else {
+      emit('bloodTestFilterChanged', value);
+    }
+  }
+  catch (error) {
+    console.warn('Error handling blood test filter change:', error);
+    emit('bloodTestFilterChanged', '');
+  }
 };
 
 const confirmDelete = () => {
   if (visitToDelete.value) {
     emit('delete', visitToDelete.value);
+    showDeleteConfirmation.value = false;
+    visitToDelete.value = null;
   }
-  showDeleteConfirmation.value = false;
-  visitToDelete.value = null;
 };
 
 const cancelDelete = () => {
@@ -166,44 +354,126 @@ const handleAddVisit = () => {
 };
 
 const formatDate = (date: Date | string): string => {
-  const d = new Date(date);
-  return d.toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+  try {
+    if (!date) return '不明';
+
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '不明';
+
+    return d.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+  catch (error) {
+    console.warn('Error formatting date:', error);
+    return '不明';
+  }
 };
 
 const formatDateTime = (date: Date | string): string => {
-  const d = new Date(date);
-  return d.toLocaleString('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  try {
+    if (!date) return '不明';
+
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '不明';
+
+    return d.toLocaleString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+  catch (error) {
+    console.warn('Error formatting datetime:', error);
+    return '不明';
+  }
 };
 
 const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('ja-JP', {
-    style: 'currency',
-    currency: 'JPY',
-  }).format(amount);
+  try {
+    if (typeof amount !== 'number' || isNaN(amount)) {
+      return '¥0';
+    }
+
+    return new Intl.NumberFormat('ja-JP', {
+      style: 'currency',
+      currency: 'JPY',
+    }).format(amount);
+  }
+  catch (error) {
+    console.warn('Error formatting currency:', error);
+    return '¥0';
+  }
 };
 
 const getCatName = (catId: string): string => {
-  const cat = props.cats.find(c => c.id === catId);
-  return cat?.name || '不明';
+  // Input validation
+  if (!catId || typeof catId !== 'string') {
+    return '不明';
+  }
+
+  // First try to find in props.cats with null safety
+  if (props.cats && Array.isArray(props.cats)) {
+    const cat = props.cats.find(c => c?.id === catId);
+    if (cat?.name && typeof cat.name === 'string') {
+      return cat.name;
+    }
+  }
+
+  // Fallback to visit.cat if available with null safety
+  if (props.visits && Array.isArray(props.visits)) {
+    const visit = props.visits.find(v => v?.catId === catId);
+    if (visit?.cat?.name && typeof visit.cat.name === 'string') {
+      return visit.cat.name;
+    }
+  }
+
+  return '不明';
 };
 
 const toggleSort = (field: typeof sortBy.value) => {
+  // 無限再帰を避けるため、状態変更を最小限にする
+  let newOrder: 'asc' | 'desc';
+
   if (sortBy.value === field) {
-    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+    // 同じフィールドの場合は順序を切り替え
+    newOrder = sortOrder.value === 'asc' ? 'desc' : 'asc';
   }
   else {
-    sortBy.value = field;
-    sortOrder.value = field === 'visitDate' ? 'desc' : 'asc';
+    // 新しいフィールドの場合は常にdescから開始
+    newOrder = 'desc';
+  }
+
+  // バッチで状態を更新して再レンダリングを最小化
+  nextTick(() => {
+    if (sortBy.value !== field) {
+      sortBy.value = field;
+    }
+    if (sortOrder.value !== newOrder) {
+      sortOrder.value = newOrder;
+    }
+    emit('sortChanged', field, newOrder);
+  });
+};
+
+const handleSearchInput = () => {
+  try {
+    const value = searchQuery.value;
+    if (typeof value === 'string' || value === null || value === undefined) {
+      emit('search', value || '');
+    }
+    else {
+      console.warn('Invalid search query value:', value);
+      emit('search', '');
+    }
+  }
+  catch (error) {
+    console.warn('Error handling search input:', error);
+    emit('search', '');
   }
 };
 
@@ -212,6 +482,23 @@ const clearFilters = () => {
   selectedCatId.value = '';
   selectedHospitalId.value = '';
   hasBloodTestFilter.value = '';
+  currentPage.value = 1;
+};
+
+const goToPage = (page: number) => {
+  currentPage.value = page;
+};
+
+const nextPage = () => {
+  if (currentPage.value < totalPages.value) {
+    currentPage.value++;
+  }
+};
+
+const prevPage = () => {
+  if (currentPage.value > 1) {
+    currentPage.value--;
+  }
 };
 </script>
 
@@ -252,7 +539,9 @@ const clearFilters = () => {
             v-model="searchQuery"
             type="text"
             class="filter-input"
+            data-testid="search-input"
             placeholder="病院名、先生名、メモ、処方内容で検索..."
+            @input="handleSearchInput"
           >
         </div>
 
@@ -260,6 +549,8 @@ const clearFilters = () => {
           <select
             v-model="selectedCatId"
             class="filter-select"
+            data-testid="cat-filter"
+            @change="handleCatFilterChange"
           >
             <option
               v-for="option in catOptions"
@@ -290,6 +581,8 @@ const clearFilters = () => {
           <select
             v-model="hasBloodTestFilter"
             class="filter-select"
+            data-testid="blood-test-filter"
+            @change="handleBloodTestFilterChange"
           >
             <option
               v-for="option in bloodTestOptions"
@@ -315,7 +608,10 @@ const clearFilters = () => {
       v-if="loading"
       class="loading-container"
     >
-      <div class="loading-spinner" />
+      <div
+        class="loading-spinner"
+        data-testid="loading-spinner"
+      />
       <p class="loading-text">
         読み込み中...
       </p>
@@ -341,12 +637,17 @@ const clearFilters = () => {
         </svg>
       </div>
       <h3 class="empty-title">
-        通院記録がありません
+        {{ searchQuery || selectedCatId || selectedHospitalId || hasBloodTestFilter !== ''
+          ? '検索結果がありません'
+          : '通院記録がありません' }}
       </h3>
-      <p class="empty-description">
+      <p
+        class="empty-description"
+        :data-testid="searchQuery || selectedCatId || selectedHospitalId || hasBloodTestFilter !== '' ? 'no-search-results' : 'empty-state'"
+      >
         {{ searchQuery || selectedCatId || selectedHospitalId || hasBloodTestFilter !== ''
           ? '検索条件に一致する記録が見つかりませんでした'
-          : 'まだ通院記録が登録されていません' }}
+          : '通院記録がありません' }}
       </p>
       <button
         v-if="showActions && !searchQuery && !selectedCatId && !selectedHospitalId && hasBloodTestFilter === ''"
@@ -361,12 +662,19 @@ const clearFilters = () => {
     <div
       v-else
       class="visit-list"
+      :class="{
+        'mobile-layout': isMobile,
+        'tablet-layout': isTablet,
+      }"
+      data-testid="visit-list"
+      role="list"
     >
       <!-- Table Header -->
       <div class="table-header">
         <button
           class="header-cell header-cell--sortable"
           :class="{ 'header-cell--active': sortBy === 'visitDate' }"
+          data-testid="sort-date-button"
           @click="toggleSort('visitDate')"
         >
           診察日時
@@ -421,6 +729,7 @@ const clearFilters = () => {
         <button
           class="header-cell header-cell--sortable"
           :class="{ 'header-cell--active': sortBy === 'cost' }"
+          data-testid="sort-cost-button"
           @click="toggleSort('cost')"
         >
           費用
@@ -456,14 +765,21 @@ const clearFilters = () => {
       <!-- Table Body -->
       <div class="table-body">
         <div
-          v-for="visit in filteredAndSortedVisits"
+          v-for="visit in paginatedVisits"
           :key="visit.id"
           class="table-row"
+          :class="{
+            'mobile-layout': isMobile,
+            'tablet-layout': isTablet,
+          }"
+          :data-testid="`visit-item-${visit.id}`"
+          role="listitem"
+          :aria-label="`${getCatName(visit.catId)}の通院記録 ${formatDate(visit.visitDate)}`"
           @click="handleSelectVisit(visit)"
         >
           <div class="table-cell">
             <div class="visit-date">
-              {{ formatDateTime(visit.visitDate) }}
+              {{ formatDate(visit.visitDate) }}
             </div>
           </div>
 
@@ -476,7 +792,7 @@ const clearFilters = () => {
           <div class="table-cell">
             <div class="hospital-info">
               <div class="hospital-name">
-                {{ visit.hospital.name }}
+                {{ visit.hospital?.name || 'Unknown Hospital' }}
               </div>
               <div
                 v-if="visit.doctor"
@@ -493,8 +809,9 @@ const clearFilters = () => {
                 v-for="treatment in visit.treatments.slice(0, 2)"
                 :key="treatment.id"
                 class="treatment-tag"
+                :data-testid="`treatment-tag-${treatment.id}`"
               >
-                {{ treatment.treatment.name }}
+                {{ treatment.treatment?.name || 'Unknown Treatment' }}
               </span>
               <span
                 v-if="visit.treatments.length > 2"
@@ -507,7 +824,7 @@ const clearFilters = () => {
 
           <div class="table-cell">
             <div class="cost">
-              {{ formatCurrency(visit.cost) }}
+              {{ (visit.cost || 0).toLocaleString() }}円
             </div>
           </div>
 
@@ -517,6 +834,7 @@ const clearFilters = () => {
                 v-if="visit.hasBloodTest"
                 class="blood-test-badge"
                 data-testid="blood-test-badge"
+                aria-label="血液検査実施"
               >
                 血液検査
               </span>
@@ -525,8 +843,19 @@ const clearFilters = () => {
                 class="notes-indicator"
                 :title="visit.notes"
               >
-                📝
+                📝 {{ visit.notes.length > 20 ? visit.notes.substring(0, 20) + '...' : visit.notes }}
               </span>
+            </div>
+
+            <!-- Mobile collapsed details -->
+            <div
+              v-if="isMobile"
+              class="collapsed-details"
+              data-testid="collapsed-details"
+            >
+              <div class="collapsed-summary">
+                詳細を表示
+              </div>
             </div>
           </div>
 
@@ -537,7 +866,11 @@ const clearFilters = () => {
           >
             <button
               class="action-btn action-btn--edit"
+              :data-testid="`edit-button-${visit.id}`"
+              aria-label="編集"
+              tabindex="0"
               @click="handleEditVisit(visit)"
+              @keydown.enter="handleEditVisit(visit)"
             >
               <svg
                 fill="none"
@@ -554,6 +887,9 @@ const clearFilters = () => {
             </button>
             <button
               class="action-btn action-btn--delete"
+              :data-testid="`delete-button-${visit.id}`"
+              aria-label="削除"
+              tabindex="0"
               @click="handleDeleteVisit(visit)"
             >
               <svg
@@ -569,8 +905,63 @@ const clearFilters = () => {
                 />
               </svg>
             </button>
+            <button
+              class="action-btn action-btn--view"
+              :data-testid="`view-button-${visit.id}`"
+              aria-label="詳細表示"
+              tabindex="0"
+              @click="handleViewVisit(visit)"
+            >
+              <svg
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
+            </button>
           </div>
         </div>
+      </div>
+
+      <!-- Pagination -->
+      <div
+        v-if="showPagination"
+        class="pagination"
+        data-testid="pagination"
+      >
+        <button
+          class="pagination-btn"
+          :disabled="currentPage === 1"
+          data-testid="prev-page-button"
+          @click="prevPage"
+        >
+          前へ
+        </button>
+
+        <div class="pagination-info">
+          {{ currentPage }} / {{ totalPages }}
+        </div>
+
+        <button
+          class="pagination-btn"
+          :disabled="currentPage === totalPages"
+          data-testid="next-page-button"
+          @click="nextPage"
+        >
+          次へ
+        </button>
       </div>
     </div>
 
@@ -1122,6 +1513,56 @@ const clearFilters = () => {
 .btn-icon {
   width: 1rem;
   height: 1rem;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+}
+
+.pagination-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #4caf50;
+  color: white;
+  border-color: #4caf50;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-info {
+  font-weight: 500;
+  color: #666;
+}
+
+.collapsed-details {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #666;
+  cursor: pointer;
+}
+
+.collapsed-summary {
+  text-align: center;
 }
 
 /* Tablet responsive */

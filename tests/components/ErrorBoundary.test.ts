@@ -9,6 +9,10 @@ vi.mock('~/utils/error-handling', () => ({
     message: error.message || 'Parsed error message',
     statusCode: error.statusCode || 500,
   })),
+  errorInfoToApiError: vi.fn(error => ({
+    message: error.message || 'API error message',
+    statusCode: error.statusCode || 500,
+  })),
   getUserFriendlyErrorMessage: vi.fn((error, context) =>
     `${context}: ${error.message}`,
   ),

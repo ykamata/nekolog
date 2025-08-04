@@ -55,11 +55,25 @@ const filteredFoods = computed(() => {
   return filtered;
 });
 
-const foodStats = computed(() => ({
-  total: foods.value.length,
-  dry: foods.value.filter(food => food.type === 'DRY').length,
-  wet: foods.value.filter(food => food.type === 'WET').length,
-}));
+const foodStats = computed(() => {
+  const totalUsage = foods.value.reduce((sum, food) => sum + (food._count?.meals || 0), 0);
+  const mostUsedFood = foods.value.length > 0
+    ? foods.value.reduce((prev, current) =>
+        (current._count?.meals || 0) > (prev?._count?.meals || 0) ? current : prev,
+      )
+    : null;
+
+  return {
+    total: foods.value.length,
+    dry: foods.value.filter(food => food.type === 'DRY').length,
+    wet: foods.value.filter(food => food.type === 'WET').length,
+    totalUsage,
+    mostUsedFood: mostUsedFood?.name || '未使用',
+    averageCalories: foods.value.length > 0
+      ? (foods.value.reduce((sum, food) => sum + food.caloriesPerGram, 0) / foods.value.length).toFixed(2)
+      : '0',
+  };
+});
 
 // Fetch foods data
 const fetchFoods = async () => {
@@ -182,6 +196,18 @@ const handleEditCancel = () => {
 // Clear search
 const clearSearch = () => {
   searchQuery.value = '';
+};
+
+// Generate delete confirmation message
+const getDeleteMessage = (food: Food | null): string => {
+  if (!food) return '';
+
+  const usageCount = food._count?.meals || 0;
+  if (usageCount > 0) {
+    return `${food.name}を削除しますか？このフードは${usageCount}回使用されています。削除すると関連する食事記録に影響する可能性があります。この操作は取り消せません。`;
+  }
+
+  return `${food.name}を削除しますか？この操作は取り消せません。`;
 };
 
 // Lifecycle
@@ -320,6 +346,32 @@ onMounted(() => {
             </div>
             <div class="stat-label">
               ウェットフード
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            📊
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">
+              {{ foodStats.totalUsage }}
+            </div>
+            <div class="stat-label">
+              総使用回数
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            ⭐
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">
+              {{ foodStats.averageCalories }}
+            </div>
+            <div class="stat-label">
+              平均カロリー/g
             </div>
           </div>
         </div>
@@ -493,7 +545,7 @@ onMounted(() => {
     <ConfirmationDialog
       :is-open="showDeleteConfirmation"
       :title="`${foodToDelete?.name}を削除`"
-      :message="`${foodToDelete?.name}を削除しますか？この操作は取り消せません。関連する食事記録も影響を受ける可能性があります。`"
+      :message="getDeleteMessage(foodToDelete)"
       confirm-text="削除"
       cancel-text="キャンセル"
       type="danger"

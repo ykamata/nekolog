@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
 import type {
   MealRecord,
   MealRecordInput,
@@ -21,575 +22,599 @@ interface PaginationState {
   hasPreviousPage: boolean;
 }
 
-interface MealsState {
-  meals: MealRecord[];
-  loading: boolean;
-  error: string | null;
-  pagination: PaginationState;
-  filters: MealRecordFilter;
-  cache: {
-    lastFetch: Date | null;
-    ttl: number; // Time to live in milliseconds
-  };
-  realTimeEnabled: boolean;
-  lastUpdate: Date | null;
-}
+export const useMealsStore = defineStore('meals', () => {
+  // State
+  const meals = ref<MealRecord[]>([]);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+  const pagination = ref<PaginationState>({
+    currentPage: 1,
+    pageSize: 20,
+    totalCount: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
+  const filters = ref<MealRecordFilter>({});
+  const cache = ref({
+    lastFetch: null as Date | null,
+    ttl: 2 * 60 * 1000, // 2 minutes (meals change frequently)
+  });
+  const realTimeEnabled = ref(true);
+  const lastUpdate = ref<Date | null>(null);
 
-export const useMealsStore = defineStore('meals', {
-  state: (): MealsState => ({
-    meals: [],
-    loading: false,
-    error: null,
-    pagination: {
-      currentPage: 1,
-      pageSize: 20,
-      totalCount: 0,
-      hasNextPage: false,
-      hasPreviousPage: false,
+  // Getters
+  const getMealById = computed(() =>
+    (id: string): MealRecord | undefined => {
+      return meals.value.find(meal => meal.id === id);
     },
-    filters: {},
-    cache: {
-      lastFetch: null,
-      ttl: 2 * 60 * 1000, // 2 minutes (meals change frequently)
+  );
+
+  const getMealsByCat = computed(() =>
+    (catId: string): MealRecord[] => {
+      return meals.value.filter(meal => meal.catId === catId);
     },
-    realTimeEnabled: true,
-    lastUpdate: null,
-  }),
+  );
 
-  getters: {
-    getMealById:
-      state =>
-        (id: string): MealRecord | undefined => {
-          return state.meals.find(meal => meal.id === id);
-        },
+  const getMealsByFood = computed(() =>
+    (foodId: string): MealRecord[] => {
+      return meals.value.filter(meal => meal.foodId === foodId);
+    },
+  );
 
-    getMealsByCat:
-      state =>
-        (catId: string): MealRecord[] => {
-          return state.meals.filter(meal => meal.catId === catId);
-        },
-
-    getMealsByFood:
-      state =>
-        (foodId: string): MealRecord[] => {
-          return state.meals.filter(meal => meal.foodId === foodId);
-        },
-
-    getMealsByDateRange:
-      state =>
-        (startDate: Date, endDate: Date): MealRecord[] => {
-          return state.meals.filter((meal) => {
-            const mealDate = new Date(meal.mealTime);
-            return mealDate >= startDate && mealDate <= endDate;
-          });
-        },
-
-    todaysMeals: (state): MealRecord[] => {
-      const today = new Date();
-      const startOfDay = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
-      );
-      const endOfDay = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
-        23,
-        59,
-        59,
-      );
-
-      return state.meals.filter((meal) => {
+  const getMealsByDateRange = computed(() =>
+    (startDate: Date, endDate: Date): MealRecord[] => {
+      return meals.value.filter((meal) => {
         const mealDate = new Date(meal.mealTime);
-        return mealDate >= startOfDay && mealDate <= endOfDay;
+        return mealDate >= startDate && mealDate <= endDate;
       });
     },
+  );
 
-    recentMeals: (state): MealRecord[] => {
-      return [...state.meals]
-        .sort(
-          (a, b) =>
-            new Date(b.mealTime).getTime() - new Date(a.mealTime).getTime(),
-        )
-        .slice(0, 10);
-    },
+  const todaysMeals = computed((): MealRecord[] => {
+    const today = new Date();
+    const startOfDay = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
+    const endOfDay = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+      23,
+      59,
+      59,
+    );
 
-    totalPages: (state): number => {
-      return Math.ceil(state.pagination.totalCount / state.pagination.pageSize);
-    },
+    return meals.value.filter((meal) => {
+      const mealDate = new Date(meal.mealTime);
+      return mealDate >= startOfDay && mealDate <= endOfDay;
+    });
+  });
 
-    isLoading: (state): boolean => state.loading,
+  const recentMeals = computed((): MealRecord[] => {
+    return [...meals.value]
+      .sort(
+        (a, b) =>
+          new Date(b.mealTime).getTime() - new Date(a.mealTime).getTime(),
+      )
+      .slice(0, 10);
+  });
 
-    hasError: (state): boolean => !!state.error,
+  const totalPages = computed((): number => {
+    return Math.ceil(pagination.value.totalCount / pagination.value.pageSize);
+  });
 
-    isCacheValid: (state): boolean => {
-      if (!state.cache.lastFetch) return false;
-      const now = new Date();
-      const timeDiff = now.getTime() - state.cache.lastFetch.getTime();
-      return timeDiff < state.cache.ttl;
-    },
+  const isLoading = computed((): boolean => loading.value);
 
-    currentFilters: (state): MealRecordFilter => state.filters,
-  },
+  const hasError = computed((): boolean => !!error.value);
 
-  actions: {
-    async fetchMeals(filter?: MealRecordFilter, forceRefresh = false) {
-      const { syncStatus } = useSync();
-      const offlineStorage = OfflineStorage.getInstance();
+  const isCacheValid = computed((): boolean => {
+    if (!cache.value.lastFetch) return false;
+    const now = new Date();
+    const timeDiff = now.getTime() - cache.value.lastFetch.getTime();
+    return timeDiff < cache.value.ttl;
+  });
 
-      // If offline, load from local storage
-      if (!syncStatus.value.isOnline) {
-        this.loading = true;
-        try {
-          const localMeals = offlineStorage.getMeals(
-            filter?.catId,
-            filter?.startDate,
-            filter?.endDate,
-          );
-          this.meals = localMeals;
-          this.pagination.totalCount = localMeals.length;
-          return this.meals;
-        }
-        catch (error) {
-          this.error = 'Failed to load offline data';
-          throw error;
-        }
-        finally {
-          this.loading = false;
-        }
-      }
+  const currentFilters = computed((): MealRecordFilter => filters.value);
 
-      // Check API cache first
-      const filtersChanged
-        = JSON.stringify(filter || {}) !== JSON.stringify(this.filters);
-      const cacheKey = createCacheKey('meals', JSON.stringify(filter || {}));
-      const cachedData = apiCache.get(cacheKey);
+  // Actions
+  const fetchMeals = async (filter?: MealRecordFilter, forceRefresh = false) => {
+    const { syncStatus } = useSync();
+    const offlineStorage = OfflineStorage.getInstance();
 
-      if (!forceRefresh && cachedData && !filtersChanged) {
-        this.meals = cachedData.meals;
-        this.pagination = cachedData.pagination;
-        return this.meals;
-      }
-
-      this.loading = true;
-      this.error = null;
-
-      // Update filters if provided
-      if (filter) {
-        this.filters = { ...filter };
-      }
-
+    // If offline, load from local storage
+    if (!syncStatus.value.isOnline) {
+      loading.value = true;
       try {
-        const query = new URLSearchParams();
-
-        // Add pagination
-        query.append(
-          'limit',
-          (this.filters.limit || this.pagination.pageSize).toString(),
+        const localMeals = offlineStorage.getMeals(
+          filter?.catId,
+          filter?.startDate,
+          filter?.endDate,
         );
-        query.append(
-          'offset',
-          (
-            this.filters.offset
-            || (this.pagination.currentPage - 1) * this.pagination.pageSize
-          ).toString(),
-        );
+        meals.value = localMeals;
+        pagination.value.totalCount = localMeals.length;
+        return meals.value;
+      }
+      catch (err) {
+        error.value = 'Failed to load offline data';
+        throw err;
+      }
+      finally {
+        loading.value = false;
+      }
+    }
 
-        // Add filters
-        if (this.filters.catId) query.append('catId', this.filters.catId);
-        if (this.filters.foodId) query.append('foodId', this.filters.foodId);
-        if (this.filters.startDate)
-          query.append('startDate', this.filters.startDate.toISOString());
-        if (this.filters.endDate)
-          query.append('endDate', this.filters.endDate.toISOString());
-        if (this.filters.foodType)
-          query.append('foodType', this.filters.foodType);
+    // Check API cache first
+    const filtersChanged
+      = JSON.stringify(filter || {}) !== JSON.stringify(filters.value);
+    const cacheKey = createCacheKey('meals', JSON.stringify(filter || {}));
+    const cachedData = apiCache.get(cacheKey);
 
-        const url = `/api/meals?${query.toString()}`;
+    if (!forceRefresh && cachedData && !filtersChanged) {
+      meals.value = cachedData.meals;
+      pagination.value = cachedData.pagination;
+      return meals.value;
+    }
 
-        const response = await $fetch<{
-          data: MealRecord[];
-          pagination: {
-            total: number;
-            page: number;
-            pageSize: number;
-            hasNext: boolean;
-            hasPrevious: boolean;
-          };
-        }>(url);
+    loading.value = true;
+    error.value = null;
 
-        this.meals = response.data.map(meal => ({
-          ...meal,
-          mealTime: new Date(meal.mealTime),
-          createdAt: new Date(meal.createdAt),
-          updatedAt: new Date(meal.updatedAt),
-        }));
+    // Update filters if provided
+    if (filter) {
+      filters.value = { ...filter };
+    }
 
-        // Update pagination
-        this.pagination = {
-          currentPage: response.pagination.page,
-          pageSize: response.pagination.pageSize,
-          totalCount: response.pagination.total,
-          hasNextPage: response.pagination.hasNext,
-          hasPreviousPage: response.pagination.hasPrevious,
+    try {
+      const query = new URLSearchParams();
+
+      // Add pagination
+      query.append(
+        'limit',
+        (filters.value.limit || pagination.value.pageSize).toString(),
+      );
+      query.append(
+        'offset',
+        (
+          filters.value.offset
+          || (pagination.value.currentPage - 1) * pagination.value.pageSize
+        ).toString(),
+      );
+
+      // Add filters
+      if (filters.value.catId) query.append('catId', filters.value.catId);
+      if (filters.value.foodId) query.append('foodId', filters.value.foodId);
+      if (filters.value.startDate)
+        query.append('startDate', filters.value.startDate.toISOString());
+      if (filters.value.endDate)
+        query.append('endDate', filters.value.endDate.toISOString());
+      if (filters.value.foodType)
+        query.append('foodType', filters.value.foodType);
+
+      const url = `/api/meals?${query.toString()}`;
+
+      const response = await $fetch<{
+        data: MealRecord[];
+        pagination: {
+          total: number;
+          page: number;
+          pageSize: number;
+          hasNext: boolean;
+          hasPrevious: boolean;
         };
+      }>(url);
 
-        // Cache the results
-        apiCache.set(cacheKey, {
-          meals: this.meals,
-          pagination: this.pagination,
+      meals.value = response.data.map(meal => ({
+        ...meal,
+        mealTime: new Date(meal.mealTime),
+        createdAt: new Date(meal.createdAt),
+        updatedAt: new Date(meal.updatedAt),
+      }));
+
+      // Update pagination
+      pagination.value = {
+        currentPage: response.pagination.page,
+        pageSize: response.pagination.pageSize,
+        totalCount: response.pagination.total,
+        hasNextPage: response.pagination.hasNext,
+        hasPreviousPage: response.pagination.hasPrevious,
+      };
+
+      // Cache the results
+      apiCache.set(cacheKey, {
+        meals: meals.value,
+        pagination: pagination.value,
+      });
+
+      cache.value.lastFetch = new Date();
+      lastUpdate.value = new Date();
+
+      return meals.value;
+    }
+    catch (err) {
+      // Fallback to offline data if available
+      try {
+        const localMeals = offlineStorage.getMeals(
+          filter?.catId,
+          filter?.startDate,
+          filter?.endDate,
+        );
+        if (localMeals.length > 0) {
+          meals.value = localMeals;
+          pagination.value.totalCount = localMeals.length;
+          error.value = 'Using offline data';
+          return meals.value;
+        }
+      }
+      catch {
+        // Ignore offline error, use original error
+      }
+
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch meals';
+      error.value = errorMessage;
+      throw new Error(errorMessage);
+    }
+    finally {
+      loading.value = false;
+    }
+  };
+
+  const createMeal = async (mealInput: MealRecordInput): Promise<MealRecord> => {
+    const { syncStatus, offlineOperations } = useSync();
+    loading.value = true;
+    error.value = null;
+
+    try {
+      if (syncStatus.value.isOnline) {
+        // Online: Create on server
+        const data = await $fetch<MealRecord>('/api/meals', {
+          method: 'POST',
+          body: mealInput,
         });
 
-        this.cache.lastFetch = new Date();
-        this.lastUpdate = new Date();
+        const newMeal = {
+          ...data,
+          mealTime: new Date(data.mealTime),
+          createdAt: new Date(data.createdAt),
+          updatedAt: new Date(data.updatedAt),
+        };
 
-        return this.meals;
-      }
-      catch (error) {
-        // Fallback to offline data if available
-        try {
-          const localMeals = offlineStorage.getMeals(
-            filter?.catId,
-            filter?.startDate,
-            filter?.endDate,
-          );
-          if (localMeals.length > 0) {
-            this.meals = localMeals;
-            this.pagination.totalCount = localMeals.length;
-            this.error = 'Using offline data';
-            return this.meals;
-          }
-        }
-        catch {
-          // Ignore offline error, use original error
-        }
+        // Add to beginning of meals array (most recent first)
+        meals.value.unshift(newMeal);
+        pagination.value.totalCount += 1;
+        lastUpdate.value = new Date();
 
-        this.error
-          = error instanceof Error ? error.message : 'Failed to fetch meals';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async createMeal(mealInput: MealRecordInput): Promise<MealRecord> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Create on server
-          const data = await $fetch<MealRecord>('/api/meals', {
-            method: 'POST',
-            body: mealInput,
-          });
-
-          const newMeal = {
-            ...data,
-            mealTime: new Date(data.mealTime),
-            createdAt: new Date(data.createdAt),
-            updatedAt: new Date(data.updatedAt),
-          };
-
-          // Add to beginning of meals array (most recent first)
-          this.meals.unshift(newMeal);
-          this.pagination.totalCount += 1;
-          this.lastUpdate = new Date();
-
-          // Invalidate related cache
-          invalidateRelatedCache('meals');
-
-          // Trigger real-time update if enabled
-          if (this.realTimeEnabled) {
-            this.invalidateCache();
-          }
-
-          return newMeal;
-        }
-        else {
-          // Offline: Create locally with temporary ID
-          const localId = offlineOperations.addMeal({
-            catId: mealInput.catId,
-            foodId: mealInput.foodId,
-            quantity: mealInput.quantity,
-            calories: mealInput.calories || 0,
-            mealTime: new Date(mealInput.mealTime),
-            notes: mealInput.notes,
-          });
-
-          const newMeal: MealRecord = {
-            id: localId,
-            catId: mealInput.catId,
-            foodId: mealInput.foodId,
-            quantity: mealInput.quantity,
-            calories: mealInput.calories || 0,
-            mealTime: new Date(mealInput.mealTime),
-            notes: mealInput.notes,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
-          this.meals.unshift(newMeal);
-          this.pagination.totalCount += 1;
-          this.lastUpdate = new Date();
-
-          return newMeal;
-        }
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error ? error.message : 'Failed to create meal';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async updateMeal(
-      id: string,
-      mealUpdate: MealRecordUpdate,
-    ): Promise<MealRecord> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Update on server
-          const data = await $fetch<MealRecord>(`/api/meals/${id}`, {
-            method: 'PUT' as any,
-            body: mealUpdate,
-          });
-
-          const updatedMeal = {
-            ...data,
-            mealTime: new Date(data.mealTime),
-            createdAt: new Date(data.createdAt),
-            updatedAt: new Date(data.updatedAt),
-          };
-
-          const index = this.meals.findIndex(meal => meal.id === id);
-          if (index !== -1) {
-            this.meals[index] = updatedMeal;
-          }
-
-          this.lastUpdate = new Date();
-
-          // Trigger real-time update if enabled
-          if (this.realTimeEnabled) {
-            this.invalidateCache();
-          }
-
-          return updatedMeal;
-        }
-        else {
-          // Offline: Update locally
-          offlineOperations.updateMeal(id, mealUpdate);
-
-          const index = this.meals.findIndex(meal => meal.id === id);
-          if (index !== -1) {
-            const updatedMeal = {
-              ...this.meals[index],
-              ...mealUpdate,
-              mealTime: mealUpdate.mealTime
-                ? new Date(mealUpdate.mealTime)
-                : this.meals[index]?.mealTime,
-              updatedAt: new Date(),
-            };
-            const validatedMeal = {
-              ...updatedMeal,
-              id: updatedMeal.id || this.meals[index]?.id || '',
-            };
-            this.meals[index] = validatedMeal as MealRecord;
-            this.lastUpdate = new Date();
-            return validatedMeal as MealRecord;
-          }
-
-          throw new Error('Meal not found');
-        }
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error ? error.message : 'Failed to update meal';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async deleteMeal(id: string): Promise<void> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Delete on server
-          await $fetch(`/api/meals/${id}`, {
-            method: 'DELETE' as any,
-          });
-        }
-        else {
-          // Offline: Mark for deletion
-          offlineOperations.deleteMeal(id);
-        }
-
-        this.meals = this.meals.filter(meal => meal.id !== id);
-        this.pagination.totalCount = Math.max(
-          0,
-          this.pagination.totalCount - 1,
-        );
-        this.lastUpdate = new Date();
+        // Invalidate related cache
+        invalidateRelatedCache('meals');
 
         // Trigger real-time update if enabled
-        if (this.realTimeEnabled) {
-          this.invalidateCache();
+        if (realTimeEnabled.value) {
+          invalidateCache();
         }
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error ? error.message : 'Failed to delete meal';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
 
-    // Pagination actions
-    async nextPage() {
-      if (this.pagination.hasNextPage) {
-        this.pagination.currentPage += 1;
-        this.filters.offset
-          = (this.pagination.currentPage - 1) * this.pagination.pageSize;
-        await this.fetchMeals(this.filters, true);
-      }
-    },
-
-    async previousPage() {
-      if (this.pagination.hasPreviousPage) {
-        this.pagination.currentPage -= 1;
-        this.filters.offset
-          = (this.pagination.currentPage - 1) * this.pagination.pageSize;
-        await this.fetchMeals(this.filters, true);
-      }
-    },
-
-    async goToPage(page: number) {
-      if (page >= 1 && page <= this.totalPages) {
-        this.pagination.currentPage = page;
-        this.filters.offset = (page - 1) * this.pagination.pageSize;
-        await this.fetchMeals(this.filters, true);
-      }
-    },
-
-    setPageSize(size: number) {
-      this.pagination.pageSize = size;
-      this.pagination.currentPage = 1;
-      this.filters.limit = size;
-      this.filters.offset = 0;
-    },
-
-    // Filter actions
-    setFilters(filters: MealRecordFilter) {
-      this.filters = { ...filters };
-      this.pagination.currentPage = 1;
-      this.filters.offset = 0;
-    },
-
-    clearFilters() {
-      this.filters = {};
-      this.pagination.currentPage = 1;
-    },
-
-    // Real-time update actions
-    enableRealTimeUpdates() {
-      this.realTimeEnabled = true;
-    },
-
-    disableRealTimeUpdates() {
-      this.realTimeEnabled = false;
-    },
-
-    async refreshData() {
-      await this.fetchMeals(this.filters, true);
-    },
-
-    // Utility actions
-    clearError() {
-      this.error = null;
-    },
-
-    invalidateCache() {
-      this.cache.lastFetch = null;
-    },
-
-    // Local state management methods
-    addMealToState(meal: MealRecord) {
-      const existingIndex = this.meals.findIndex(m => m.id === meal.id);
-      if (existingIndex !== -1) {
-        this.meals[existingIndex] = meal;
+        return newMeal;
       }
       else {
-        this.meals.unshift(meal); // Add to beginning for chronological order
+        // Offline: Create locally with temporary ID
+        const localId = offlineOperations.addMeal({
+          catId: mealInput.catId,
+          foodId: mealInput.foodId,
+          quantity: mealInput.quantity,
+          calories: mealInput.calories || 0,
+          mealTime: new Date(mealInput.mealTime),
+          notes: mealInput.notes,
+        });
+
+        const newMeal: MealRecord = {
+          id: localId,
+          catId: mealInput.catId,
+          foodId: mealInput.foodId,
+          quantity: mealInput.quantity,
+          calories: mealInput.calories || 0,
+          mealTime: new Date(mealInput.mealTime),
+          notes: mealInput.notes,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        meals.value.unshift(newMeal);
+        pagination.value.totalCount += 1;
+        lastUpdate.value = new Date();
+
+        return newMeal;
       }
-      this.lastUpdate = new Date();
-    },
+    }
+    catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create meal';
+      error.value = errorMessage;
+      throw new Error(errorMessage);
+    }
+    finally {
+      loading.value = false;
+    }
+  };
 
-    removeMealFromState(id: string) {
-      this.meals = this.meals.filter(meal => meal.id !== id);
-      this.pagination.totalCount = Math.max(0, this.pagination.totalCount - 1);
-      this.lastUpdate = new Date();
-    },
+  const updateMeal = async (
+    id: string,
+    mealUpdate: MealRecordUpdate,
+  ): Promise<MealRecord> => {
+    const { syncStatus, offlineOperations } = useSync();
+    loading.value = true;
+    error.value = null;
 
-    // Load offline data into state
-    loadOfflineData() {
-      const offlineStorage = OfflineStorage.getInstance();
-      this.meals = offlineStorage.getMeals();
-    },
+    try {
+      if (syncStatus.value.isOnline) {
+        // Online: Update on server
+        const data = await $fetch<MealRecord>(`/api/meals/${id}`, {
+          method: 'PUT',
+          body: mealUpdate,
+        });
 
-    // Bulk operations
-    async bulkDeleteMeals(ids: string[]): Promise<void> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
+        const updatedMeal = {
+          ...data,
+          mealTime: new Date(data.mealTime),
+          createdAt: new Date(data.createdAt),
+          updatedAt: new Date(data.updatedAt),
+        };
 
-      try {
-        if (syncStatus.value.isOnline) {
-          await $fetch('/api/meals/bulk-delete', {
-            method: 'POST' as any,
-            body: { ids },
-          });
+        const index = meals.value.findIndex(meal => meal.id === id);
+        if (index !== -1) {
+          meals.value[index] = updatedMeal;
         }
-        else {
-          // Offline: Mark all for deletion
-          ids.forEach(id => offlineOperations.deleteMeal(id));
+
+        lastUpdate.value = new Date();
+
+        // Trigger real-time update if enabled
+        if (realTimeEnabled.value) {
+          invalidateCache();
         }
 
-        this.meals = this.meals.filter(meal => !ids.includes(meal.id));
-        this.pagination.totalCount = Math.max(
-          0,
-          this.pagination.totalCount - ids.length,
-        );
-        this.lastUpdate = new Date();
+        return updatedMeal;
+      }
+      else {
+        // Offline: Update locally
+        offlineOperations.updateMeal(id, mealUpdate);
 
-        if (this.realTimeEnabled) {
-          this.invalidateCache();
+        const index = meals.value.findIndex(meal => meal.id === id);
+        if (index !== -1) {
+          const updatedMeal = {
+            ...meals.value[index],
+            ...mealUpdate,
+            mealTime: mealUpdate.mealTime
+              ? new Date(mealUpdate.mealTime)
+              : meals.value[index]?.mealTime,
+            updatedAt: new Date(),
+          };
+          const validatedMeal = {
+            ...updatedMeal,
+            id: updatedMeal.id || meals.value[index]?.id || '',
+          };
+          meals.value[index] = validatedMeal as MealRecord;
+          lastUpdate.value = new Date();
+          return validatedMeal as MealRecord;
         }
+
+        throw new Error('Meal not found');
       }
-      catch (error) {
-        this.error
-          = error instanceof Error ? error.message : 'Failed to delete meals';
-        throw error;
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to update meal';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
+
+  const deleteMeal = async (id: string): Promise<void> => {
+    const { syncStatus, offlineOperations } = useSync();
+    loading.value = true;
+    error.value = null;
+
+    try {
+      if (syncStatus.value.isOnline) {
+        // Online: Delete on server
+        await $fetch(`/api/meals/${id}`, {
+          method: 'DELETE',
+        } as any);
       }
-      finally {
-        this.loading = false;
+      else {
+        // Offline: Mark for deletion
+        offlineOperations.deleteMeal(id);
       }
-    },
-  },
+
+      meals.value = meals.value.filter(meal => meal.id !== id);
+      pagination.value.totalCount = Math.max(
+        0,
+        pagination.value.totalCount - 1,
+      );
+      lastUpdate.value = new Date();
+
+      // Trigger real-time update if enabled
+      if (realTimeEnabled.value) {
+        invalidateCache();
+      }
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to delete meal';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
+
+  // Pagination actions
+  const nextPage = async () => {
+    if (pagination.value.hasNextPage) {
+      pagination.value.currentPage += 1;
+      filters.value.offset
+        = (pagination.value.currentPage - 1) * pagination.value.pageSize;
+      await fetchMeals(filters.value, true);
+    }
+  };
+
+  const previousPage = async () => {
+    if (pagination.value.hasPreviousPage) {
+      pagination.value.currentPage -= 1;
+      filters.value.offset
+        = (pagination.value.currentPage - 1) * pagination.value.pageSize;
+      await fetchMeals(filters.value, true);
+    }
+  };
+
+  const goToPage = async (page: number) => {
+    if (page >= 1 && page <= totalPages.value) {
+      pagination.value.currentPage = page;
+      filters.value.offset = (page - 1) * pagination.value.pageSize;
+      await fetchMeals(filters.value, true);
+    }
+  };
+
+  const setPageSize = (size: number) => {
+    pagination.value.pageSize = size;
+    pagination.value.currentPage = 1;
+    filters.value.limit = size;
+    filters.value.offset = 0;
+  };
+
+  // Filter actions
+  const setFilters = (newFilters: MealRecordFilter) => {
+    filters.value = { ...newFilters };
+    pagination.value.currentPage = 1;
+    filters.value.offset = 0;
+  };
+
+  const clearFilters = () => {
+    filters.value = {};
+    pagination.value.currentPage = 1;
+  };
+
+  // Real-time update actions
+  const enableRealTimeUpdates = () => {
+    realTimeEnabled.value = true;
+  };
+
+  const disableRealTimeUpdates = () => {
+    realTimeEnabled.value = false;
+  };
+
+  const refreshData = async () => {
+    await fetchMeals(filters.value, true);
+  };
+
+  // Utility actions
+  const clearError = () => {
+    error.value = null;
+  };
+
+  const invalidateCache = () => {
+    cache.value.lastFetch = null;
+  };
+
+  // Local state management methods
+  const addMealToState = (meal: MealRecord) => {
+    const existingIndex = meals.value.findIndex(m => m.id === meal.id);
+    if (existingIndex !== -1) {
+      meals.value[existingIndex] = meal;
+    }
+    else {
+      meals.value.unshift(meal); // Add to beginning for chronological order
+    }
+    lastUpdate.value = new Date();
+  };
+
+  const removeMealFromState = (id: string) => {
+    meals.value = meals.value.filter(meal => meal.id !== id);
+    pagination.value.totalCount = Math.max(0, pagination.value.totalCount - 1);
+    lastUpdate.value = new Date();
+  };
+
+  // Load offline data into state
+  const loadOfflineData = () => {
+    const offlineStorage = OfflineStorage.getInstance();
+    meals.value = offlineStorage.getMeals();
+  };
+
+  // Bulk operations
+  const bulkDeleteMeals = async (ids: string[]): Promise<void> => {
+    const { syncStatus, offlineOperations } = useSync();
+    loading.value = true;
+    error.value = null;
+
+    try {
+      if (syncStatus.value.isOnline) {
+        await $fetch('/api/meals/bulk-delete', {
+          method: 'POST',
+          body: { ids },
+        } as any);
+      }
+      else {
+        // Offline: Mark all for deletion
+        ids.forEach(id => offlineOperations.deleteMeal(id));
+      }
+
+      meals.value = meals.value.filter(meal => !ids.includes(meal.id));
+      pagination.value.totalCount = Math.max(
+        0,
+        pagination.value.totalCount - ids.length,
+      );
+      lastUpdate.value = new Date();
+
+      if (realTimeEnabled.value) {
+        invalidateCache();
+      }
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to delete meals';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
+
+  return {
+    // State
+    meals,
+    loading,
+    error,
+    pagination,
+    filters,
+    cache,
+    realTimeEnabled,
+    lastUpdate,
+    // Getters
+    getMealById,
+    getMealsByCat,
+    getMealsByFood,
+    getMealsByDateRange,
+    todaysMeals,
+    recentMeals,
+    totalPages,
+    isLoading,
+    hasError,
+    isCacheValid,
+    currentFilters,
+    // Actions
+    fetchMeals,
+    createMeal,
+    updateMeal,
+    deleteMeal,
+    nextPage,
+    previousPage,
+    goToPage,
+    setPageSize,
+    setFilters,
+    clearFilters,
+    enableRealTimeUpdates,
+    disableRealTimeUpdates,
+    refreshData,
+    clearError,
+    invalidateCache,
+    addMealToState,
+    removeMealFromState,
+    loadOfflineData,
+    bulkDeleteMeals,
+  };
 });

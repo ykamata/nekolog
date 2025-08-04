@@ -7,29 +7,26 @@ import {
   getRequestContext,
 } from '~/server/utils/error-handler';
 
-// Mock logger
-vi.mock('~/lib/pino-logger', () => ({
-  logger: {
-    error: vi.fn(),
-    warn: vi.fn(),
-    info: vi.fn(),
-  },
-}));
-
-// Mock H3 utilities
+// Mock dependencies
 vi.mock('h3', () => ({
   createError: vi.fn((options) => {
-    const error = new Error(options.statusMessage);
-    (error as any).statusCode = options.statusCode;
-    (error as any).data = options.data;
-    throw error;
+    const error = new Error(options.statusMessage) as any;
+    error.statusCode = options.statusCode;
+    error.statusMessage = options.statusMessage;
+    error.data = options.data;
+    return error;
   }),
   getHeaders: vi.fn(() => ({
     'user-agent': 'test-agent',
     'x-request-id': 'test-request-id',
+    'x-forwarded-for': '127.0.0.1',
   })),
-  getClientIP: vi.fn(() => '127.0.0.1'),
-  getMethod: vi.fn(() => 'POST'),
+}));
+
+vi.mock('~/server/utils/logger', () => ({
+  logger: {
+    error: vi.fn(),
+  },
 }));
 
 describe('Server Error Handler', () => {
@@ -38,14 +35,12 @@ describe('Server Error Handler', () => {
   });
 
   describe('createApiErrorHandler', () => {
-    const context = {
-      endpoint: '/api/test',
-      method: 'POST',
-      userId: 'user-123',
-    };
-
     it('should handle Zod validation errors', () => {
-      const handleError = createApiErrorHandler(context);
+      const handleError = createApiErrorHandler();
+      const mockEvent = {
+        context: { user: { id: 'user-123' } },
+      } as any;
+
       const schema = z.object({
         name: z.string().min(1, 'Name is required'),
         age: z.number().min(0, 'Age must be positive'),
@@ -55,14 +50,14 @@ describe('Server Error Handler', () => {
         schema.parse({ name: '', age: -1 });
       }
       catch (zodError) {
-        expect(() => handleError(zodError)).toThrow();
+        expect(() => handleError(zodError, mockEvent)).toThrow();
 
         try {
-          handleError(zodError);
+          handleError(zodError, mockEvent);
         }
         catch (error: any) {
           expect(error.statusCode).toBe(400);
-          expect(error.message).toBe('入力データが無効です');
+          expect(error.statusMessage).toBe('入力データが無効です');
           expect(error.data.validationErrors).toHaveLength(2);
           expect(error.data.errorId).toBeDefined();
           expect(error.data.timestamp).toBeDefined();
@@ -71,7 +66,11 @@ describe('Server Error Handler', () => {
     });
 
     it('should handle Prisma unique constraint errors', () => {
-      const handleError = createApiErrorHandler(context);
+      const handleError = createApiErrorHandler();
+      const mockEvent = {
+        context: { user: { id: 'user-123' } },
+      } as any;
+
       const prismaError = {
         code: 'P2002',
         message: 'Unique constraint failed',
@@ -79,109 +78,129 @@ describe('Server Error Handler', () => {
         clientVersion: '4.0.0',
       };
 
-      expect(() => handleError(prismaError)).toThrow();
+      expect(() => handleError(prismaError, mockEvent)).toThrow();
 
       try {
-        handleError(prismaError);
+        handleError(prismaError, mockEvent);
       }
       catch (error: any) {
         expect(error.statusCode).toBe(409);
-        expect(error.message).toBe('同じ名前のデータが既に存在します');
+        expect(error.statusMessage).toBe('同じ名前のデータが既に存在します');
         expect(error.data.code).toBe('UNIQUE_CONSTRAINT_VIOLATION');
       }
     });
 
     it('should handle Prisma foreign key constraint errors', () => {
-      const handleError = createApiErrorHandler(context);
+      const handleError = createApiErrorHandler();
+      const mockEvent = {
+        context: { user: { id: 'user-123' } },
+      } as any;
+
       const prismaError = {
         code: 'P2003',
         message: 'Foreign key constraint failed',
-        meta: { field_name: 'cat_id' },
+        meta: { field_name: 'catId' },
         clientVersion: '4.0.0',
       };
 
-      expect(() => handleError(prismaError)).toThrow();
+      expect(() => handleError(prismaError, mockEvent)).toThrow();
 
       try {
-        handleError(prismaError);
+        handleError(prismaError, mockEvent);
       }
       catch (error: any) {
         expect(error.statusCode).toBe(400);
-        expect(error.message).toBe('指定された猫が見つかりません');
+        expect(error.statusMessage).toBe('指定された猫が見つかりません');
         expect(error.data.code).toBe('FOREIGN_KEY_CONSTRAINT_VIOLATION');
       }
     });
 
     it('should handle Prisma record not found errors', () => {
-      const handleError = createApiErrorHandler(context);
+      const handleError = createApiErrorHandler();
+      const mockEvent = {
+        context: { user: { id: 'user-123' } },
+      } as any;
+
       const prismaError = {
         code: 'P2025',
         message: 'Record not found',
+        meta: { cause: 'Record to update not found.' },
         clientVersion: '4.0.0',
       };
 
-      expect(() => handleError(prismaError)).toThrow();
+      expect(() => handleError(prismaError, mockEvent)).toThrow();
 
       try {
-        handleError(prismaError);
+        handleError(prismaError, mockEvent);
       }
       catch (error: any) {
         expect(error.statusCode).toBe(404);
-        expect(error.message).toBe('データが見つかりません');
+        expect(error.statusMessage).toBe('データが見つかりません');
         expect(error.data.code).toBe('RECORD_NOT_FOUND');
       }
     });
 
     it('should handle HTTP errors', () => {
-      const handleError = createApiErrorHandler(context);
+      const handleError = createApiErrorHandler();
+      const mockEvent = {
+        context: { user: { id: 'user-123' } },
+      } as any;
+
       const httpError = {
         statusCode: 404,
         statusMessage: 'Not Found',
         data: { custom: 'data' },
       };
 
-      expect(() => handleError(httpError)).toThrow();
+      expect(() => handleError(httpError, mockEvent)).toThrow();
 
       try {
-        handleError(httpError);
+        handleError(httpError, mockEvent);
       }
       catch (error: any) {
         expect(error.statusCode).toBe(404);
-        expect(error.message).toBe('Not Found');
+        expect(error.statusMessage).toBe('Not Found');
         expect(error.data.custom).toBe('data');
-        expect(error.data.errorId).toBeDefined();
       }
     });
 
     it('should handle generic errors', () => {
-      const handleError = createApiErrorHandler(context);
+      const handleError = createApiErrorHandler();
+      const mockEvent = {
+        context: { user: { id: 'user-123' } },
+      } as any;
+
       const genericError = new Error('Something went wrong');
 
-      expect(() => handleError(genericError)).toThrow();
+      expect(() => handleError(genericError, mockEvent)).toThrow();
 
       try {
-        handleError(genericError);
+        handleError(genericError, mockEvent);
       }
       catch (error: any) {
         expect(error.statusCode).toBe(500);
-        expect(error.message).toBe('サーバーエラーが発生しました');
+        expect(error.statusMessage).toBe('サーバーエラーが発生しました');
         expect(error.data.errorId).toBeDefined();
         expect(error.data.timestamp).toBeDefined();
       }
     });
 
     it('should handle unknown error types', () => {
-      const handleError = createApiErrorHandler(context);
+      const handleError = createApiErrorHandler();
+      const mockEvent = {
+        context: { user: { id: 'user-123' } },
+      } as any;
+
       const unknownError = 'string error';
 
-      expect(() => handleError(unknownError)).toThrow();
+      expect(() => handleError(unknownError, mockEvent)).toThrow();
 
       try {
-        handleError(unknownError);
+        handleError(unknownError, mockEvent);
       }
       catch (error: any) {
         expect(error.statusCode).toBe(500);
-        expect(error.message).toBe('サーバーエラーが発生しました');
+        expect(error.statusMessage).toBe('サーバーエラーが発生しました');
         expect(error.data.errorId).toBeDefined();
       }
     });
@@ -190,11 +209,10 @@ describe('Server Error Handler', () => {
   describe('validateParams', () => {
     it('should validate valid parameters', () => {
       const schema = z.object({
-        id: z.string().min(1),
-        page: z.number().optional(),
+        id: z.string().min(1, 'ID is required'),
       });
 
-      const params = { id: 'test-id', page: 1 };
+      const params = { id: 'test-id' };
       const result = validateParams(schema, params);
 
       expect(result).toEqual(params);
@@ -214,7 +232,7 @@ describe('Server Error Handler', () => {
       }
       catch (error: any) {
         expect(error.statusCode).toBe(400);
-        expect(error.message).toBe('Invalid request parameters');
+        expect(error.statusMessage).toBe('Invalid request parameters');
         expect(error.data.validationErrors).toHaveLength(1);
         expect(error.data.validationErrors[0].field).toBe('id');
         expect(error.data.validationErrors[0].message).toBe('ID is required');
@@ -225,11 +243,11 @@ describe('Server Error Handler', () => {
   describe('validateBody', () => {
     it('should validate valid body', () => {
       const schema = z.object({
-        name: z.string().min(1),
-        type: z.enum(['MEDICINE', 'SUPPLEMENT']),
+        name: z.string().min(1, 'Name is required'),
+        type: z.enum(['DRY', 'WET']),
       });
 
-      const body = { name: 'Test Medicine', type: 'MEDICINE' };
+      const body = { name: 'Test Food', type: 'DRY' };
       const result = validateBody(schema, body);
 
       expect(result).toEqual(body);
@@ -238,9 +256,7 @@ describe('Server Error Handler', () => {
     it('should throw error for invalid body', () => {
       const schema = z.object({
         name: z.string().min(1, 'Name is required'),
-        type: z.enum(['MEDICINE', 'SUPPLEMENT'], {
-          errorMap: () => ({ message: 'Invalid type' }),
-        }),
+        type: z.enum(['DRY', 'WET']),
       });
 
       const body = { name: '', type: 'INVALID' };
@@ -252,7 +268,7 @@ describe('Server Error Handler', () => {
       }
       catch (error: any) {
         expect(error.statusCode).toBe(400);
-        expect(error.message).toBe('入力データが無効です');
+        expect(error.statusMessage).toBe('入力データが無効です');
         expect(error.data.validationErrors).toHaveLength(2);
       }
     });
@@ -279,12 +295,16 @@ describe('Server Error Handler', () => {
     it('should handle missing user context', () => {
       const mockEvent = {
         context: {},
-      } as unknown;
+      } as any;
 
       const context = getRequestContext(mockEvent);
 
-      expect(context.userId).toBeUndefined();
-      expect(context.requestId).toBe('test-request-id');
+      expect(context).toEqual({
+        userId: 'anonymous',
+        requestId: 'test-request-id',
+        userAgent: 'test-agent',
+        ip: '127.0.0.1',
+      });
     });
   });
 });

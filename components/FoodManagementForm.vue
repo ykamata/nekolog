@@ -30,8 +30,12 @@ const formData = reactive<FoodInput>({
 const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
 
-// Brand suggestions for auto-complete
-const brandSuggestions = ref<string[]>([
+// Dynamic suggestions from database
+const brandSuggestions = ref<string[]>([]);
+const productSuggestions = ref<string[]>([]);
+
+// Fallback suggestions for initial display
+const fallbackBrandSuggestions = [
   'ロイヤルカナン',
   'ヒルズ',
   'ピュリナ',
@@ -42,9 +46,9 @@ const brandSuggestions = ref<string[]>([
   'ウェルネス',
   'ブルーバッファロー',
   'サイエンスダイエット',
-]);
+];
 
-const productSuggestions = ref<string[]>([
+const fallbackProductSuggestions = [
   'キトン',
   'アダルト',
   'シニア',
@@ -57,12 +61,16 @@ const productSuggestions = ref<string[]>([
   'サーモン',
   'ターキー',
   'ビーフ',
-]);
+];
 
 const showBrandSuggestions = ref(false);
 const showProductSuggestions = ref(false);
 const filteredBrandSuggestions = ref<string[]>([]);
 const filteredProductSuggestions = ref<string[]>([]);
+
+// Debounce timers for API calls
+let brandDebounceTimer: NodeJS.Timeout | null = null;
+let productDebounceTimer: NodeJS.Timeout | null = null;
 
 // Initialize form data when food prop changes
 watch(
@@ -160,17 +168,60 @@ const handleReset = () => {
   errors.value = {};
 };
 
-// Auto-complete functionality
+// Auto-complete functionality with API integration
 const handleBrandInput = (event: Event) => {
   const target = event.target as HTMLInputElement;
   const value = target.value;
   formData.brand = value;
 
+  // Clear existing timer
+  if (brandDebounceTimer) {
+    clearTimeout(brandDebounceTimer);
+  }
+
   if (value.length > 0) {
-    filteredBrandSuggestions.value = brandSuggestions.value.filter(brand =>
+    // Show immediate local filtering
+    const localFiltered = brandSuggestions.value.filter(brand =>
       brand.toLowerCase().includes(value.toLowerCase()),
     );
-    showBrandSuggestions.value = filteredBrandSuggestions.value.length > 0;
+    filteredBrandSuggestions.value = localFiltered;
+    showBrandSuggestions.value = true;
+
+    // Debounced API call
+    brandDebounceTimer = setTimeout(async () => {
+      try {
+        const suggestions = await $fetch<string[]>('/api/foods/suggestions', {
+          query: {
+            type: 'brands',
+            query: value,
+            limit: 10,
+          },
+        });
+
+        // Combine API suggestions with fallback suggestions
+        const combinedSuggestions = [
+          ...suggestions,
+          ...fallbackBrandSuggestions.filter(brand =>
+            brand.toLowerCase().includes(value.toLowerCase())
+            && !suggestions.includes(brand),
+          ),
+        ];
+
+        filteredBrandSuggestions.value = combinedSuggestions.slice(0, 10);
+        showBrandSuggestions.value = filteredBrandSuggestions.value.length > 0;
+      }
+      catch {
+        // Keep local filtering if API fails
+        const localFiltered = [
+          ...brandSuggestions.value,
+          ...fallbackBrandSuggestions,
+        ].filter(brand =>
+          brand.toLowerCase().includes(value.toLowerCase()),
+        );
+        filteredBrandSuggestions.value = [...new Set(localFiltered)].slice(0, 10);
+        showBrandSuggestions.value = filteredBrandSuggestions.value.length > 0;
+      }
+    }, 300);
   }
   else {
     showBrandSuggestions.value = false;
@@ -182,11 +233,54 @@ const handleProductInput = (event: Event) => {
   const value = target.value;
   formData.name = value;
 
+  // Clear existing timer
+  if (productDebounceTimer) {
+    clearTimeout(productDebounceTimer);
+  }
+
   if (value.length > 0) {
-    filteredProductSuggestions.value = productSuggestions.value.filter(
-      product => product.toLowerCase().includes(value.toLowerCase()),
+    // Show immediate local filtering
+    const localFiltered = productSuggestions.value.filter(product =>
+      product.toLowerCase().includes(value.toLowerCase()),
     );
-    showProductSuggestions.value = filteredProductSuggestions.value.length > 0;
+    filteredProductSuggestions.value = localFiltered;
+    showProductSuggestions.value = true;
+
+    // Debounced API call
+    productDebounceTimer = setTimeout(async () => {
+      try {
+        const suggestions = await $fetch<string[]>('/api/foods/suggestions', {
+          query: {
+            type: 'names',
+            query: value,
+            limit: 10,
+          },
+        });
+
+        // Combine API suggestions with fallback suggestions
+        const combinedSuggestions = [
+          ...suggestions,
+          ...fallbackProductSuggestions.filter(product =>
+            product.toLowerCase().includes(value.toLowerCase())
+            && !suggestions.includes(product),
+          ),
+        ];
+
+        filteredProductSuggestions.value = combinedSuggestions.slice(0, 10);
+        showProductSuggestions.value = filteredProductSuggestions.value.length > 0;
+      }
+      catch {
+        // Keep local filtering if API fails
+        const localFiltered = [
+          ...productSuggestions.value,
+          ...fallbackProductSuggestions,
+        ].filter(product =>
+          product.toLowerCase().includes(value.toLowerCase()),
+        );
+        filteredProductSuggestions.value = [...new Set(localFiltered)].slice(0, 10);
+        showProductSuggestions.value = filteredProductSuggestions.value.length > 0;
+      }
+    }, 300);
   }
   else {
     showProductSuggestions.value = false;
@@ -197,7 +291,7 @@ const selectBrandSuggestion = (brand: string) => {
   formData.brand = brand;
   showBrandSuggestions.value = false;
 
-  // Add to suggestions if not already present
+  // Add to local suggestions cache if not already present
   if (!brandSuggestions.value.includes(brand)) {
     brandSuggestions.value.push(brand);
   }
@@ -207,7 +301,7 @@ const selectProductSuggestion = (product: string) => {
   formData.name = product;
   showProductSuggestions.value = false;
 
-  // Add to suggestions if not already present
+  // Add to local suggestions cache if not already present
   if (!productSuggestions.value.includes(product)) {
     productSuggestions.value.push(product);
   }
@@ -219,12 +313,35 @@ const handleClickOutside = () => {
   showProductSuggestions.value = false;
 };
 
+// Load initial suggestions on mount
+const loadInitialSuggestions = async () => {
+  try {
+    const response = await $fetch<{ brands: string[]; names: string[] }>('/api/foods/suggestions');
+    brandSuggestions.value = response.brands;
+    productSuggestions.value = response.names;
+  }
+  catch {
+    // Use fallback suggestions if API fails
+    brandSuggestions.value = [...fallbackBrandSuggestions];
+    productSuggestions.value = [...fallbackProductSuggestions];
+  }
+};
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
+  loadInitialSuggestions();
 });
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
+
+  // Clear debounce timers
+  if (brandDebounceTimer) {
+    clearTimeout(brandDebounceTimer);
+  }
+  if (productDebounceTimer) {
+    clearTimeout(productDebounceTimer);
+  }
 });
 </script>
 

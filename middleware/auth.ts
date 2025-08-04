@@ -3,6 +3,11 @@
  * This is a simplified version that redirects to login if not authenticated
  */
 export default defineNuxtRouteMiddleware(async (_to) => {
+  // テスト環境では認証をバイパス
+  if (process.env.PLAYWRIGHT_TEST) {
+    return;
+  }
+
   const { isAuthenticated, initializeAuth, refreshToken } = useAuth();
 
   // Initialize auth state if not already done

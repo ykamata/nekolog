@@ -1,30 +1,41 @@
-/**
- * Global type definitions for the Nuxt 3 TypeScript project
- */
+// 共通型定義
 
-// Re-export cat meal types for global access
-export * from './cat-meal';
-
-// Extend process.env with custom environment variables
-declare namespace NodeJS {
-  interface ProcessEnv {
-    NODE_ENV: 'development' | 'production' | 'test';
-    NUXT_PUBLIC_API_BASE?: string;
-  }
+export interface Cat {
+  id: string;
+  name: string;
+  weight?: number;
+  birthdate?: Date;
+  photoUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Extend Vue component options
-declare module 'vue' {
-  interface ComponentCustomProperties {
-    // Add any global properties here
-    $customProperty?: string;
-  }
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// Extend Nuxt context
-declare module '#app' {
-  interface NuxtApp {
-    // Add any Nuxt app extensions here
-    $customMethod?: () => void;
-  }
+// API共通レスポンス型
+export interface ApiResponse<T = any> {
+  data?: T;
+  message?: string;
+  error?: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+// エラー型
+export interface ApiError {
+  message: string;
+  code?: string;
+  details?: Record<string, any>;
 }

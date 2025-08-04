@@ -288,7 +288,7 @@ describe('Medication Validation Schemas', () => {
         catId: 'cat-1',
         medicationId: 'med-1',
         frequency: 'invalid_frequency',
-        times: ['08:00'],
+        times: JSON.stringify(['08:00']),
         startDate: new Date('2024-01-01'),
       };
 
@@ -302,7 +302,7 @@ describe('Medication Validation Schemas', () => {
         catId: 'cat-1',
         medicationId: 'med-1',
         frequency: 'daily',
-        times: ['25:00'], // Invalid hour
+        times: JSON.stringify(['25:00']), // Invalid hour
         startDate: new Date('2024-01-01'),
       };
 
@@ -316,7 +316,7 @@ describe('Medication Validation Schemas', () => {
         catId: 'cat-1',
         medicationId: 'med-1',
         frequency: 'daily',
-        times: [],
+        times: JSON.stringify([]),
         startDate: new Date('2024-01-01'),
       };
 
@@ -344,7 +344,7 @@ describe('Medication Validation Schemas', () => {
         catId: 'cat-1',
         medicationId: 'med-1',
         frequency: 'daily',
-        times: ['08:00'],
+        times: JSON.stringify(['08:00']),
         startDate: new Date('2024-12-31'),
         endDate: new Date('2024-01-01'),
       };

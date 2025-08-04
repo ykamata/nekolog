@@ -1,312 +1,321 @@
 import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
 import type { Cat, CatInput, CatUpdate, CatFilter } from '~/types/cat-meal';
 import { OfflineStorage } from '~/utils/offline-storage';
 import { useSync } from '~/composables/useSync';
 
-interface CatsState {
-  cats: Cat[];
-  loading: boolean;
-  error: string | null;
-  cache: {
-    lastFetch: Date | null;
-    ttl: number; // Time to live in milliseconds
+export const useCatsStore = defineStore('cats', () => {
+  // State
+  const cats = ref<Cat[]>([]);
+  const loading = ref(false);
+  const error = ref<string | null>(null);
+  const cache = ref({
+    lastFetch: null as Date | null,
+    ttl: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Getters
+  const getCatById = computed(() =>
+    (id: string): Cat | undefined => {
+      return cats.value.find(cat => cat.id === id);
+    },
+  );
+
+  const getCatsByName = computed(() =>
+    (name: string): Cat[] => {
+      return cats.value.filter(cat =>
+        cat.name.toLowerCase().includes(name.toLowerCase()),
+      );
+    },
+  );
+
+  const sortedCats = computed((): Cat[] => {
+    return [...cats.value].sort((a, b) => a.name.localeCompare(b.name));
+  });
+
+  const isLoading = computed((): boolean => loading.value);
+
+  const hasError = computed((): boolean => !!error.value);
+
+  const isCacheValid = computed((): boolean => {
+    if (!cache.value.lastFetch) return false;
+    const now = new Date();
+    const timeDiff = now.getTime() - cache.value.lastFetch.getTime();
+    return timeDiff < cache.value.ttl;
+  });
+
+  // Actions
+  const fetchCats = async (filter?: CatFilter, forceRefresh = false) => {
+    const { syncStatus } = useSync();
+    const offlineStorage = OfflineStorage.getInstance();
+
+    // If offline, load from local storage
+    if (!syncStatus.value.isOnline) {
+      loading.value = true;
+      try {
+        const localCats = offlineStorage.getCats();
+        cats.value = localCats;
+        return cats.value;
+      }
+      catch (err) {
+        error.value = 'Failed to load offline data';
+        throw err;
+      }
+      finally {
+        loading.value = false;
+      }
+    }
+
+    // Use cache if valid and not forcing refresh
+    if (!forceRefresh && isCacheValid.value && cats.value.length > 0) {
+      return cats.value;
+    }
+
+    loading.value = true;
+    error.value = null;
+
+    try {
+      const query = new URLSearchParams();
+      if (filter?.name) query.append('name', filter.name);
+      if (filter?.limit) query.append('limit', filter.limit.toString());
+      if (filter?.offset) query.append('offset', filter.offset.toString());
+
+      const queryString = query.toString();
+      const url = `/api/cats${queryString ? `?${queryString}` : ''}`;
+
+      const data = await $fetch<Cat[]>(url);
+
+      cats.value = data.map(cat => ({
+        ...cat,
+        birthdate: cat.birthdate ? new Date(cat.birthdate) : undefined,
+        createdAt: new Date(cat.createdAt),
+        updatedAt: new Date(cat.updatedAt),
+      }));
+
+      cache.value.lastFetch = new Date();
+      return cats.value;
+    }
+    catch (err) {
+      // Fallback to offline data if available
+      try {
+        const localCats = offlineStorage.getCats();
+        if (localCats.length > 0) {
+          cats.value = localCats;
+          error.value = 'Using offline data';
+          return cats.value;
+        }
+      }
+      catch {
+        // Ignore offline error, use original error
+      }
+
+      error.value = err instanceof Error ? err.message : 'Failed to fetch cats';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
   };
-}
 
-export const useCatsStore = defineStore('cats', {
-  state: (): CatsState => ({
-    cats: [],
-    loading: false,
-    error: null,
-    cache: {
-      lastFetch: null,
-      ttl: 5 * 60 * 1000, // 5 minutes
-    },
-  }),
+  const createCat = async (catInput: CatInput): Promise<Cat> => {
+    const { syncStatus, offlineOperations } = useSync();
+    loading.value = true;
+    error.value = null;
 
-  getters: {
-    getCatById:
-      state =>
-        (id: string): Cat | undefined => {
-          return state.cats.find(cat => cat.id === id);
-        },
+    try {
+      if (syncStatus.value.isOnline) {
+        // Online: Create on server
+        const data = await $fetch<Cat>('/api/cats', {
+          method: 'POST',
+          body: catInput,
+        });
 
-    getCatsByName:
-      state =>
-        (name: string): Cat[] => {
-          return state.cats.filter(cat =>
-            cat.name.toLowerCase().includes(name.toLowerCase()),
-          );
-        },
+        const newCat = {
+          ...data,
+          birthdate: data.birthdate ? new Date(data.birthdate) : undefined,
+          createdAt: new Date(data.createdAt),
+          updatedAt: new Date(data.updatedAt),
+        };
 
-    sortedCats: (state): Cat[] => {
-      return [...state.cats].sort((a, b) => a.name.localeCompare(b.name));
-    },
-
-    isLoading: (state): boolean => state.loading,
-
-    hasError: (state): boolean => !!state.error,
-
-    isCacheValid: (state): boolean => {
-      if (!state.cache.lastFetch) return false;
-      const now = new Date();
-      const timeDiff = now.getTime() - state.cache.lastFetch.getTime();
-      return timeDiff < state.cache.ttl;
-    },
-  },
-
-  actions: {
-    async fetchCats(filter?: CatFilter, forceRefresh = false) {
-      const { syncStatus } = useSync();
-      const offlineStorage = OfflineStorage.getInstance();
-
-      // If offline, load from local storage
-      if (!syncStatus.value.isOnline) {
-        this.loading = true;
-        try {
-          const localCats = offlineStorage.getCats();
-          this.cats = localCats;
-          return this.cats;
-        }
-        catch (error) {
-          this.error = 'Failed to load offline data';
-          throw error;
-        }
-        finally {
-          this.loading = false;
-        }
-      }
-
-      // Use cache if valid and not forcing refresh
-      if (!forceRefresh && this.isCacheValid && this.cats.length > 0) {
-        return this.cats;
-      }
-
-      this.loading = true;
-      this.error = null;
-
-      try {
-        const query = new URLSearchParams();
-        if (filter?.name) query.append('name', filter.name);
-        if (filter?.limit) query.append('limit', filter.limit.toString());
-        if (filter?.offset) query.append('offset', filter.offset.toString());
-
-        const queryString = query.toString();
-        const url = `/api/cats${queryString ? `?${queryString}` : ''}`;
-
-        const data = await $fetch<Cat[]>(url);
-
-        this.cats = data.map(cat => ({
-          ...cat,
-          birthdate: cat.birthdate ? new Date(cat.birthdate) : undefined,
-          createdAt: new Date(cat.createdAt),
-          updatedAt: new Date(cat.updatedAt),
-        }));
-
-        this.cache.lastFetch = new Date();
-        return this.cats;
-      }
-      catch (error) {
-        // Fallback to offline data if available
-        try {
-          const localCats = offlineStorage.getCats();
-          if (localCats.length > 0) {
-            this.cats = localCats;
-            this.error = 'Using offline data';
-            return this.cats;
-          }
-        }
-        catch {
-          // Ignore offline error, use original error
-        }
-
-        this.error
-          = error instanceof Error ? error.message : 'Failed to fetch cats';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async createCat(catInput: CatInput): Promise<Cat> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Create on server
-          const data = await $fetch<Cat>('/api/cats', {
-            method: 'POST',
-            body: catInput,
-          });
-
-          const newCat = {
-            ...data,
-            birthdate: data.birthdate ? new Date(data.birthdate) : undefined,
-            createdAt: new Date(data.createdAt),
-            updatedAt: new Date(data.updatedAt),
-          };
-
-          this.cats.push(newCat);
-          return newCat;
-        }
-        else {
-          // Offline: Create locally with temporary ID
-          const localId = offlineOperations.addCat({
-            name: catInput.name,
-            birthdate: catInput.birthdate
-              ? new Date(catInput.birthdate)
-              : undefined,
-            weight: catInput.weight,
-            photoUrl: catInput.photoUrl,
-          });
-
-          const newCat: Cat = {
-            id: localId,
-            name: catInput.name,
-            birthdate: catInput.birthdate
-              ? new Date(catInput.birthdate)
-              : undefined,
-            weight: catInput.weight,
-            photoUrl: catInput.photoUrl,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          };
-
-          this.cats.push(newCat);
-          return newCat;
-        }
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error ? error.message : 'Failed to create cat';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async updateCat(id: string, catUpdate: CatUpdate): Promise<Cat> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Update on server
-          const data = await $fetch<Cat>(`/api/cats/${id}`, {
-            method: 'PUT' as any,
-            body: catUpdate,
-          });
-
-          const updatedCat = {
-            ...data,
-            birthdate: data.birthdate ? new Date(data.birthdate) : undefined,
-            createdAt: new Date(data.createdAt),
-            updatedAt: new Date(data.updatedAt),
-          };
-
-          const index = this.cats.findIndex(cat => cat.id === id);
-          if (index !== -1) {
-            this.cats[index] = updatedCat;
-          }
-
-          return updatedCat;
-        }
-        else {
-          // Offline: Update locally
-          offlineOperations.updateCat(id, catUpdate);
-
-          const index = this.cats.findIndex(cat => cat.id === id);
-          if (index !== -1) {
-            const updatedCat = {
-              ...this.cats[index],
-              ...catUpdate,
-              birthdate: catUpdate.birthdate
-                ? new Date(catUpdate.birthdate)
-                : this.cats[index]?.birthdate,
-              updatedAt: new Date(),
-            };
-            const validatedCat = {
-              ...updatedCat,
-              id: updatedCat.id || this.cats[index]?.id || '',
-            };
-            this.cats[index] = validatedCat as Cat;
-            return validatedCat as Cat;
-          }
-
-          throw new Error('Cat not found');
-        }
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error ? error.message : 'Failed to update cat';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    async deleteCat(id: string): Promise<void> {
-      const { syncStatus, offlineOperations } = useSync();
-      this.loading = true;
-      this.error = null;
-
-      try {
-        if (syncStatus.value.isOnline) {
-          // Online: Delete on server
-          await $fetch(`/api/cats/${id}`, {
-            method: 'DELETE' as any,
-          });
-        }
-        else {
-          // Offline: Mark for deletion
-          offlineOperations.deleteCat(id);
-        }
-
-        this.cats = this.cats.filter(cat => cat.id !== id);
-      }
-      catch (error) {
-        this.error
-          = error instanceof Error ? error.message : 'Failed to delete cat';
-        throw error;
-      }
-      finally {
-        this.loading = false;
-      }
-    },
-
-    clearError() {
-      this.error = null;
-    },
-
-    invalidateCache() {
-      this.cache.lastFetch = null;
-    },
-
-    // Local state management methods
-    addCatToState(cat: Cat) {
-      const existingIndex = this.cats.findIndex(c => c.id === cat.id);
-      if (existingIndex !== -1) {
-        this.cats[existingIndex] = cat;
+        cats.value.push(newCat);
+        return newCat;
       }
       else {
-        this.cats.push(cat);
+        // Offline: Create locally with temporary ID
+        const localId = offlineOperations.addCat({
+          name: catInput.name,
+          birthdate: catInput.birthdate
+            ? new Date(catInput.birthdate)
+            : undefined,
+          weight: catInput.weight,
+          photoUrl: catInput.photoUrl,
+        });
+
+        const newCat: Cat = {
+          id: localId,
+          name: catInput.name,
+          birthdate: catInput.birthdate
+            ? new Date(catInput.birthdate)
+            : undefined,
+          weight: catInput.weight,
+          photoUrl: catInput.photoUrl,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        cats.value.push(newCat);
+        return newCat;
       }
-    },
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to create cat';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
 
-    removeCatFromState(id: string) {
-      this.cats = this.cats.filter(cat => cat.id !== id);
-    },
+  const updateCat = async (id: string, catUpdate: CatUpdate): Promise<Cat> => {
+    const { syncStatus, offlineOperations } = useSync();
+    loading.value = true;
+    error.value = null;
 
-    // Load offline data into state
-    loadOfflineData() {
-      const offlineStorage = OfflineStorage.getInstance();
-      this.cats = offlineStorage.getCats();
-    },
-  },
+    try {
+      if (syncStatus.value.isOnline) {
+        // Online: Update on server
+        const data = await $fetch<Cat>(`/api/cats/${id}`, {
+          method: 'PUT',
+          body: catUpdate,
+        });
+
+        const updatedCat = {
+          ...data,
+          birthdate: data.birthdate ? new Date(data.birthdate) : undefined,
+          createdAt: new Date(data.createdAt),
+          updatedAt: new Date(data.updatedAt),
+        };
+
+        const index = cats.value.findIndex(cat => cat.id === id);
+        if (index !== -1) {
+          cats.value[index] = updatedCat;
+        }
+
+        return updatedCat;
+      }
+      else {
+        // Offline: Update locally
+        offlineOperations.updateCat(id, catUpdate);
+
+        const index = cats.value.findIndex(cat => cat.id === id);
+        if (index !== -1) {
+          const updatedCat = {
+            ...cats.value[index],
+            ...catUpdate,
+            birthdate: catUpdate.birthdate
+              ? new Date(catUpdate.birthdate)
+              : cats.value[index]?.birthdate,
+            updatedAt: new Date(),
+          };
+          const validatedCat = {
+            ...updatedCat,
+            id: updatedCat.id || cats.value[index]?.id || '',
+          };
+          cats.value[index] = validatedCat as Cat;
+          return validatedCat as Cat;
+        }
+
+        throw new Error('Cat not found');
+      }
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to update cat';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
+
+  const deleteCat = async (id: string): Promise<void> => {
+    const { syncStatus, offlineOperations } = useSync();
+    loading.value = true;
+    error.value = null;
+
+    try {
+      if (syncStatus.value.isOnline) {
+        // Online: Delete on server
+        await $fetch(`/api/cats/${id}`, {
+          method: 'DELETE',
+        });
+      }
+      else {
+        // Offline: Mark for deletion
+        offlineOperations.deleteCat(id);
+      }
+
+      cats.value = cats.value.filter(cat => cat.id !== id);
+    }
+    catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to delete cat';
+      throw err;
+    }
+    finally {
+      loading.value = false;
+    }
+  };
+
+  const clearError = () => {
+    error.value = null;
+  };
+
+  const invalidateCache = () => {
+    cache.value.lastFetch = null;
+  };
+
+  // Local state management methods
+  const addCatToState = (cat: Cat) => {
+    const existingIndex = cats.value.findIndex(c => c.id === cat.id);
+    if (existingIndex !== -1) {
+      cats.value[existingIndex] = cat;
+    }
+    else {
+      cats.value.push(cat);
+    }
+  };
+
+  const removeCatFromState = (id: string) => {
+    cats.value = cats.value.filter(cat => cat.id !== id);
+  };
+
+  // Load offline data into state
+  const loadOfflineData = () => {
+    const offlineStorage = OfflineStorage.getInstance();
+    cats.value = offlineStorage.getCats();
+  };
+
+  return {
+    // State
+    cats,
+    loading,
+    error,
+    cache,
+    // Getters
+    getCatById,
+    getCatsByName,
+    sortedCats,
+    isLoading,
+    hasError,
+    isCacheValid,
+    // Actions
+    fetchCats,
+    createCat,
+    updateCat,
+    deleteCat,
+    clearError,
+    invalidateCache,
+    addCatToState,
+    removeCatFromState,
+    loadOfflineData,
+  };
 });

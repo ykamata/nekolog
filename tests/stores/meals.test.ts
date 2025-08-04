@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useMealsStore } from '~/stores/meals';
+import { OfflineStorage } from '~/utils/offline-storage';
 import type {
   MealRecord,
   MealRecordInput,
@@ -10,6 +11,17 @@ import type {
 // Mock $fetch
 const mockFetch = vi.fn();
 vi.stubGlobal('$fetch', mockFetch);
+
+// Mock OfflineStorage
+vi.mock('~/utils/offline-storage', () => ({
+  OfflineStorage: {
+    getInstance: vi.fn(() => ({
+      getMeals: vi.fn(),
+      saveMeals: vi.fn(),
+      clearMeals: vi.fn(),
+    })),
+  },
+}));
 
 describe('useMealsStore', () => {
   beforeEach(() => {
@@ -186,6 +198,9 @@ describe('useMealsStore', () => {
       const error = new Error('Fetch failed');
       mockFetch.mockRejectedValueOnce(error);
 
+      // オフラインストレージのモックも空の配列を返すように設定
+      vi.mocked(OfflineStorage.getInstance().getMeals).mockReturnValue([]);
+
       await expect(store.fetchMeals()).rejects.toThrow('Fetch failed');
       expect(store.error).toBe('Fetch failed');
     });
@@ -194,7 +209,7 @@ describe('useMealsStore', () => {
   describe('createMeal', () => {
     it('should create meal successfully', async () => {
       const store = useMealsStore();
-      mockFetch.mockResolvedValueOnce({ data: mockMeal });
+      mockFetch.mockResolvedValueOnce(mockMeal);
 
       const result = await store.createMeal(mockMealInput);
 
@@ -211,6 +226,9 @@ describe('useMealsStore', () => {
       const error = new Error('Create failed');
       mockFetch.mockRejectedValueOnce(error);
 
+      // オフラインストレージのモックも設定
+      vi.mocked(OfflineStorage.getInstance().getMeals).mockReturnValue([]);
+
       await expect(store.createMeal(mockMealInput)).rejects.toThrow(
         'Create failed',
       );
@@ -223,7 +241,7 @@ describe('useMealsStore', () => {
       const store = useMealsStore();
       store.meals = [mockMeal];
       const updatedMeal = { ...mockMeal, quantity: 60 };
-      mockFetch.mockResolvedValueOnce({ data: updatedMeal });
+      mockFetch.mockResolvedValueOnce(updatedMeal);
 
       const mealUpdate: MealRecordUpdate = { quantity: 60 };
       const result = await store.updateMeal('1', mealUpdate);

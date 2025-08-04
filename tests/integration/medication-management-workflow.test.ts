@@ -315,7 +315,7 @@ describe('Medication Management Workflow Integration', () => {
           catId: testCat.id,
           medicationId: testMedication.id,
           frequency: 'daily',
-          times: ['08:00'],
+          times: JSON.stringify(['08:00']),
           startDate: new Date('2024-01-01'),
           isActive: true,
         },
@@ -377,7 +377,7 @@ describe('Medication Management Workflow Integration', () => {
           catId: testCat.id,
           medicationId: testMedication.id,
           frequency: 'daily',
-          times: ['08:00'],
+          times: JSON.stringify(['08:00']),
           startDate: new Date('2024-01-01'),
           isActive: true,
         },
@@ -461,7 +461,7 @@ describe('Medication Management Workflow Integration', () => {
           catId: testCat.id,
           medicationId: testMedication.id,
           frequency: 'daily',
-          times: ['08:00'],
+          times: JSON.stringify(['08:00']),
           startDate: new Date('2024-01-01'),
           isActive: true,
         },
@@ -472,7 +472,7 @@ describe('Medication Management Workflow Integration', () => {
           catId: secondCat.id,
           medicationId: testMedication.id,
           frequency: 'twice_daily',
-          times: ['08:00', '20:00'],
+          times: JSON.stringify(['08:00', '20:00']),
           startDate: new Date('2024-01-01'),
           isActive: true,
         },
@@ -594,7 +594,7 @@ describe('Medication Management Workflow Integration', () => {
           catId: testCat.id,
           medicationId: testMedication.id,
           frequency: 'daily',
-          times: ['08:00'],
+          times: JSON.stringify(['08:00']),
           startDate: new Date('2024-01-01'),
           isActive: true,
         },
@@ -605,7 +605,7 @@ describe('Medication Management Workflow Integration', () => {
           catId: secondCat.id,
           medicationId: medication2.id,
           frequency: 'weekly',
-          times: ['10:00'],
+          times: JSON.stringify(['10:00']),
           startDate: new Date('2024-01-01'),
           isActive: true,
         },
@@ -707,8 +707,8 @@ describe('Medication Management Workflow Integration', () => {
       });
 
       expect(jan15Records).toHaveLength(2);
-      expect(jan15Records[0].administeredAt.getHours()).toBe(8);
-      expect(jan15Records[1].administeredAt.getHours()).toBe(20);
+      expect(jan15Records[0].administeredAt.getUTCHours()).toBe(8);
+      expect(jan15Records[1].administeredAt.getUTCHours()).toBe(20);
 
       // Query records for date range
       const weekRecords = await prisma.medicationRecord.findMany({
@@ -771,7 +771,7 @@ describe('Medication Management Workflow Integration', () => {
           catId: testCat.id,
           medicationId: testMedication.id,
           frequency: 'three_times_daily',
-          times: ['08:00', '14:00', '20:00'],
+          times: JSON.stringify(['08:00', '14:00', '20:00']),
           startDate: new Date('2024-01-01'),
           isActive: true,
         },
@@ -856,7 +856,7 @@ describe('Medication Management Workflow Integration', () => {
           catId: testCat.id,
           medicationId: testMedication.id,
           frequency: 'daily',
-          times: ['08:00'],
+          times: JSON.stringify(['08:00']),
           startDate: new Date('2024-01-01'),
           isActive: true,
         },
@@ -926,7 +926,7 @@ describe('Medication Management Workflow Integration', () => {
           catId: testCat.id,
           medicationId: testMedication.id,
           frequency: 'daily',
-          times: ['08:00'],
+          times: JSON.stringify(['08:00']),
           startDate: new Date('2024-01-01'),
           isActive: true,
         },

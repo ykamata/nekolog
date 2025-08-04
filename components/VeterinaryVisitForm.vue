@@ -9,7 +9,7 @@ import type {
   VeterinaryTreatment,
 } from '~/types/veterinary-visit';
 import { VeterinaryVisitFormSchema } from '~/lib/validations/veterinary-visit';
-import { parseApiError, formatValidationErrors, createDebouncedValidator } from '~/utils/error-handling';
+import { parseApiError, formatValidationErrors, createDebouncedValidator, errorInfoToApiError } from '~/utils/error-handling';
 import { useToast } from '~/composables/useToast';
 
 interface Props {
@@ -58,6 +58,35 @@ const newTreatmentName = ref('');
 
 const { error: showErrorToast } = useToast();
 
+// Responsive state
+const isMobile = ref(false);
+const isTablet = ref(false);
+
+// Check screen size
+const checkScreenSize = () => {
+  if (typeof window !== 'undefined') {
+    isMobile.value = window.innerWidth <= 768;
+    isTablet.value = window.innerWidth > 768 && window.innerWidth <= 1024;
+  }
+};
+
+onMounted(() => {
+  checkScreenSize();
+  window.addEventListener('resize', checkScreenSize);
+});
+
+onUnmounted(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', checkScreenSize);
+  }
+});
+
+// Methods
+const clearErrors = () => {
+  errors.value = {};
+  submitError.value = '';
+};
+
 // Initialize form data when visit prop changes
 watch(
   () => props.visit,
@@ -67,7 +96,7 @@ watch(
       formData.visitDate = new Date(visit.visitDate);
       formData.hospitalName = visit.hospital.name;
       formData.doctorName = visit.doctor?.name || '';
-      formData.treatments = visit.treatments.map(t => t.treatment.name);
+      formData.treatments = visit.treatments.map(t => t.treatment?.name || 'Unknown Treatment');
       formData.cost = visit.cost;
       formData.notes = visit.notes || '';
       formData.hasBloodTest = visit.hasBloodTest;
@@ -87,6 +116,31 @@ watch(
   },
   { immediate: true },
 );
+
+const loadMasterData = async () => {
+  loadingMasterData.value = true;
+  try {
+    const [hospitalsResponse, doctorsResponse, treatmentsResponse] = await Promise.all([
+      $fetch<VeterinaryHospital[]>('/api/veterinary-hospitals'),
+      $fetch<VeterinaryDoctor[]>('/api/veterinary-doctors'),
+      $fetch<VeterinaryTreatment[]>('/api/veterinary-treatments'),
+    ]);
+
+    hospitals.value = hospitalsResponse;
+    doctors.value = doctorsResponse;
+    treatments.value = treatmentsResponse;
+  }
+  catch (error) {
+    console.error('Failed to load master data:', error);
+    showErrorToast({
+      title: 'データの読み込みに失敗しました',
+      message: 'マスタデータの取得に失敗しました',
+    });
+  }
+  finally {
+    loadingMasterData.value = false;
+  }
+};
 
 // Load master data when component is opened
 watch(
@@ -150,55 +204,24 @@ const formTitle = computed(() =>
 );
 
 const filteredHospitals = computed(() => {
-  if (!formData.hospitalName) return hospitals.value;
-  return hospitals.value.filter(h =>
+  if (!formData.hospitalName) return hospitals.value || [];
+  return hospitals.value?.filter(h =>
     h.name.toLowerCase().includes(formData.hospitalName.toLowerCase()),
-  );
+  ) || [];
 });
 
 const filteredDoctors = computed(() => {
-  if (!formData.doctorName) return doctors.value;
-  return doctors.value.filter(d =>
+  if (!formData.doctorName) return doctors.value || [];
+  return doctors.value?.filter(d =>
     d.name.toLowerCase().includes((formData.doctorName || '').toLowerCase()),
-  );
+  ) || [];
 });
 
 const filteredTreatments = computed(() => {
-  return treatments.value.filter(t =>
+  return treatments.value?.filter(t =>
     !formData.treatments.includes(t.name),
-  );
+  ) || [];
 });
-
-// Methods
-const loadMasterData = async () => {
-  loadingMasterData.value = true;
-  try {
-    const [hospitalsResponse, doctorsResponse, treatmentsResponse] = await Promise.all([
-      $fetch<VeterinaryHospital[]>('/api/veterinary-hospitals'),
-      $fetch<VeterinaryDoctor[]>('/api/veterinary-doctors'),
-      $fetch<VeterinaryTreatment[]>('/api/veterinary-treatments'),
-    ]);
-
-    hospitals.value = hospitalsResponse;
-    doctors.value = doctorsResponse;
-    treatments.value = treatmentsResponse;
-  }
-  catch (error) {
-    console.error('Failed to load master data:', error);
-    showErrorToast({
-      title: 'データの読み込みに失敗しました',
-      message: 'マスタデータの取得に失敗しました',
-    });
-  }
-  finally {
-    loadingMasterData.value = false;
-  }
-};
-
-const clearErrors = () => {
-  errors.value = {};
-  submitError.value = '';
-};
 
 const validateForm = (): boolean => {
   // Clear previous field errors but keep submit errors
@@ -297,7 +320,8 @@ const handleSubmit = async () => {
     retryCount.value = 0;
   }
   catch (error) {
-    const apiError = parseApiError(error);
+    const errorInfo = parseApiError(error);
+    const apiError = errorInfoToApiError(errorInfo);
 
     // Handle validation errors from server
     if (apiError.validationErrors) {
@@ -402,12 +426,18 @@ const handleDoctorBlur = () => {
 
       <form
         class="veterinary-visit-form"
+        :class="{
+          'mobile-layout': isMobile,
+          'tablet-layout': isTablet,
+        }"
+        data-testid="visit-form"
         @submit.prevent="handleSubmit"
       >
         <!-- Submit Error Display -->
         <div
           v-if="submitError"
           class="form-error-banner"
+          data-testid="submit-error"
         >
           <div class="error-icon">
             <svg
@@ -457,6 +487,7 @@ const handleDoctorBlur = () => {
             class="form-input"
             :class="{ 'form-input--error': errors.catId }"
             data-testid="cat-select"
+            aria-required="true"
           >
             <option value="">
               猫を選択してください
@@ -503,20 +534,21 @@ const handleDoctorBlur = () => {
         <!-- 病院名 -->
         <div class="form-group">
           <label
-            for="hospital-name"
+            for="hospital-input"
             class="form-label"
           >
             病院名 <span class="required">*</span>
           </label>
           <div class="autocomplete-container">
             <input
-              id="hospital-name"
+              id="hospital-input"
               v-model="formData.hospitalName"
               type="text"
               class="form-input"
               :class="{ 'form-input--error': errors.hospitalName }"
               placeholder="病院名を入力してください"
               data-testid="hospital-input"
+              aria-required="true"
               @focus="showHospitalInput = true"
               @blur="handleHospitalBlur"
             >
@@ -665,24 +697,26 @@ const handleDoctorBlur = () => {
         <!-- 費用 -->
         <div class="form-group">
           <label
-            for="cost"
+            for="cost-input"
             class="form-label"
           >
             費用（円） <span class="required">*</span>
           </label>
           <input
-            id="cost"
+            id="cost-input"
             v-model.number="formData.cost"
             type="number"
             min="0"
             max="1000000"
             class="form-input"
             :class="{ 'form-input--error': errors.cost }"
+            :aria-describedby="errors.cost ? 'cost-error' : undefined"
             placeholder="0"
             data-testid="cost-input"
           >
           <span
             v-if="errors.cost"
+            id="cost-error"
             class="form-error"
           >{{ errors.cost }}</span>
         </div>
@@ -714,6 +748,7 @@ const handleDoctorBlur = () => {
             placeholder="診察内容や気になることを記録してください"
             rows="3"
             maxlength="1000"
+            data-testid="notes-textarea"
           />
           <span
             v-if="errors.notes"
