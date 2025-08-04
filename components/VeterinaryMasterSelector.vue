@@ -1,349 +1,148 @@
-<script setup lang="ts" generic="T extends { id: string; name: string }">
+<script setup lang="ts">
+interface MasterItem {
+  id: string;
+  name: string;
+}
+
 interface Props {
   modelValue: string;
-  items: T[];
-  placeholder?: string;
-  label?: string;
-  required?: boolean;
-  disabled?: boolean;
+  items: MasterItem[];
   loading?: boolean;
+  disabled?: boolean;
   error?: string;
-  allowNew?: boolean;
-  displayField?: keyof T;
-  searchFields?: (keyof T)[];
-  maxDisplayItems?: number;
+  placeholder?: string;
+  required?: boolean;
+  id?: string;
+  ariaRequired?: string;
 }
 
 interface Emits {
   (e: 'update:modelValue', value: string): void;
-  (e: 'select', item: T): void;
   (e: 'create', name: string): void;
-  (e: 'search', query: string): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placeholder: '選択してください',
-  displayField: 'name' as keyof T,
-  searchFields: () => ['name'] as (keyof T)[],
-  maxDisplayItems: 10,
-  allowNew: true,
+  loading: false,
+  disabled: false,
+  required: false,
+  placeholder: '選択または入力してください',
 });
 
 const emit = defineEmits<Emits>();
 
-// Local state
-const isOpen = ref(false);
-const searchQuery = ref('');
-const selectedIndex = ref(-1);
-const inputRef = ref<HTMLInputElement>();
-const dropdownRef = ref<HTMLElement>();
+const inputValue = ref(props.modelValue);
+const showDropdown = ref(false);
+const isCreating = ref(false);
 
-// Computed properties
 const filteredItems = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return props.items.slice(0, props.maxDisplayItems);
-  }
-
-  const query = searchQuery.value.toLowerCase().trim();
-  return props.items
-    .filter((item) => {
-      return props.searchFields.some((field) => {
-        const value = item[field];
-        return typeof value === 'string' && value.toLowerCase().includes(query);
-      });
-    })
-    .slice(0, props.maxDisplayItems);
-});
-
-const showCreateOption = computed(() => {
-  if (!props.allowNew || !searchQuery.value.trim()) return false;
-
-  const exactMatch = props.items.some(item =>
-    (item as any)[props.displayField] === searchQuery.value.trim(),
+  if (!inputValue.value) return props.items;
+  return props.items.filter(item =>
+    item.name.toLowerCase().includes(inputValue.value.toLowerCase()),
   );
-
-  return !exactMatch;
 });
 
-const displayValue = computed(() => {
-  if (searchQuery.value) return searchQuery.value;
-
-  const selectedItem = props.items.find(item => item.id === props.modelValue);
-  return selectedItem ? String((selectedItem as any)[props.displayField]) : '';
+const exactMatch = computed(() => {
+  return props.items.find(item => item.name === inputValue.value);
 });
 
-// Methods
-const openDropdown = () => {
-  if (props.disabled) return;
-
-  isOpen.value = true;
-  selectedIndex.value = -1;
-  searchQuery.value = displayValue.value;
-
-  nextTick(() => {
-    inputRef.value?.focus();
-    inputRef.value?.select();
-  });
-};
-
-const closeDropdown = () => {
-  isOpen.value = false;
-  selectedIndex.value = -1;
-
-  // Reset search query to display value
-  searchQuery.value = displayValue.value;
-};
-
-const selectItem = (item: T) => {
-  emit('update:modelValue', item.id);
-  emit('select', item);
-  searchQuery.value = String((item as any)[props.displayField]);
-  closeDropdown();
-};
-
-const createNewItem = () => {
-  if (!searchQuery.value.trim()) return;
-
-  emit('create', searchQuery.value.trim());
-  closeDropdown();
-};
+const canCreate = computed(() => {
+  return inputValue.value && !exactMatch.value && !props.loading;
+});
 
 const handleInput = (event: Event) => {
   const target = event.target as HTMLInputElement;
-  searchQuery.value = target.value;
-  selectedIndex.value = -1;
+  inputValue.value = target.value;
+  emit('update:modelValue', target.value);
+  showDropdown.value = true;
+};
 
-  // Emit search event for external filtering
-  emit('search', target.value);
+const selectItem = (item: MasterItem) => {
+  inputValue.value = item.name;
+  emit('update:modelValue', item.name);
+  showDropdown.value = false;
+};
 
-  if (!isOpen.value) {
-    isOpen.value = true;
+const createNew = async () => {
+  if (!canCreate.value) return;
+
+  isCreating.value = true;
+  try {
+    emit('create', inputValue.value);
+    showDropdown.value = false;
+  }
+  finally {
+    isCreating.value = false;
   }
 };
 
-const handleKeydown = (event: KeyboardEvent) => {
-  if (!isOpen.value) {
-    if (event.key === 'ArrowDown' || event.key === 'Enter') {
-      event.preventDefault();
-      openDropdown();
-    }
-    return;
-  }
-
-  const totalItems = filteredItems.value.length + (showCreateOption.value ? 1 : 0);
-
-  switch (event.key) {
-    case 'ArrowDown':
-      event.preventDefault();
-      selectedIndex.value = Math.min(selectedIndex.value + 1, totalItems - 1);
-      scrollToSelected();
-      break;
-
-    case 'ArrowUp':
-      event.preventDefault();
-      selectedIndex.value = Math.max(selectedIndex.value - 1, -1);
-      scrollToSelected();
-      break;
-
-    case 'Enter':
-      event.preventDefault();
-      if (selectedIndex.value >= 0) {
-        if (selectedIndex.value < filteredItems.value.length) {
-          const item = filteredItems.value[selectedIndex.value];
-          if (item) selectItem(item);
-        }
-        else if (showCreateOption.value) {
-          createNewItem();
-        }
-      }
-      else if (filteredItems.value.length === 1) {
-        const item = filteredItems.value[0];
-        if (item) selectItem(item);
-      }
-      else if (showCreateOption.value) {
-        createNewItem();
-      }
-      break;
-
-    case 'Escape':
-      event.preventDefault();
-      closeDropdown();
-      break;
-
-    case 'Tab':
-      closeDropdown();
-      break;
-  }
+const handleFocus = () => {
+  showDropdown.value = true;
 };
 
-const scrollToSelected = () => {
-  if (!dropdownRef.value || selectedIndex.value < 0) return;
-
-  const selectedElement = dropdownRef.value.children[selectedIndex.value] as HTMLElement;
-  if (selectedElement) {
-    selectedElement.scrollIntoView({
-      block: 'nearest',
-      behavior: 'smooth',
-    });
-  }
+const handleBlur = () => {
+  // Delay hiding dropdown to allow for clicks
+  setTimeout(() => {
+    showDropdown.value = false;
+  }, 200);
 };
 
-const handleClickOutside = (event: Event) => {
-  const target = event.target as Element;
-  if (!inputRef.value?.contains(target) && !dropdownRef.value?.contains(target)) {
-    closeDropdown();
-  }
-};
-
-// Lifecycle
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
-});
-
-// Watch for external value changes
 watch(() => props.modelValue, (newValue) => {
-  if (!isOpen.value) {
-    const selectedItem = props.items.find(item => item.id === newValue);
-    searchQuery.value = selectedItem ? String((selectedItem as any)[props.displayField]) : '';
-  }
+  inputValue.value = newValue;
 });
 </script>
 
 <template>
   <div class="master-selector">
-    <label
-      v-if="label"
-      class="selector-label"
-      :class="{ 'selector-label--required': required }"
-    >
-      {{ label }}
-      <span
-        v-if="required"
-        class="required-mark"
-      >*</span>
-    </label>
-
-    <div
-      class="selector-container"
-      :class="{
-        'selector-container--open': isOpen,
-        'selector-container--error': error,
-        'selector-container--disabled': disabled,
-      }"
-    >
+    <div class="input-container">
       <input
-        ref="inputRef"
-        :value="searchQuery"
+        :id="id"
+        v-model="inputValue"
         type="text"
-        class="selector-input"
+        class="master-input"
+        :class="{ 'master-input--error': error }"
         :placeholder="placeholder"
-        :disabled="disabled"
-        autocomplete="off"
+        :disabled="disabled || loading"
+        :required="required"
+        :aria-required="ariaRequired"
         @input="handleInput"
-        @keydown="handleKeydown"
-        @focus="openDropdown"
+        @focus="handleFocus"
+        @blur="handleBlur"
       >
-
-      <div class="selector-icons">
-        <div
-          v-if="loading"
-          class="loading-spinner"
-        />
-        <svg
-          v-else
-          class="dropdown-arrow"
-          :class="{ 'dropdown-arrow--open': isOpen }"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </div>
 
       <div
-        v-if="isOpen"
-        ref="dropdownRef"
-        class="selector-dropdown"
+        v-if="loading"
+        class="loading-indicator"
       >
-        <div
-          v-if="filteredItems.length === 0 && !showCreateOption"
-          class="dropdown-empty"
-        >
-          該当する項目がありません
-        </div>
-
-        <button
-          v-for="(item, index) in filteredItems"
-          :key="item.id"
-          type="button"
-          class="dropdown-item"
-          :class="{ 'dropdown-item--selected': index === selectedIndex }"
-          @click="selectItem(item)"
-        >
-          <div class="item-content">
-            <div class="item-name">
-              {{ (item as any)[displayField] }}
-            </div>
-            <div
-              v-if="'specialization' in item && item.specialization"
-              class="item-meta"
-            >
-              {{ item.specialization }}
-            </div>
-            <div
-              v-if="'category' in item && item.category"
-              class="item-meta"
-            >
-              {{ item.category }}
-            </div>
-          </div>
-        </button>
-
-        <button
-          v-if="showCreateOption"
-          type="button"
-          class="dropdown-item dropdown-item--create"
-          :class="{ 'dropdown-item--selected': selectedIndex === filteredItems.length }"
-          @click="createNewItem"
-        >
-          <div class="create-icon">
-            <svg
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-          </div>
-          <div class="item-content">
-            <div class="item-name">
-              「{{ searchQuery }}」を新規作成
-            </div>
-          </div>
-        </button>
+        <div class="spinner" />
       </div>
     </div>
 
     <div
-      v-if="error"
-      class="selector-error"
+      v-if="showDropdown && (filteredItems.length > 0 || canCreate)"
+      class="dropdown"
     >
-      {{ error }}
+      <div
+        v-for="item in filteredItems"
+        :key="item.id"
+        class="dropdown-item"
+        @click="selectItem(item)"
+      >
+        {{ item.name }}
+      </div>
+
+      <div
+        v-if="canCreate"
+        class="dropdown-item create-item"
+        :class="{ creating: isCreating }"
+        @click="createNew"
+      >
+        <span v-if="!isCreating">
+          「{{ inputValue }}」を新規作成
+        </span>
+        <span v-else>
+          作成中...
+        </span>
+      </div>
     </div>
   </div>
 </template>
@@ -351,86 +150,54 @@ watch(() => props.modelValue, (newValue) => {
 <style scoped>
 .master-selector {
   position: relative;
+  width: 100%;
 }
 
-.selector-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #333;
-}
-
-.selector-label--required {
-  color: #333;
-}
-
-.required-mark {
-  color: #e74c3c;
-  margin-left: 0.25rem;
-}
-
-.selector-container {
+.input-container {
   position: relative;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  background: white;
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.selector-container:focus-within {
+.master-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.master-input:focus {
+  outline: none;
   border-color: #4caf50;
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
-.selector-container--open {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.selector-container--error {
+.master-input--error {
   border-color: #e74c3c;
 }
 
-.selector-container--error:focus-within {
+.master-input--error:focus {
   border-color: #e74c3c;
   box-shadow: 0 0 0 2px rgba(231, 76, 60, 0.2);
 }
 
-.selector-container--disabled {
-  background-color: #f5f5f5;
+.master-input:disabled {
+  background: #f8f8f8;
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-.selector-input {
-  width: 100%;
-  padding: 0.75rem;
-  padding-right: 2.5rem;
-  border: none;
-  background: transparent;
-  font-size: 1rem;
-  outline: none;
-  font-family: inherit;
-}
-
-.selector-input:disabled {
-  cursor: not-allowed;
-  color: #999;
-}
-
-.selector-icons {
+.loading-indicator {
   position: absolute;
   right: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  pointer-events: none;
 }
 
-.loading-spinner {
+.spinner {
   width: 1rem;
   height: 1rem;
-  border: 2px solid #e0e0e0;
+  border: 2px solid #e2e8f0;
   border-top: 2px solid #4caf50;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -441,108 +208,43 @@ watch(() => props.modelValue, (newValue) => {
   100% { transform: rotate(360deg); }
 }
 
-.dropdown-arrow {
-  width: 1rem;
-  height: 1rem;
-  color: #666;
-  transition: transform 0.2s;
-}
-
-.dropdown-arrow--open {
-  transform: rotate(180deg);
-}
-
-.selector-dropdown {
+.dropdown {
   position: absolute;
   top: 100%;
-  left: -1px;
-  right: -1px;
+  left: 0;
+  right: 0;
   background: white;
-  border: 1px solid #ddd;
+  border: 1px solid #e2e8f0;
   border-top: none;
   border-radius: 0 0 4px 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
   max-height: 200px;
   overflow-y: auto;
-  z-index: 1000;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.dropdown-empty {
-  padding: 1rem;
-  text-align: center;
-  color: #666;
-  font-style: italic;
 }
 
 .dropdown-item {
-  display: flex;
-  align-items: center;
-  width: 100%;
   padding: 0.75rem;
-  border: none;
-  background: none;
-  text-align: left;
   cursor: pointer;
-  transition: background-color 0.2s;
-  gap: 0.75rem;
+  transition: background-color 0.2s ease;
 }
 
-.dropdown-item:hover,
-.dropdown-item--selected {
-  background-color: #f5f5f5;
+.dropdown-item:hover {
+  background-color: #f8f8f8;
 }
 
-.dropdown-item--create {
-  border-top: 1px solid #e0e0e0;
+.create-item {
+  border-top: 1px solid #e2e8f0;
   color: #4caf50;
-}
-
-.dropdown-item--create:hover,
-.dropdown-item--create.dropdown-item--selected {
-  background-color: #f0f8f0;
-}
-
-.create-icon {
-  width: 1rem;
-  height: 1rem;
-  flex-shrink: 0;
-}
-
-.create-icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-.item-content {
-  flex: 1;
-  min-width: 0;
-}
-
-.item-name {
   font-weight: 500;
-  color: #333;
-  margin-bottom: 0.125rem;
 }
 
-.item-meta {
-  font-size: 0.875rem;
-  color: #666;
+.create-item:hover {
+  background-color: #f0f9ff;
 }
 
-.selector-error {
-  margin-top: 0.25rem;
-  font-size: 0.875rem;
-  color: #e74c3c;
-}
-
-/* Mobile responsive */
-@media (max-width: 768px) {
-  .selector-dropdown {
-    max-height: 150px;
-  }
-
-  .dropdown-item {
-    padding: 1rem 0.75rem;
-  }
+.create-item.creating {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

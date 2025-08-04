@@ -307,18 +307,25 @@ onMounted(() => {
 
       <form
         class="appointment-form"
+        data-testid="appointment-form"
         @submit.prevent="handleSubmit"
       >
         <!-- Cat Selection -->
         <div class="form-group">
-          <label class="form-label required">
+          <label
+            for="cat-select"
+            class="form-label required"
+          >
             猫
           </label>
           <select
+            id="cat-select"
             v-model="formData.catId"
             class="form-select"
             :class="{ 'form-select--error': errors.catId }"
             :disabled="isSubmitting"
+            data-testid="cat-select"
+            aria-required="true"
             required
           >
             <option value="">
@@ -335,6 +342,7 @@ onMounted(() => {
           <div
             v-if="errors.catId"
             class="form-error"
+            data-testid="cat-error"
           >
             {{ errors.catId }}
           </div>
@@ -342,18 +350,25 @@ onMounted(() => {
 
         <!-- Appointment Date -->
         <div class="form-group">
-          <label class="form-label required">
+          <label
+            for="appointment-date"
+            class="form-label required"
+          >
             予約日時
           </label>
           <DateTimePicker
+            id="appointment-date"
             :value="formData.appointmentDate"
             :disabled="isSubmitting"
             :min-date="new Date()"
+            data-testid="appointment-date"
+            aria-required="true"
             @change="formData.appointmentDate = $event"
           />
           <div
             v-if="errors.appointmentDate"
             class="form-error"
+            data-testid="appointment-date-error"
           >
             {{ errors.appointmentDate }}
           </div>
@@ -361,50 +376,85 @@ onMounted(() => {
 
         <!-- Hospital Selection -->
         <div class="form-group">
+          <label
+            for="hospital-input"
+            class="form-label required"
+          >
+            病院
+          </label>
           <VeterinaryMasterSelector
+            id="hospital-input"
             v-model="formData.hospitalName"
             :items="hospitals"
             :loading="loadingHospitals"
             :disabled="isSubmitting"
             :error="errors.hospitalName"
-            label="病院"
             placeholder="病院を選択または入力してください"
+            data-testid="hospital-input"
+            aria-required="true"
             required
             @create="handleHospitalCreate"
           />
+          <div
+            v-if="errors.hospitalName"
+            class="form-error"
+            data-testid="hospital-error"
+          >
+            {{ errors.hospitalName }}
+          </div>
         </div>
 
         <!-- Doctor Selection -->
         <div class="form-group">
+          <label
+            for="doctor-input"
+            class="form-label"
+          >
+            先生
+          </label>
           <VeterinaryMasterSelector
+            id="doctor-input"
             :model-value="formData.doctorName || ''"
             :items="doctors"
             :loading="loadingDoctors"
             :disabled="isSubmitting"
             :error="errors.doctorName"
-            label="先生"
             placeholder="先生を選択または入力してください（任意）"
+            data-testid="doctor-input"
             @update:model-value="formData.doctorName = $event"
             @create="handleDoctorCreate"
           />
+          <div
+            v-if="errors.doctorName"
+            class="form-error"
+            data-testid="doctor-error"
+          >
+            {{ errors.doctorName }}
+          </div>
         </div>
 
         <!-- Planned Treatments -->
         <div class="form-group">
-          <label class="form-label">
+          <label
+            for="planned-treatments-textarea"
+            class="form-label"
+          >
             予定内容
           </label>
           <textarea
+            id="planned-treatments-textarea"
             v-model="formData.plannedTreatments"
             class="form-textarea"
             :class="{ 'form-textarea--error': errors.plannedTreatments }"
             :disabled="isSubmitting"
             placeholder="予定している診察や処置内容を入力してください"
+            data-testid="planned-treatments-textarea"
             rows="3"
           />
           <div
             v-if="errors.plannedTreatments"
             class="form-error"
+            data-testid="planned-treatments-error"
           >
             {{ errors.plannedTreatments }}
           </div>
@@ -412,20 +462,26 @@ onMounted(() => {
 
         <!-- Notes -->
         <div class="form-group">
-          <label class="form-label">
+          <label
+            for="notes"
+            class="form-label"
+          >
             メモ
           </label>
           <textarea
+            id="notes"
             v-model="formData.notes"
             class="form-textarea"
             :class="{ 'form-textarea--error': errors.notes }"
             :disabled="isSubmitting"
             placeholder="その他のメモがあれば入力してください"
+            data-testid="notes"
             rows="3"
           />
           <div
             v-if="errors.notes"
             class="form-error"
+            data-testid="notes-error"
           >
             {{ errors.notes }}
           </div>
@@ -435,6 +491,7 @@ onMounted(() => {
         <div
           v-if="submitError"
           class="submit-error"
+          data-testid="submit-error"
         >
           {{ submitError }}
           <span
@@ -452,6 +509,7 @@ onMounted(() => {
             type="button"
             class="convert-button"
             :disabled="isSubmitting"
+            data-testid="convert-to-visit-button"
             @click="handleConvertToVisit"
           >
             通院記録に変換
@@ -462,6 +520,7 @@ onMounted(() => {
               type="button"
               class="cancel-button"
               :disabled="isSubmitting"
+              data-testid="cancel-button"
               @click="handleClose"
             >
               キャンセル
@@ -470,6 +529,7 @@ onMounted(() => {
               type="submit"
               class="submit-button"
               :disabled="isSubmitting"
+              data-testid="submit-button"
             >
               <span
                 v-if="isSubmitting"

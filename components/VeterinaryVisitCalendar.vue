@@ -453,10 +453,14 @@ watch(
     data-testid="calendar-container"
   >
     <!-- Calendar Header -->
-    <div class="calendar-header">
+    <div
+      class="calendar-header"
+      data-testid="calendar-header"
+    >
       <div class="calendar-navigation">
         <button
           class="nav-btn"
+          data-testid="prev-month-button"
           @click="navigateMonth('prev')"
         >
           <svg
@@ -479,6 +483,7 @@ watch(
 
         <button
           class="nav-btn"
+          data-testid="next-month-button"
           @click="navigateMonth('next')"
         >
           <svg
