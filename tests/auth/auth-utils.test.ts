@@ -18,22 +18,22 @@ describe('Auth Utils', () => {
   };
 
   describe('Token Generation', () => {
-    it('should generate access token', () => {
-      const token = generateAccessToken(mockPayload);
+    it('should generate access token', async () => {
+      const token = await generateAccessToken(mockPayload);
       expect(token).toBeDefined();
       expect(typeof token).toBe('string');
       expect(token.split('.')).toHaveLength(3); // JWT has 3 parts
     });
 
-    it('should generate refresh token', () => {
-      const token = generateRefreshToken(mockPayload);
+    it('should generate refresh token', async () => {
+      const token = await generateRefreshToken(mockPayload);
       expect(token).toBeDefined();
       expect(typeof token).toBe('string');
       expect(token.split('.')).toHaveLength(3);
     });
 
-    it('should generate token pair', () => {
-      const tokens = generateTokenPair(mockPayload);
+    it('should generate token pair', async () => {
+      const tokens = await generateTokenPair(mockPayload);
       expect(tokens).toHaveProperty('accessToken');
       expect(tokens).toHaveProperty('refreshToken');
       expect(typeof tokens.accessToken).toBe('string');
@@ -42,9 +42,9 @@ describe('Auth Utils', () => {
   });
 
   describe('Token Verification', () => {
-    it('should verify valid token', () => {
-      const token = generateAccessToken(mockPayload);
-      const decoded = verifyToken(token);
+    it('should verify valid token', async () => {
+      const token = await generateAccessToken(mockPayload);
+      const decoded = await verifyToken(token);
 
       expect(decoded).toBeDefined();
       expect(decoded?.userId).toBe(mockPayload.userId);
@@ -53,14 +53,14 @@ describe('Auth Utils', () => {
       expect(decoded?.exp).toBeDefined();
     });
 
-    it('should return null for invalid token', () => {
-      const decoded = verifyToken('invalid-token');
+    it('should return null for invalid token', async () => {
+      const decoded = await verifyToken('invalid-token');
       expect(decoded).toBeNull();
     });
 
-    it('should return null for malformed token', () => {
+    it('should return null for malformed token', async () => {
       // Test with a malformed token
-      const decoded = verifyToken(
+      const decoded = await verifyToken(
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature',
       );
       expect(decoded).toBeNull();

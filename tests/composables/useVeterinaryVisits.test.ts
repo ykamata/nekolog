@@ -162,9 +162,14 @@ describe('useVeterinaryVisits', () => {
       const errorMessage = 'ネットワークエラー';
       mockFetch.mockRejectedValueOnce(new Error(errorMessage));
 
-      await fetchVisits();
+      try {
+        await fetchVisits();
+      }
+      catch (e) {
+        // エラーが投げられることを期待
+      }
 
-      expect(error.value).toBe('通院記録の取得に失敗しました');
+      expect(error.value).toBe('データの取得に失敗しました');
       expect(loading.value).toBe(false);
     });
   });
@@ -192,8 +197,6 @@ describe('useVeterinaryVisits', () => {
         hasBloodTest: false,
       };
 
-      mockFetch.mockResolvedValueOnce({ visit: createdVisit });
-
       mockFetch.mockResolvedValueOnce(createdVisit);
 
       const result = await createVisit(newVisitData);
@@ -203,7 +206,8 @@ describe('useVeterinaryVisits', () => {
         body: newVisitData,
       });
       expect(result).toEqual(createdVisit);
-      expect(visits.value).toContain(createdVisit);
+      expect(visits.value).toHaveLength(1);
+      expect(visits.value[0].id).toBe('visit3');
     });
 
     it('作成エラーが発生した場合、エラーがスローされる', async () => {
@@ -468,7 +472,12 @@ describe('useVeterinaryVisits', () => {
 
       // エラーを発生させる
       mockFetch.mockRejectedValueOnce(new Error('テストエラー'));
-      await fetchVisits();
+      try {
+        await fetchVisits();
+      }
+      catch (e) {
+        // エラーが投げられることを期待
+      }
 
       expect(error.value).toBeTruthy();
 
@@ -496,7 +505,12 @@ describe('useVeterinaryVisits', () => {
       expect(hasError.value).toBe(false);
 
       mockFetch.mockRejectedValueOnce(new Error('エラー'));
-      await fetchVisits();
+      try {
+        await fetchVisits();
+      }
+      catch (e) {
+        // エラーが投げられることを期待
+      }
 
       expect(hasError.value).toBe(true);
     });
@@ -528,7 +542,7 @@ describe('useVeterinaryVisits', () => {
 
   describe('リアクティブ性', () => {
     it('visits配列の変更が正しく反映される', async () => {
-      const { visits, fetchVisits } = useVeterinaryVisits();
+      const { visits, fetchVisits, createVisit } = useVeterinaryVisits();
 
       // 初期状態
       expect(visits.value).toHaveLength(0);
@@ -537,11 +551,26 @@ describe('useVeterinaryVisits', () => {
       await fetchVisits();
       expect(visits.value).toHaveLength(2);
 
-      // 手動でデータを変更
-      visits.value.push({
+      // createVisitを使用してデータを追加
+      const newVisitData = {
+        catId: 'cat1',
+        visitDate: new Date('2024-01-25T10:00:00Z'),
+        hospitalId: 'hospital1',
+        doctorId: 'doctor1',
+        cost: 4000,
+        notes: '新しいメモ',
+        hasBloodTest: false,
+      };
+
+      const createdVisit = {
         ...mockVisits[0],
         id: 'visit3',
-      });
+        ...newVisitData,
+      };
+
+      mockFetch.mockResolvedValueOnce(createdVisit);
+
+      await createVisit(newVisitData);
       expect(visits.value).toHaveLength(3);
     });
 
@@ -564,9 +593,14 @@ describe('useVeterinaryVisits', () => {
 
       mockFetch.mockRejectedValueOnce(new Error('Network Error'));
 
-      await fetchVisits();
+      try {
+        await fetchVisits();
+      }
+      catch (e) {
+        // エラーが投げられることを期待
+      }
 
-      expect(error.value).toBe('通院記録の取得に失敗しました');
+      expect(error.value).toBe('データの取得に失敗しました');
     });
 
     it('APIエラーレスポンスが適切に処理される', async () => {

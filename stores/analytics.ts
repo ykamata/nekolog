@@ -2,7 +2,6 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type {
   MealAnalytics,
-  DailyCalorieData,
 } from '~/types/cat-meal';
 import { FoodType } from '~/types/cat-meal';
 import type { ErrorInfo } from '~/utils/error-handling';
@@ -26,10 +25,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const selectedCatId = ref<string | null>(null);
   const selectedFoodType = ref<FoodType | null>(null);
   const chartDisplayMode = ref<'line' | 'bar'>('line');
-  const cache = ref<Record<string, any>>({});
+  const cache = ref<Record<string, unknown>>({});
   const retryCount = ref(0);
   const lastErrorTime = ref<Date | null>(null);
-  const dataQuality = ref<any>(null);
+  const dataQuality = ref<unknown>(null);
 
   // Getters
   const currentFilters = computed((): AnalyticsFilter => ({
@@ -47,22 +46,155 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const hasError = computed((): boolean => !!error.value);
 
+  // Data getters
+  const dailyCaloriesData = computed(() => {
+    return analytics.value?.dailyCalories || [];
+  });
+
+  const weeklyAverage = computed(() => {
+    return analytics.value?.weeklyAverage || 0;
+  });
+
+  const foodTypeBreakdown = computed(() => {
+    return analytics.value?.foodTypeBreakdown || [];
+  });
+
+  const dryFoodPercentage = computed(() => {
+    const breakdown = foodTypeBreakdown.value.find(item => item.type === 'DRY');
+    return breakdown?.percentage || 0;
+  });
+
+  const wetFoodPercentage = computed(() => {
+    const breakdown = foodTypeBreakdown.value.find(item => item.type === 'WET');
+    return breakdown?.percentage || 0;
+  });
+
+  const totalCaloriesToday = computed(() => {
+    if (!analytics.value) return 0;
+    const today = new Date().toISOString().split('T')[0];
+    const todayData = analytics.value.dailyCalories.filter(data => data.date === today);
+    return todayData.reduce((sum, data) => sum + data.calories, 0);
+  });
+
+  const averageDailyCalories = computed(() => {
+    if (!analytics.value || analytics.value.dailyCalories.length === 0) return 0;
+    const total = analytics.value.dailyCalories.reduce((sum, data) => sum + data.calories, 0);
+    return total / analytics.value.dailyCalories.length;
+  });
+
   const chartDataForLineChart = computed(() => {
-    if (!analytics.value) return [];
-    return analytics.value.dailyCalories.map(data => ({
-      date: data.date,
-      calories: data.calories,
-      type: data.type,
-    }));
+    if (!analytics.value) return { labels: [], datasets: [] };
+
+    const data = analytics.value.dailyCalories;
+    return {
+      labels: data.map(item => item.date),
+      datasets: [{
+        label: 'カロリー',
+        data: data.map(item => item.calories),
+      }],
+    };
   });
 
   const chartDataForBarChart = computed(() => {
-    if (!analytics.value) return [];
-    return analytics.value.dailyCalories.map(data => ({
-      date: data.date,
-      dryCalories: data.type === 'DRY' ? data.calories : 0,
-      wetCalories: data.type === 'WET' ? data.calories : 0,
-    }));
+    if (!analytics.value) return { labels: [], datasets: [] };
+
+    // Get unique dates within the date range
+    const startDate = dateRange.value.startDate;
+    const endDate = dateRange.value.endDate;
+    const dates = [];
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      dates.push(currentDate.toISOString().split('T')[0]);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    const dryData = dates.map((date) => {
+      const dayData = analytics.value!.dailyCalories.filter(item => item.date === date && item.type === 'DRY');
+      return dayData.reduce((sum, item) => sum + item.calories, 0);
+    });
+
+    const wetData = dates.map((date) => {
+      const dayData = analytics.value!.dailyCalories.filter(item => item.date === date && item.type === 'WET');
+      return dayData.reduce((sum, item) => sum + item.calories, 0);
+    });
+
+    const missingDataDates = dates.filter((date) => {
+      return !analytics.value!.dailyCalories.some(item => item.date === date);
+    });
+
+    return {
+      labels: dates,
+      datasets: [
+        {
+          label: 'ドライフード',
+          data: dryData,
+        },
+        {
+          label: 'ウェットフード',
+          data: wetData,
+        },
+      ],
+      missingDataDates,
+      appliedFilters: {
+        dateRange: {
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+        },
+        catId: selectedCatId.value,
+        foodType: selectedFoodType.value,
+      },
+    };
+  });
+
+  const dataQualityInfo = computed(() => {
+    if (!analytics.value) return null;
+
+    const startDate = dateRange.value.startDate;
+    const endDate = dateRange.value.endDate;
+    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    const uniqueDates = [...new Set(analytics.value.dailyCalories.map(item => item.date))];
+    const daysWithData = uniqueDates.length;
+    const missingDays = totalDays - daysWithData;
+    const dataCompleteness = (daysWithData / totalDays) * 100;
+
+    return {
+      totalDays,
+      daysWithData,
+      missingDays,
+      dataCompleteness: Math.round(dataCompleteness),
+    };
+  });
+
+  const activeFiltersInfo = computed(() => {
+    const filters = [];
+
+    // Always include date range
+    filters.push({
+      type: 'dateRange',
+      value: `${dateRange.value.startDate.toLocaleDateString()} - ${dateRange.value.endDate.toLocaleDateString()}`,
+    });
+
+    if (selectedCatId.value) {
+      filters.push({
+        type: 'cat',
+        value: selectedCatId.value,
+      });
+    }
+
+    if (selectedFoodType.value) {
+      filters.push({
+        type: 'foodType',
+        value: selectedFoodType.value,
+      });
+    }
+
+    return {
+      count: filters.length,
+      hasActiveFilters: filters.length > 1, // More than just date range
+      filters,
+    };
   });
 
   const errorInfo = computed(() => error.value);
@@ -77,25 +209,46 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   // Actions
   const fetchAnalytics = async (filters?: AnalyticsFilter, forceRefresh = false) => {
+    // Check cache first
+    const cacheKey = JSON.stringify(filters || currentFilters.value);
+    const cachedData = cache.value[cacheKey];
+
+    if (!forceRefresh && cachedData && cachedData.timestamp) {
+      const now = new Date();
+      const cacheAge = now.getTime() - cachedData.timestamp.getTime();
+      if (cacheAge < cachedData.ttl) {
+        analytics.value = cachedData.data;
+        return cachedData.data;
+      }
+    }
+
     loading.value = true;
     error.value = null;
 
     try {
       const params = new URLSearchParams();
-      if (filters?.catId) params.append('catId', filters.catId);
-      if (filters?.startDate) params.append('startDate', filters.startDate.toISOString());
-      if (filters?.endDate) params.append('endDate', filters.endDate.toISOString());
-      if (filters?.foodType) params.append('foodType', filters.foodType);
+      const activeFilters = filters || currentFilters.value;
 
-      const response = await $fetch<MealAnalytics>(`/api/analytics/meals?${params.toString()}`);
-      analytics.value = response;
+      if (activeFilters.catId) params.append('catId', activeFilters.catId);
+      if (activeFilters.startDate) params.append('startDate', activeFilters.startDate.toISOString());
+      if (activeFilters.endDate) params.append('endDate', activeFilters.endDate.toISOString());
+      if (activeFilters.foodType) params.append('foodType', activeFilters.foodType);
+
+      const response = await $fetch<{ data: MealAnalytics }>(`/api/meals/analytics?${params.toString()}`);
+      analytics.value = response.data;
+
+      // Cache the result
+      cache.value[cacheKey] = {
+        data: response.data,
+        timestamp: new Date(),
+        ttl: 5 * 60 * 1000, // 5 minutes
+      };
+
+      return response.data;
     }
     catch (err) {
-      error.value = {
-        message: err instanceof Error ? err.message : 'Failed to fetch analytics',
-        code: 'FETCH_ERROR',
-        timestamp: new Date(),
-      } as ErrorInfo;
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analytics';
+      error.value = errorMessage;
       throw err;
     }
     finally {
@@ -149,8 +302,20 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     setLast30Days();
   };
 
+  const setStartDate = (startDate: Date) => {
+    dateRange.value.startDate = startDate;
+  };
+
+  const setEndDate = (endDate: Date) => {
+    dateRange.value.endDate = endDate;
+  };
+
   const refreshData = async () => {
     await fetchAnalytics(currentFilters.value, true);
+  };
+
+  const clearCache = () => {
+    cache.value = {};
   };
 
   const clearError = () => {
@@ -215,7 +380,45 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       totalCalories,
       averageCalories: Math.round(avgCalories * 100) / 100,
       weeklyAverage: analytics.value.weeklyAverage || 0,
-      foodTypeBreakdown: analytics.value.foodTypeBreakdown || { DRY: 0, WET: 0 },
+      foodTypeBreakdown: analytics.value.foodTypeBreakdown || [],
+    };
+  };
+
+  const getEnhancedBarChartData = () => {
+    if (!analytics.value) return null;
+
+    const chartData = chartDataForBarChart.value;
+    const qualityInfo = dataQualityInfo.value;
+
+    const totalCalories = analytics.value.dailyCalories.reduce((sum, data) => sum + data.calories, 0);
+    const averageDaily = totalCalories / (qualityInfo?.daysWithData || 1);
+
+    // Find peak day
+    const dailyTotals = new Map<string, number>();
+    analytics.value.dailyCalories.forEach((data) => {
+      const current = dailyTotals.get(data.date) || 0;
+      dailyTotals.set(data.date, current + data.calories);
+    });
+
+    let peakDay = { date: '', calories: 0 };
+    dailyTotals.forEach((calories, date) => {
+      if (calories > peakDay.calories) {
+        peakDay = { date, calories };
+      }
+    });
+
+    return {
+      ...chartData,
+      qualityInfo,
+      statistics: {
+        totalCalories,
+        averageDaily: Math.round(averageDaily * 100) / 100,
+        peakDay,
+      },
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        filters: currentFilters.value,
+      },
     };
   };
 
@@ -251,8 +454,17 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     hasData,
     isLoading,
     hasError,
+    dailyCaloriesData,
+    weeklyAverage,
+    foodTypeBreakdown,
+    dryFoodPercentage,
+    wetFoodPercentage,
+    totalCaloriesToday,
+    averageDailyCalories,
     chartDataForLineChart,
     chartDataForBarChart,
+    dataQualityInfo,
+    activeFiltersInfo,
     errorInfo,
     canRetry,
     currentChartMode,
@@ -266,6 +478,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     // Actions
     fetchAnalytics,
     setDateRange,
+    setStartDate,
+    setEndDate,
     setLast7Days,
     setLast30Days,
     setLast90Days,
@@ -274,11 +488,13 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     clearFilters,
     refreshData,
     clearError,
+    clearCache,
     setChartDisplayMode,
     toggleChartDisplayMode,
     restoreDisplaySettings,
     exportToCsv,
     getAnalyticsSummary,
+    getEnhancedBarChartData,
     retryLastOperation,
     optimizeMemoryUsage,
   };

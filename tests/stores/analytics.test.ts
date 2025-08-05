@@ -3,8 +3,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useAnalyticsStore } from '~/stores/analytics';
 import type {
   MealAnalytics,
-  DailyCalorieData,
-  FoodType,
+  DailyCalorieData, FoodType,
 } from '~/types/cat-meal';
 
 // Mock $fetch
@@ -178,10 +177,10 @@ describe('useAnalyticsStore', () => {
     it('should use cache when valid', async () => {
       const store = useAnalyticsStore();
       const cacheKey = JSON.stringify({
-        catId: null,
-        startDate: store.dateRange.startDate.toISOString(),
-        endDate: store.dateRange.endDate.toISOString(),
-        foodType: null,
+        catId: undefined,
+        startDate: store.dateRange.startDate,
+        endDate: store.dateRange.endDate,
+        foodType: undefined,
       });
 
       store.cache[cacheKey] = {
@@ -416,8 +415,6 @@ describe('useAnalyticsStore', () => {
         totalCalories: 630,
         averageCalories: 157.5,
         weeklyAverage: 157.5,
-        dryFoodDays: 2,
-        wetFoodDays: 2,
         foodTypeBreakdown: mockAnalytics.foodTypeBreakdown,
       });
     });

@@ -23,6 +23,31 @@ vi.mock('~/utils/offline-storage', () => ({
   },
 }));
 
+// Mock useSync to avoid onMounted warnings
+const mockOfflineOperations = {
+  addMeal: vi.fn().mockReturnValue('local-id-123'),
+  updateMeal: vi.fn(),
+  deleteMeal: vi.fn(),
+};
+
+vi.mock('~/composables/useSync', () => ({
+  useSync: vi.fn(() => ({
+    syncStatus: { value: { isOnline: true } },
+    offlineOperations: mockOfflineOperations,
+  })),
+}));
+
+// Mock cache utilities
+vi.mock('~/utils/cache', () => ({
+  apiCache: {
+    get: vi.fn(),
+    set: vi.fn(),
+    delete: vi.fn(),
+  },
+  createCacheKey: vi.fn(() => 'test-cache-key'),
+  invalidateRelatedCache: vi.fn(),
+}));
+
 describe('useMealsStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -198,8 +223,10 @@ describe('useMealsStore', () => {
       const error = new Error('Fetch failed');
       mockFetch.mockRejectedValueOnce(error);
 
-      // オフラインストレージのモックも空の配列を返すように設定
-      vi.mocked(OfflineStorage.getInstance().getMeals).mockReturnValue([]);
+      // オフラインストレージのモックも例外を投げるように設定
+      vi.mocked(OfflineStorage.getInstance().getMeals).mockImplementation(() => {
+        throw new Error('No offline data');
+      });
 
       await expect(store.fetchMeals()).rejects.toThrow('Fetch failed');
       expect(store.error).toBe('Fetch failed');
@@ -226,8 +253,10 @@ describe('useMealsStore', () => {
       const error = new Error('Create failed');
       mockFetch.mockRejectedValueOnce(error);
 
-      // オフラインストレージのモックも設定
-      vi.mocked(OfflineStorage.getInstance().getMeals).mockReturnValue([]);
+      // オフライン操作でもエラーを投げるようにモック
+      mockOfflineOperations.addMeal.mockImplementation(() => {
+        throw new Error('Create failed');
+      });
 
       await expect(store.createMeal(mockMealInput)).rejects.toThrow(
         'Create failed',
@@ -274,24 +303,24 @@ describe('useMealsStore', () => {
 
   describe('pagination', () => {
     beforeEach(() => {
-      const store = useMealsStore();
-      store.pagination = {
-        currentPage: 2,
-        pageSize: 20,
-        totalCount: 100,
-        hasNextPage: true,
-        hasPreviousPage: true,
-      };
       mockFetch.mockResolvedValue(mockApiResponse);
     });
 
     it('should go to next page', async () => {
       const store = useMealsStore();
+      // Set initial pagination state
+      store.pagination = {
+        currentPage: 1,
+        pageSize: 20,
+        totalCount: 100,
+        hasNextPage: true,
+        hasPreviousPage: false,
+      };
 
       await store.nextPage();
 
-      expect(store.pagination.currentPage).toBe(1); // Updated from API response
       expect(mockFetch).toHaveBeenCalled();
+      expect(store.pagination.currentPage).toBe(1); // Updated from API response
     });
 
     it('should go to previous page', async () => {

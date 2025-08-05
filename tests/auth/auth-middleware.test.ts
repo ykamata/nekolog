@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { requireAuth, optionalAuth } from '~/middleware/auth';
+import { requireAuth, optionalAuth } from '~/lib/auth-middleware';
 import { generateAccessToken } from '~/lib/auth';
 
 // Mock Nuxt utilities
@@ -10,17 +10,30 @@ const mockCreateError = vi.fn((options) => {
 });
 const mockGetHeader = vi.fn();
 const mockGetCookie = vi.fn();
+const mockSetCookie = vi.fn();
 
-vi.mock('#imports', () => ({
+// Mock H3 functions
+vi.mock('h3', () => ({
   createError: mockCreateError,
   getHeader: mockGetHeader,
   getCookie: mockGetCookie,
+  setCookie: mockSetCookie,
+}));
+
+// Mock Prisma
+vi.mock('~/lib/prisma', () => ({
+  prisma: {
+    user: {
+      findUnique: vi.fn(),
+    },
+  },
 }));
 
 // Mock global functions that would be available in Nuxt runtime
-global.createError = mockCreateError;
-global.getHeader = mockGetHeader;
-global.getCookie = mockGetCookie;
+(global as any).createError = mockCreateError;
+(global as any).getHeader = mockGetHeader;
+(global as any).getCookie = mockGetCookie;
+(global as unknown).setCookie = mockSetCookie;
 
 describe('Auth Middleware', () => {
   const mockPayload = {
@@ -28,10 +41,11 @@ describe('Auth Middleware', () => {
     email: 'test@example.com',
   };
 
-  const validToken = generateAccessToken(mockPayload);
+  let validToken: string;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
+    validToken = await generateAccessToken(mockPayload);
   });
 
   describe('requireAuth', () => {
