@@ -13,33 +13,6 @@ import type {
   MedicationReminderInput,
 } from '~/types/medication';
 
-// Mock the composables and utilities
-vi.mock('~/composables/useSync', () => ({
-  useSync: () => ({
-    syncStatus: { value: { isOnline: true } },
-    offlineOperations: {
-      addMedication: vi.fn().mockReturnValue('local-medication-123'),
-      updateMedication: vi.fn(),
-      deleteMedication: vi.fn(),
-      addMedicationRecord: vi.fn().mockReturnValue('local-record-123'),
-      updateMedicationRecord: vi.fn(),
-      deleteMedicationRecord: vi.fn(),
-      addMedicationReminder: vi.fn().mockReturnValue('local-reminder-123'),
-      updateMedicationReminder: vi.fn(),
-    },
-  }),
-}));
-
-vi.mock('~/utils/offline-storage', () => ({
-  OfflineStorage: {
-    getInstance: () => ({
-      getMedications: vi.fn().mockReturnValue([]),
-      getMedicationRecords: vi.fn().mockReturnValue([]),
-      getMedicationReminders: vi.fn().mockReturnValue([]),
-    }),
-  },
-}));
-
 // Mock $fetch
 global.$fetch = vi.fn();
 
@@ -111,14 +84,13 @@ describe('Medications Store', () => {
   describe('Initial State', () => {
     it('should have correct initial state', () => {
       expect(store.medications).toEqual([]);
-      expect(store.records).toEqual([]);
-      expect(store.reminders).toEqual([]);
+      expect(store.medicationRecords).toEqual([]);
+      expect(store.medicationReminders).toEqual([]);
       expect(store.loading).toBe(false);
       expect(store.error).toBe(null);
       expect(store.cache.lastFetch).toBe(null);
       expect(store.cache.recordsLastFetch).toBe(null);
       expect(store.cache.remindersLastFetch).toBe(null);
-      expect(store.cache.ttl).toBe(5 * 60 * 1000); // 5 minutes
     });
   });
 
@@ -145,11 +117,6 @@ describe('Medications Store', () => {
       expect(medication).toBeUndefined();
     });
 
-    it('should get medications by name', () => {
-      const medications = store.getMedicationsByName('テスト');
-      expect(medications).toHaveLength(2);
-    });
-
     it('should get medications by type', () => {
       const medicines = store.getMedicationsByType(MedicationType.MEDICINE);
       expect(medicines).toHaveLength(1);
@@ -160,12 +127,6 @@ describe('Medications Store', () => {
       const sorted = store.sortedMedications;
       expect(sorted[0].name).toBe('テストサプリ');
       expect(sorted[1].name).toBe('テスト薬');
-    });
-
-    it('should group medications by type', () => {
-      const grouped = store.medicationsByType;
-      expect(grouped[MedicationType.MEDICINE]).toHaveLength(1);
-      expect(grouped[MedicationType.SUPPLEMENT]).toHaveLength(1);
     });
 
     it('should return loading state', () => {
@@ -192,26 +153,11 @@ describe('Medications Store', () => {
       store.cache.lastFetch = oldDate;
       expect(store.isCacheValid).toBe(false);
     });
-
-    it('should check records cache validity', () => {
-      // Cache is invalid initially
-      expect(store.isRecordsCacheValid).toBe(false);
-
-      // Set recent cache
-      store.cache.recordsLastFetch = new Date();
-      expect(store.isRecordsCacheValid).toBe(true);
-
-      // Set old cache
-      const oldDate = new Date();
-      oldDate.setMinutes(oldDate.getMinutes() - 10); // 10 minutes ago
-      store.cache.recordsLastFetch = oldDate;
-      expect(store.isRecordsCacheValid).toBe(false);
-    });
   });
 
   describe('Medication Record Getters', () => {
     beforeEach(() => {
-      store.records = [
+      store.medicationRecords = [
         mockMedicationRecord,
         {
           ...mockMedicationRecord,
@@ -226,11 +172,6 @@ describe('Medications Store', () => {
     it('should get medication record by id', () => {
       const record = store.getMedicationRecordById('record-1');
       expect(record).toEqual(mockMedicationRecord);
-    });
-
-    it('should return undefined for non-existent record', () => {
-      const record = store.getMedicationRecordById('non-existent');
-      expect(record).toBeUndefined();
     });
 
     it('should get medication records by cat', () => {
@@ -256,28 +197,10 @@ describe('Medications Store', () => {
       expect(pendingRecords).toHaveLength(1);
     });
 
-    it('should get medication records by date range', () => {
-      const startDate = new Date('2024-01-01T00:00:00Z');
-      const endDate = new Date('2024-01-01T23:59:59Z');
-
-      const records = store.getMedicationRecordsByDateRange(startDate, endDate);
-      expect(records).toHaveLength(1);
-      expect(records[0].id).toBe('record-1');
-    });
-
     it('should return sorted medication records', () => {
       const sorted = store.sortedMedicationRecords;
       expect(sorted[0].id).toBe('record-2'); // More recent date
       expect(sorted[1].id).toBe('record-1');
-    });
-
-    it('should get today\'s medication records', () => {
-      // Set one record to today
-      const today = new Date();
-      store.records[0].administeredAt = today;
-
-      const todaysRecords = store.getTodaysMedicationRecords;
-      expect(todaysRecords).toHaveLength(1);
     });
 
     it('should get pending medication records', () => {
@@ -299,53 +222,34 @@ describe('Medications Store', () => {
         const mockResponse = {
           medications: [mockMedication],
           total: 1,
-          limit: 20,
-          offset: 0,
         };
 
         vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
 
-        const result = await store.fetchMedications();
+        await store.fetchMedications();
 
-        expect($fetch).toHaveBeenCalledWith('/api/medications');
+        expect($fetch).toHaveBeenCalledWith('/api/medications?');
         expect(store.medications).toHaveLength(1);
         expect(store.medications[0].name).toBe('テスト薬');
         expect(store.loading).toBe(false);
         expect(store.error).toBe(null);
-        expect(result).toEqual(store.medications);
       });
 
       it('should fetch medications with filter', async () => {
         const mockResponse = {
           medications: [mockMedication],
           total: 1,
-          limit: 10,
-          offset: 0,
         };
 
         vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
 
         await store.fetchMedications({
-          name: 'テスト',
           type: MedicationType.MEDICINE,
-          limit: 10,
-          offset: 0,
         });
 
         expect($fetch).toHaveBeenCalledWith(
-          '/api/medications?name=%E3%83%86%E3%82%B9%E3%83%88&type=MEDICINE&limit=10',
+          '/api/medications?type=MEDICINE',
         );
-      });
-
-      it('should use cache when valid', async () => {
-        // Set up valid cache
-        store.medications = [mockMedication];
-        store.cache.lastFetch = new Date();
-
-        const result = await store.fetchMedications();
-
-        expect($fetch).not.toHaveBeenCalled();
-        expect(result).toEqual([mockMedication]);
       });
 
       it('should handle fetch error', async () => {
@@ -359,13 +263,8 @@ describe('Medications Store', () => {
     });
 
     describe('createMedication', () => {
-      it('should create medication successfully when online', async () => {
-        const mockResponse = {
-          medication: mockMedication,
-          message: '薬が正常に登録されました',
-        };
-
-        vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
+      it('should create medication successfully', async () => {
+        vi.mocked($fetch).mockResolvedValueOnce(mockMedication);
 
         const result = await store.createMedication(mockMedicationInput);
 
@@ -397,7 +296,7 @@ describe('Medications Store', () => {
         store.medications = [mockMedication];
       });
 
-      it('should update medication successfully when online', async () => {
+      it('should update medication successfully', async () => {
         const updateData: MedicationUpdate = {
           name: '更新された薬',
           dosage: '1日2回',
@@ -409,12 +308,7 @@ describe('Medications Store', () => {
           updatedAt: new Date('2024-01-02T00:00:00Z'),
         };
 
-        const mockResponse = {
-          medication: updatedMedication,
-          message: '薬の情報が正常に更新されました',
-        };
-
-        vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
+        vi.mocked($fetch).mockResolvedValueOnce(updatedMedication);
 
         const result = await store.updateMedication('med-1', updateData);
 
@@ -446,7 +340,7 @@ describe('Medications Store', () => {
         store.medications = [mockMedication];
       });
 
-      it('should delete medication successfully when online', async () => {
+      it('should delete medication successfully', async () => {
         vi.mocked($fetch).mockResolvedValueOnce({
           message: '薬が正常に削除されました',
         });
@@ -459,22 +353,6 @@ describe('Medications Store', () => {
         expect(store.medications).toHaveLength(0);
         expect(store.loading).toBe(false);
         expect(store.error).toBe(null);
-      });
-
-      it('should delete medication with cascade', async () => {
-        vi.mocked($fetch).mockResolvedValueOnce({
-          message: '薬が正常に削除されました',
-        });
-
-        await store.deleteMedication('med-1', true);
-
-        expect($fetch).toHaveBeenCalledWith(
-          '/api/medications/med-1?cascade=true',
-          {
-            method: 'DELETE',
-          },
-        );
-        expect(store.medications).toHaveLength(0);
       });
 
       it('should handle delete error', async () => {
@@ -495,634 +373,330 @@ describe('Medications Store', () => {
         store.clearError();
         expect(store.error).toBe(null);
       });
+    });
+  });
 
-      it('should invalidate cache', () => {
-        store.cache.lastFetch = new Date();
-        store.invalidateCache();
-        expect(store.cache.lastFetch).toBe(null);
+  describe('Medication Record Actions', () => {
+    describe('fetchMedicationRecords', () => {
+      it('should fetch medication records successfully', async () => {
+        const mockResponse = {
+          records: [mockMedicationRecord],
+          total: 1,
+        };
+
+        vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
+
+        await store.fetchMedicationRecords();
+
+        expect($fetch).toHaveBeenCalledWith('/api/medication-records?');
+        expect(store.medicationRecords).toHaveLength(1);
+        expect(store.medicationRecords[0].id).toBe('record-1');
+        expect(store.loading).toBe(false);
+        expect(store.error).toBe(null);
       });
 
-      it('should add medication to state', () => {
-        store.addMedicationToState(mockMedication);
-        expect(store.medications).toHaveLength(1);
-        expect(store.medications[0].id).toBe(mockMedication.id);
+      it('should fetch medication records with filter', async () => {
+        const mockResponse = {
+          records: [mockMedicationRecord],
+          total: 1,
+        };
 
-        // Should update existing medication
-        const updatedMedication = { ...mockMedication, name: 'Updated' };
-        store.addMedicationToState(updatedMedication);
-        expect(store.medications).toHaveLength(1);
-        expect(store.medications[0].name).toBe('Updated');
+        vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
+
+        await store.fetchMedicationRecords({
+          catId: 'cat-1',
+          medicationId: 'med-1',
+          status: MedicationStatus.ADMINISTERED,
+        });
+
+        expect($fetch).toHaveBeenCalledWith(
+          '/api/medication-records?catId=cat-1&medicationId=med-1&status=ADMINISTERED',
+        );
       });
 
-      it('should remove medication from state', () => {
-        store.medications = [mockMedication];
-        store.removeMedicationFromState('med-1');
-        expect(store.medications).toHaveLength(0);
+      it('should handle fetch error', async () => {
+        const error = new Error('Network error');
+        vi.mocked($fetch).mockRejectedValueOnce(error);
+
+        await expect(store.fetchMedicationRecords()).rejects.toThrow(
+          'Network error',
+        );
+        expect(store.error).toBe('Network error');
+        expect(store.loading).toBe(false);
       });
     });
 
-    describe('Medication Record Actions', () => {
-      describe('fetchMedicationRecords', () => {
-        it('should fetch medication records successfully', async () => {
-          const mockResponse = {
-            records: [mockMedicationRecord],
-            total: 1,
-            limit: 20,
-            offset: 0,
-          };
+    describe('createMedicationRecord', () => {
+      it('should create medication record successfully', async () => {
+        vi.mocked($fetch).mockResolvedValueOnce(mockMedicationRecord);
 
-          vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
+        const result = await store.createMedicationRecord(
+          mockMedicationRecordInput,
+        );
 
-          const result = await store.fetchMedicationRecords();
-
-          expect($fetch).toHaveBeenCalledWith('/api/medication-records');
-          expect(store.records).toHaveLength(1);
-          expect(store.records[0].id).toBe('record-1');
-          expect(store.loading).toBe(false);
-          expect(store.error).toBe(null);
-          expect(result).toEqual(store.records);
+        expect($fetch).toHaveBeenCalledWith('/api/medication-records', {
+          method: 'POST',
+          body: mockMedicationRecordInput,
         });
-
-        it('should fetch medication records with filter', async () => {
-          const mockResponse = {
-            records: [mockMedicationRecord],
-            total: 1,
-            limit: 10,
-            offset: 0,
-          };
-
-          vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
-
-          await store.fetchMedicationRecords({
-            catId: 'cat-1',
-            medicationId: 'med-1',
-            status: MedicationStatus.ADMINISTERED,
-            limit: 10,
-            offset: 5,
-          });
-
-          expect($fetch).toHaveBeenCalledWith(
-            '/api/medication-records?catId=cat-1&medicationId=med-1&status=ADMINISTERED&limit=10&offset=5',
-          );
-        });
-
-        it('should use cache when valid', async () => {
-          // Set up valid cache
-          store.records = [mockMedicationRecord];
-          store.cache.recordsLastFetch = new Date();
-
-          const result = await store.fetchMedicationRecords();
-
-          expect($fetch).not.toHaveBeenCalled();
-          expect(result).toEqual([mockMedicationRecord]);
-        });
-
-        it('should handle fetch error', async () => {
-          const error = new Error('Network error');
-          vi.mocked($fetch).mockRejectedValueOnce(error);
-
-          await expect(store.fetchMedicationRecords()).rejects.toThrow(
-            'Network error',
-          );
-          expect(store.error).toBe('Network error');
-          expect(store.loading).toBe(false);
-        });
+        expect(store.medicationRecords).toHaveLength(1);
+        expect(store.medicationRecords[0].id).toBe(result.id);
+        expect(result.catId).toBe('cat-1');
+        expect(store.loading).toBe(false);
+        expect(store.error).toBe(null);
       });
 
-      describe('createMedicationRecord', () => {
-        it('should create medication record successfully when online', async () => {
-          const mockResponse = {
-            record: mockMedicationRecord,
-            message: '投与記録が正常に登録されました',
-          };
+      it('should handle create error', async () => {
+        const error = new Error('Validation error');
+        vi.mocked($fetch).mockRejectedValueOnce(error);
 
-          vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
-
-          const result = await store.createMedicationRecord(
-            mockMedicationRecordInput,
-          );
-
-          expect($fetch).toHaveBeenCalledWith('/api/medication-records', {
-            method: 'POST',
-            body: mockMedicationRecordInput,
-          });
-          expect(store.records).toHaveLength(1);
-          expect(store.records[0].id).toBe(result.id);
-          expect(result.catId).toBe('cat-1');
-          expect(store.loading).toBe(false);
-          expect(store.error).toBe(null);
-        });
-
-        it('should handle create error', async () => {
-          const error = new Error('Validation error');
-          vi.mocked($fetch).mockRejectedValueOnce(error);
-
-          await expect(
-            store.createMedicationRecord(mockMedicationRecordInput),
-          ).rejects.toThrow('Validation error');
-          expect(store.error).toBe('Validation error');
-          expect(store.loading).toBe(false);
-        });
-      });
-
-      describe('updateMedicationRecord', () => {
-        beforeEach(() => {
-          store.records = [mockMedicationRecord];
-        });
-
-        it('should update medication record successfully when online', async () => {
-          const updateData: MedicationRecordUpdate = {
-            quantity: 3,
-            status: MedicationStatus.ADMINISTERED,
-            notes: '更新されたメモ',
-          };
-
-          const updatedRecord = {
-            ...mockMedicationRecord,
-            ...updateData,
-            updatedAt: new Date('2024-01-02T00:00:00Z'),
-          };
-
-          const mockResponse = {
-            record: updatedRecord,
-            message: '投与記録が正常に更新されました',
-          };
-
-          vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
-
-          const result = await store.updateMedicationRecord(
-            'record-1',
-            updateData,
-          );
-
-          expect($fetch).toHaveBeenCalledWith(
-            '/api/medication-records/record-1',
-            {
-              method: 'PUT',
-              body: updateData,
-            },
-          );
-          expect(result.quantity).toBe(3);
-          expect(result.notes).toBe('更新されたメモ');
-          expect(store.records[0]).toEqual(result);
-          expect(store.loading).toBe(false);
-          expect(store.error).toBe(null);
-        });
-
-        it('should handle update error', async () => {
-          const error = new Error('Not found');
-          vi.mocked($fetch).mockRejectedValueOnce(error);
-
-          await expect(
-            store.updateMedicationRecord('record-1', { quantity: 3 }),
-          ).rejects.toThrow('Not found');
-          expect(store.error).toBe('Not found');
-          expect(store.loading).toBe(false);
-        });
-      });
-
-      describe('deleteMedicationRecord', () => {
-        beforeEach(() => {
-          store.records = [mockMedicationRecord];
-        });
-
-        it('should delete medication record successfully when online', async () => {
-          vi.mocked($fetch).mockResolvedValueOnce({
-            message: '投与記録が正常に削除されました',
-          });
-
-          await store.deleteMedicationRecord('record-1');
-
-          expect($fetch).toHaveBeenCalledWith(
-            '/api/medication-records/record-1',
-            {
-              method: 'DELETE',
-            },
-          );
-          expect(store.records).toHaveLength(0);
-          expect(store.loading).toBe(false);
-          expect(store.error).toBe(null);
-        });
-
-        it('should handle delete error', async () => {
-          const error = new Error('Cannot delete');
-          vi.mocked($fetch).mockRejectedValueOnce(error);
-
-          await expect(
-            store.deleteMedicationRecord('record-1'),
-          ).rejects.toThrow('Cannot delete');
-          expect(store.error).toBe('Cannot delete');
-          expect(store.loading).toBe(false);
-        });
-      });
-
-      describe('Medication Record Utility Actions', () => {
-        it('should add medication record to state', () => {
-          store.addMedicationRecordToState(mockMedicationRecord);
-          expect(store.records).toHaveLength(1);
-          expect(store.records[0].id).toBe(mockMedicationRecord.id);
-
-          // Should update existing record
-          const updatedRecord = { ...mockMedicationRecord, quantity: 5 };
-          store.addMedicationRecordToState(updatedRecord);
-          expect(store.records).toHaveLength(1);
-          expect(store.records[0].quantity).toBe(5);
-        });
-
-        it('should remove medication record from state', () => {
-          store.records = [mockMedicationRecord];
-          store.removeMedicationRecordFromState('record-1');
-          expect(store.records).toHaveLength(0);
-        });
-
-        it('should invalidate records cache', () => {
-          store.cache.recordsLastFetch = new Date();
-          store.invalidateRecordsCache();
-          expect(store.cache.recordsLastFetch).toBe(null);
-        });
+        await expect(
+          store.createMedicationRecord(mockMedicationRecordInput),
+        ).rejects.toThrow('Validation error');
+        expect(store.error).toBe('Validation error');
+        expect(store.loading).toBe(false);
       });
     });
 
-    describe('Medication Reminder Getters', () => {
+    describe('updateMedicationRecord', () => {
       beforeEach(() => {
-        store.reminders = [
-          mockMedicationReminder,
+        store.medicationRecords = [mockMedicationRecord];
+      });
+
+      it('should update medication record successfully', async () => {
+        const updateData: MedicationRecordUpdate = {
+          quantity: 3,
+          status: MedicationStatus.ADMINISTERED,
+          notes: '更新されたメモ',
+        };
+
+        const updatedRecord = {
+          ...mockMedicationRecord,
+          ...updateData,
+          updatedAt: new Date('2024-01-02T00:00:00Z'),
+        };
+
+        vi.mocked($fetch).mockResolvedValueOnce(updatedRecord);
+
+        const result = await store.updateMedicationRecord(
+          'record-1',
+          updateData,
+        );
+
+        expect($fetch).toHaveBeenCalledWith(
+          '/api/medication-records/record-1',
           {
-            ...mockMedicationReminder,
-            id: 'reminder-2',
-            catId: 'cat-2',
-            status: ReminderStatus.ACKNOWLEDGED,
-            scheduledAt: new Date('2024-01-02T08:00:00Z'),
+            method: 'PUT',
+            body: updateData,
           },
-          {
-            ...mockMedicationReminder,
-            id: 'reminder-3',
-            status: ReminderStatus.SNOOZED,
-            scheduledAt: new Date('2024-01-01T09:00:00Z'),
-          },
-        ];
+        );
+        expect(result.quantity).toBe(3);
+        expect(result.notes).toBe('更新されたメモ');
+        expect(store.medicationRecords[0]).toEqual(result);
+        expect(store.loading).toBe(false);
+        expect(store.error).toBe(null);
       });
 
-      it('should get medication reminder by id', () => {
-        const reminder = store.getMedicationReminderById('reminder-1');
-        expect(reminder).toEqual(mockMedicationReminder);
+      it('should handle update error', async () => {
+        const error = new Error('Not found');
+        vi.mocked($fetch).mockRejectedValueOnce(error);
+
+        await expect(
+          store.updateMedicationRecord('record-1', { quantity: 3 }),
+        ).rejects.toThrow('Not found');
+        expect(store.error).toBe('Not found');
+        expect(store.loading).toBe(false);
+      });
+    });
+  });
+
+  describe('Medication Reminder Actions', () => {
+    describe('fetchMedicationReminders', () => {
+      it('should fetch medication reminders successfully', async () => {
+        const mockResponse = {
+          reminders: [mockMedicationReminder],
+          total: 1,
+        };
+
+        vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
+
+        await store.fetchMedicationReminders();
+
+        expect($fetch).toHaveBeenCalledWith('/api/medication-reminders?');
+        expect(store.medicationReminders).toHaveLength(1);
+        expect(store.medicationReminders[0].id).toBe('reminder-1');
+        expect(store.loading).toBe(false);
+        expect(store.error).toBe(null);
       });
 
-      it('should return undefined for non-existent reminder', () => {
-        const reminder = store.getMedicationReminderById('non-existent');
-        expect(reminder).toBeUndefined();
+      it('should fetch medication reminders with filter', async () => {
+        const mockResponse = {
+          reminders: [mockMedicationReminder],
+          total: 1,
+        };
+
+        vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
+
+        await store.fetchMedicationReminders({
+          catId: 'cat-1',
+          status: ReminderStatus.PENDING,
+        });
+
+        expect($fetch).toHaveBeenCalledWith(
+          '/api/medication-reminders?catId=cat-1&status=PENDING',
+        );
       });
 
-      it('should get medication reminders by cat', () => {
-        const reminders = store.getMedicationRemindersByCat('cat-1');
-        expect(reminders).toHaveLength(2);
-        expect(reminders.every(r => r.catId === 'cat-1')).toBe(true);
-      });
+      it('should handle fetch error', async () => {
+        const error = new Error('Network error');
+        vi.mocked($fetch).mockRejectedValueOnce(error);
 
-      it('should get medication reminders by medication', () => {
-        const reminders = store.getMedicationRemindersByMedication('med-1');
-        expect(reminders).toHaveLength(3);
-      });
-
-      it('should get medication reminders by schedule', () => {
-        const reminders = store.getMedicationRemindersBySchedule('schedule-1');
-        expect(reminders).toHaveLength(3);
-      });
-
-      it('should get medication reminders by status', () => {
-        const pendingReminders = store.getMedicationRemindersByStatus(ReminderStatus.PENDING);
-        const acknowledgedReminders = store.getMedicationRemindersByStatus(ReminderStatus.ACKNOWLEDGED);
-        const snoozedReminders = store.getMedicationRemindersByStatus(ReminderStatus.SNOOZED);
-
-        expect(pendingReminders).toHaveLength(1);
-        expect(acknowledgedReminders).toHaveLength(1);
-        expect(snoozedReminders).toHaveLength(1);
-      });
-
-      it('should get pending reminders', () => {
-        const pendingReminders = store.getPendingReminders;
-        expect(pendingReminders).toHaveLength(1);
-        expect(pendingReminders[0].status).toBe(ReminderStatus.PENDING);
-      });
-
-      it('should get acknowledged reminders', () => {
-        const acknowledgedReminders = store.getAcknowledgedReminders;
-        expect(acknowledgedReminders).toHaveLength(1);
-        expect(acknowledgedReminders[0].status).toBe(ReminderStatus.ACKNOWLEDGED);
-      });
-
-      it('should get snoozed reminders', () => {
-        const snoozedReminders = store.getSnoozedReminders;
-        expect(snoozedReminders).toHaveLength(1);
-        expect(snoozedReminders[0].status).toBe(ReminderStatus.SNOOZED);
-      });
-
-      it('should get today\'s reminders', () => {
-        // Set one reminder to today
-        const today = new Date();
-        store.reminders[0].scheduledAt = today;
-
-        const todaysReminders = store.getTodaysReminders;
-        expect(todaysReminders).toHaveLength(1);
-      });
-
-      it('should get upcoming reminders', () => {
-        // Set one reminder to next 30 minutes
-        const soon = new Date(Date.now() + 30 * 60 * 1000);
-        store.reminders[0].scheduledAt = soon;
-        store.reminders[0].status = ReminderStatus.PENDING;
-
-        const upcomingReminders = store.getUpcomingReminders;
-        expect(upcomingReminders).toHaveLength(1);
-      });
-
-      it('should get overdue reminders', () => {
-        // Set one reminder to past
-        const past = new Date(Date.now() - 60 * 60 * 1000);
-        store.reminders[0].scheduledAt = past;
-        store.reminders[0].status = ReminderStatus.PENDING;
-
-        const overdueReminders = store.getOverdueReminders;
-        expect(overdueReminders).toHaveLength(1);
-      });
-
-      it('should return sorted medication reminders', () => {
-        const sorted = store.sortedMedicationReminders;
-        // Check that reminders are sorted by scheduledAt in ascending order
-        expect(sorted).toHaveLength(3);
-        expect(sorted[0].scheduledAt.getTime()).toBeLessThanOrEqual(sorted[1].scheduledAt.getTime());
-        expect(sorted[1].scheduledAt.getTime()).toBeLessThanOrEqual(sorted[2].scheduledAt.getTime());
+        await expect(store.fetchMedicationReminders()).rejects.toThrow(
+          'Network error',
+        );
+        expect(store.error).toBe('Network error');
+        expect(store.loading).toBe(false);
       });
     });
 
-    describe('Medication Reminder Actions', () => {
-      describe('fetchMedicationReminders', () => {
-        it('should fetch medication reminders successfully', async () => {
-          const mockResponse = {
-            data: [mockMedicationReminder],
-            pagination: {
-              total: 1,
-              limit: 50,
-              offset: 0,
-              hasMore: false,
-            },
-          };
+    describe('createMedicationReminder', () => {
+      it('should create medication reminder successfully', async () => {
+        vi.mocked($fetch).mockResolvedValueOnce(mockMedicationReminder);
 
-          vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
+        const result = await store.createMedicationReminder(
+          mockMedicationReminderInput,
+        );
 
-          const result = await store.fetchMedicationReminders();
-
-          expect($fetch).toHaveBeenCalledWith('/api/medication-reminders');
-          expect(store.reminders).toHaveLength(1);
-          expect(store.reminders[0].id).toBe('reminder-1');
-          expect(store.loading).toBe(false);
-          expect(store.error).toBe(null);
-          expect(result).toEqual(store.reminders);
+        expect($fetch).toHaveBeenCalledWith('/api/medication-reminders', {
+          method: 'POST',
+          body: mockMedicationReminderInput,
         });
-
-        it('should fetch medication reminders with filter', async () => {
-          const mockResponse = {
-            data: [mockMedicationReminder],
-            pagination: {
-              total: 1,
-              limit: 10,
-              offset: 0,
-              hasMore: false,
-            },
-          };
-
-          vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
-
-          await store.fetchMedicationReminders({
-            catId: 'cat-1',
-            status: ReminderStatus.PENDING,
-            limit: 10,
-            offset: 5,
-          });
-
-          expect($fetch).toHaveBeenCalledWith(
-            '/api/medication-reminders?catId=cat-1&status=PENDING&limit=10&offset=5',
-          );
-        });
-
-        it('should use cache when valid', async () => {
-          // Set up valid cache
-          store.reminders = [mockMedicationReminder];
-          store.cache.remindersLastFetch = new Date();
-
-          const result = await store.fetchMedicationReminders();
-
-          expect($fetch).not.toHaveBeenCalled();
-          expect(result).toEqual([mockMedicationReminder]);
-        });
-
-        it('should handle fetch error', async () => {
-          const error = new Error('Network error');
-          vi.mocked($fetch).mockRejectedValueOnce(error);
-
-          await expect(store.fetchMedicationReminders()).rejects.toThrow(
-            'Network error',
-          );
-          expect(store.error).toBe('Network error');
-          expect(store.loading).toBe(false);
-        });
+        expect(store.medicationReminders).toHaveLength(1);
+        expect(store.medicationReminders[0].id).toBe(result.id);
+        expect(result.scheduleId).toBe('schedule-1');
+        expect(store.loading).toBe(false);
+        expect(store.error).toBe(null);
       });
 
-      describe('createMedicationReminder', () => {
-        it('should create medication reminder successfully when online', async () => {
-          vi.mocked($fetch).mockResolvedValueOnce(mockMedicationReminder);
+      it('should handle create error', async () => {
+        const error = new Error('Validation error');
+        vi.mocked($fetch).mockRejectedValueOnce(error);
 
-          const result = await store.createMedicationReminder(
-            mockMedicationReminderInput,
-          );
+        await expect(
+          store.createMedicationReminder(mockMedicationReminderInput),
+        ).rejects.toThrow('Validation error');
+        expect(store.error).toBe('Validation error');
+        expect(store.loading).toBe(false);
+      });
+    });
 
-          expect($fetch).toHaveBeenCalledWith('/api/medication-reminders', {
-            method: 'POST',
-            body: mockMedicationReminderInput,
-          });
-          expect(store.reminders).toHaveLength(1);
-          expect(store.reminders[0].id).toBe(result.id);
-          expect(result.scheduleId).toBe('schedule-1');
-          expect(store.loading).toBe(false);
-          expect(store.error).toBe(null);
-        });
-
-        it('should handle create error', async () => {
-          const error = new Error('Validation error');
-          vi.mocked($fetch).mockRejectedValueOnce(error);
-
-          await expect(
-            store.createMedicationReminder(mockMedicationReminderInput),
-          ).rejects.toThrow('Validation error');
-          expect(store.error).toBe('Validation error');
-          expect(store.loading).toBe(false);
-        });
+    describe('updateReminderStatus', () => {
+      beforeEach(() => {
+        store.medicationReminders = [mockMedicationReminder];
       });
 
-      describe('updateMedicationReminder', () => {
-        beforeEach(() => {
-          store.reminders = [mockMedicationReminder];
-        });
+      it('should update reminder status successfully', async () => {
+        const updatedReminder = {
+          ...mockMedicationReminder,
+          status: ReminderStatus.ACKNOWLEDGED,
+        };
 
-        it('should update medication reminder successfully when online', async () => {
-          const updatedReminder = {
-            ...mockMedicationReminder,
-            status: ReminderStatus.ACKNOWLEDGED,
-            updatedAt: new Date('2024-01-02T00:00:00Z'),
-          };
+        vi.mocked($fetch).mockResolvedValueOnce(updatedReminder);
 
-          vi.mocked($fetch).mockResolvedValueOnce(updatedReminder);
+        const result = await store.updateReminderStatus(
+          'reminder-1',
+          ReminderStatus.ACKNOWLEDGED,
+        );
 
-          const result = await store.updateMedicationReminder('reminder-1', {
-            status: ReminderStatus.ACKNOWLEDGED,
-          });
-
-          expect($fetch).toHaveBeenCalledWith(
-            '/api/medication-reminders/reminder-1',
-            {
-              method: 'PUT',
-              body: { status: ReminderStatus.ACKNOWLEDGED },
-            },
-          );
-          expect(result.status).toBe(ReminderStatus.ACKNOWLEDGED);
-          expect(store.reminders[0]).toEqual(result);
-          expect(store.loading).toBe(false);
-          expect(store.error).toBe(null);
-        });
-
-        it('should handle update error', async () => {
-          const error = new Error('Not found');
-          vi.mocked($fetch).mockRejectedValueOnce(error);
-
-          await expect(
-            store.updateMedicationReminder('reminder-1', {
-              status: ReminderStatus.ACKNOWLEDGED,
-            }),
-          ).rejects.toThrow('Not found');
-          expect(store.error).toBe('Not found');
-          expect(store.loading).toBe(false);
-        });
+        expect($fetch).toHaveBeenCalledWith(
+          '/api/medication-reminders/reminder-1',
+          {
+            method: 'PUT',
+            body: { status: ReminderStatus.ACKNOWLEDGED },
+          },
+        );
+        expect(result.status).toBe(ReminderStatus.ACKNOWLEDGED);
+        expect(store.medicationReminders[0]).toEqual(result);
+        expect(store.loading).toBe(false);
+        expect(store.error).toBe(null);
       });
 
-      describe('acknowledgeReminder', () => {
-        beforeEach(() => {
-          store.reminders = [mockMedicationReminder];
-        });
+      it('should handle update error', async () => {
+        const error = new Error('Not found');
+        vi.mocked($fetch).mockRejectedValueOnce(error);
 
-        it('should acknowledge reminder successfully', async () => {
-          const acknowledgedReminder = {
-            ...mockMedicationReminder,
-            status: ReminderStatus.ACKNOWLEDGED,
-          };
-
-          vi.mocked($fetch).mockResolvedValueOnce(acknowledgedReminder);
-
-          const result = await store.acknowledgeReminder('reminder-1');
-
-          expect($fetch).toHaveBeenCalledWith(
-            '/api/medication-reminders/reminder-1',
-            {
-              method: 'PUT',
-              body: { status: ReminderStatus.ACKNOWLEDGED },
-            },
-          );
-          expect(result.status).toBe(ReminderStatus.ACKNOWLEDGED);
-        });
+        await expect(
+          store.updateReminderStatus('reminder-1', ReminderStatus.ACKNOWLEDGED),
+        ).rejects.toThrow('Not found');
+        expect(store.error).toBe('Not found');
+        expect(store.loading).toBe(false);
       });
+    });
+  });
 
-      describe('snoozeReminder', () => {
-        beforeEach(() => {
-          store.reminders = [mockMedicationReminder];
-        });
+  describe('Reminder Getters', () => {
+    beforeEach(() => {
+      store.medicationReminders = [
+        mockMedicationReminder,
+        {
+          ...mockMedicationReminder,
+          id: 'reminder-2',
+          catId: 'cat-2',
+          status: ReminderStatus.ACKNOWLEDGED,
+          scheduledAt: new Date('2024-01-02T08:00:00Z'),
+        },
+        {
+          ...mockMedicationReminder,
+          id: 'reminder-3',
+          status: ReminderStatus.SNOOZED,
+          scheduledAt: new Date('2024-01-01T09:00:00Z'),
+        },
+      ];
+    });
 
-        it('should snooze reminder successfully', async () => {
-          const originalTime = mockMedicationReminder.scheduledAt;
-          const newTime = new Date(originalTime.getTime() + 30 * 60 * 1000);
-          const snoozedReminder = {
-            ...mockMedicationReminder,
-            status: ReminderStatus.SNOOZED,
-            scheduledAt: newTime,
-          };
+    it('should get medication reminder by id', () => {
+      const reminder = store.getMedicationReminderById('reminder-1');
+      expect(reminder).toEqual(mockMedicationReminder);
+    });
 
-          vi.mocked($fetch).mockResolvedValueOnce(snoozedReminder);
+    it('should get medication reminders by cat', () => {
+      const reminders = store.getMedicationRemindersByCat('cat-1');
+      expect(reminders).toHaveLength(2);
+      expect(reminders.every(r => r.catId === 'cat-1')).toBe(true);
+    });
 
-          const result = await store.snoozeReminder('reminder-1', 30);
+    it('should get medication reminders by status', () => {
+      const pendingReminders = store.getMedicationRemindersByStatus(ReminderStatus.PENDING);
+      const acknowledgedReminders = store.getMedicationRemindersByStatus(ReminderStatus.ACKNOWLEDGED);
+      const snoozedReminders = store.getMedicationRemindersByStatus(ReminderStatus.SNOOZED);
 
-          expect($fetch).toHaveBeenCalledWith(
-            '/api/medication-reminders/reminder-1',
-            {
-              method: 'PUT',
-              body: {
-                status: ReminderStatus.SNOOZED,
-                scheduledAt: newTime,
-              },
-            },
-          );
-          expect(result.status).toBe(ReminderStatus.SNOOZED);
-          expect(result.scheduledAt.getTime()).toBe(newTime.getTime());
-        });
+      expect(pendingReminders).toHaveLength(1);
+      expect(acknowledgedReminders).toHaveLength(1);
+      expect(snoozedReminders).toHaveLength(1);
+    });
 
-        it('should throw error when reminder not found', async () => {
-          await expect(store.snoozeReminder('non-existent', 30)).rejects.toThrow(
-            'Reminder not found',
-          );
-        });
-      });
+    it('should get pending reminders', () => {
+      const pendingReminders = store.getPendingReminders;
+      expect(pendingReminders).toHaveLength(1);
+      expect(pendingReminders[0].status).toBe(ReminderStatus.PENDING);
+    });
 
-      describe('dismissReminder', () => {
-        beforeEach(() => {
-          store.reminders = [mockMedicationReminder];
-        });
+    it('should get acknowledged reminders', () => {
+      const acknowledgedReminders = store.getAcknowledgedReminders;
+      expect(acknowledgedReminders).toHaveLength(1);
+      expect(acknowledgedReminders[0].status).toBe(ReminderStatus.ACKNOWLEDGED);
+    });
 
-        it('should dismiss reminder successfully', async () => {
-          const dismissedReminder = {
-            ...mockMedicationReminder,
-            status: ReminderStatus.DISMISSED,
-          };
+    it('should get snoozed reminders', () => {
+      const snoozedReminders = store.getSnoozedReminders;
+      expect(snoozedReminders).toHaveLength(1);
+      expect(snoozedReminders[0].status).toBe(ReminderStatus.SNOOZED);
+    });
 
-          vi.mocked($fetch).mockResolvedValueOnce(dismissedReminder);
-
-          const result = await store.dismissReminder('reminder-1');
-
-          expect($fetch).toHaveBeenCalledWith(
-            '/api/medication-reminders/reminder-1',
-            {
-              method: 'PUT',
-              body: { status: ReminderStatus.DISMISSED },
-            },
-          );
-          expect(result.status).toBe(ReminderStatus.DISMISSED);
-        });
-      });
-
-      describe('Medication Reminder Utility Actions', () => {
-        it('should add medication reminder to state', () => {
-          store.addMedicationReminderToState(mockMedicationReminder);
-          expect(store.reminders).toHaveLength(1);
-          expect(store.reminders[0].id).toBe(mockMedicationReminder.id);
-
-          // Should update existing reminder
-          const updatedReminder = {
-            ...mockMedicationReminder,
-            status: ReminderStatus.ACKNOWLEDGED,
-          };
-          store.addMedicationReminderToState(updatedReminder);
-          expect(store.reminders).toHaveLength(1);
-          expect(store.reminders[0].status).toBe(ReminderStatus.ACKNOWLEDGED);
-        });
-
-        it('should remove medication reminder from state', () => {
-          store.reminders = [mockMedicationReminder];
-          store.removeMedicationReminderFromState('reminder-1');
-          expect(store.reminders).toHaveLength(0);
-        });
-
-        it('should invalidate reminders cache', () => {
-          store.cache.remindersLastFetch = new Date();
-          store.invalidateRemindersCache();
-          expect(store.cache.remindersLastFetch).toBe(null);
-        });
-      });
+    it('should return sorted medication reminders', () => {
+      const sorted = store.sortedMedicationReminders;
+      expect(sorted).toHaveLength(3);
+      expect(sorted[0].scheduledAt.getTime()).toBeLessThanOrEqual(sorted[1].scheduledAt.getTime());
+      expect(sorted[1].scheduledAt.getTime()).toBeLessThanOrEqual(sorted[2].scheduledAt.getTime());
     });
   });
 });

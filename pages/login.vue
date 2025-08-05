@@ -289,7 +289,7 @@ const goToRegister = () => {
 .login-button {
   width: 100%;
   padding: 0.875rem;
-  background: #4caf50;
+  background: #2e7d32; /* より濃い緑でコントラスト比を改善 */
   color: white;
   border: none;
   border-radius: 8px;
@@ -304,9 +304,9 @@ const goToRegister = () => {
 }
 
 .login-button:hover:not(:disabled) {
-  background: #45a049;
+  background: #1b5e20; /* ホバー時もコントラストを維持 */
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
 }
 
 .login-button:disabled {
@@ -347,7 +347,7 @@ const goToRegister = () => {
 }
 
 .register-button {
-  color: #4caf50;
+  color: #2e7d32; /* より濃い緑でコントラスト比を改善 */
   background: none;
   border: none;
   font-size: 1rem;
@@ -358,7 +358,7 @@ const goToRegister = () => {
 }
 
 .register-button:hover {
-  color: #45a049;
+  color: #1b5e20; /* ホバー時もコントラストを維持 */
 }
 
 /* Mobile Responsive */

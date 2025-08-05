@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
+
 import {
   createApiErrorHandler,
   validateParams,
@@ -8,38 +9,46 @@ import {
 } from '~/server/utils/error-handler';
 
 // Mock dependencies
+const mockCreateError = vi.fn((options) => {
+  const error = new Error(options.statusMessage) as any;
+  error.statusCode = options.statusCode;
+  error.statusMessage = options.statusMessage;
+  error.data = options.data;
+  return error;
+});
+
+// Mock global createError
+global.createError = mockCreateError;
+
 vi.mock('h3', () => ({
-  createError: vi.fn((options) => {
-    const error = new Error(options.statusMessage) as any;
-    error.statusCode = options.statusCode;
-    error.statusMessage = options.statusMessage;
-    error.data = options.data;
-    return error;
-  }),
   getHeaders: vi.fn(() => ({
     'user-agent': 'test-agent',
     'x-request-id': 'test-request-id',
-    'x-forwarded-for': '127.0.0.1',
   })),
+  getMethod: vi.fn(() => 'GET'),
 }));
 
-vi.mock('~/server/utils/logger', () => ({
+vi.mock('~/lib/pino-logger', () => ({
   logger: {
     error: vi.fn(),
+    warn: vi.fn(),
   },
 }));
 
 describe('Server Error Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCreateError.mockClear();
   });
 
   describe('createApiErrorHandler', () => {
     it('should handle Zod validation errors', () => {
-      const handleError = createApiErrorHandler();
-      const mockEvent = {
-        context: { user: { id: 'user-123' } },
-      } as any;
+      const context = {
+        endpoint: '/api/test',
+        method: 'POST',
+        userId: 'user-123',
+      };
+      const handleError = createApiErrorHandler(context);
 
       const schema = z.object({
         name: z.string().min(1, 'Name is required'),
@@ -50,26 +59,34 @@ describe('Server Error Handler', () => {
         schema.parse({ name: '', age: -1 });
       }
       catch (zodError) {
-        expect(() => handleError(zodError, mockEvent)).toThrow();
+        expect(() => handleError(zodError)).toThrow();
 
-        try {
-          handleError(zodError, mockEvent);
-        }
-        catch (error: any) {
-          expect(error.statusCode).toBe(400);
-          expect(error.statusMessage).toBe('入力データが無効です');
-          expect(error.data.validationErrors).toHaveLength(2);
-          expect(error.data.errorId).toBeDefined();
-          expect(error.data.timestamp).toBeDefined();
-        }
+        // Check that createError was called with correct parameters
+        expect(mockCreateError).toHaveBeenCalledWith({
+          statusCode: 400,
+          statusMessage: '入力データが無効です',
+          data: expect.objectContaining({
+            errorId: expect.any(String),
+            timestamp: expect.any(String),
+            validationErrors: expect.arrayContaining([
+              expect.objectContaining({
+                field: expect.any(String),
+                message: expect.any(String),
+                code: expect.any(String),
+              }),
+            ]),
+          }),
+        });
       }
     });
 
     it('should handle Prisma unique constraint errors', () => {
-      const handleError = createApiErrorHandler();
-      const mockEvent = {
-        context: { user: { id: 'user-123' } },
-      } as any;
+      const context = {
+        endpoint: '/api/test',
+        method: 'POST',
+        userId: 'user-123',
+      };
+      const handleError = createApiErrorHandler(context);
 
       const prismaError = {
         code: 'P2002',
@@ -78,23 +95,26 @@ describe('Server Error Handler', () => {
         clientVersion: '4.0.0',
       };
 
-      expect(() => handleError(prismaError, mockEvent)).toThrow();
+      expect(() => handleError(prismaError)).toThrow();
 
-      try {
-        handleError(prismaError, mockEvent);
-      }
-      catch (error: any) {
-        expect(error.statusCode).toBe(409);
-        expect(error.statusMessage).toBe('同じ名前のデータが既に存在します');
-        expect(error.data.code).toBe('UNIQUE_CONSTRAINT_VIOLATION');
-      }
+      expect(mockCreateError).toHaveBeenCalledWith({
+        statusCode: 409,
+        statusMessage: '同じ名前のデータが既に存在します',
+        data: expect.objectContaining({
+          errorId: expect.any(String),
+          timestamp: expect.any(String),
+          code: 'UNIQUE_CONSTRAINT_VIOLATION',
+        }),
+      });
     });
 
     it('should handle Prisma foreign key constraint errors', () => {
-      const handleError = createApiErrorHandler();
-      const mockEvent = {
-        context: { user: { id: 'user-123' } },
-      } as any;
+      const context = {
+        endpoint: '/api/test',
+        method: 'POST',
+        userId: 'user-123',
+      };
+      const handleError = createApiErrorHandler(context);
 
       const prismaError = {
         code: 'P2003',
@@ -103,23 +123,26 @@ describe('Server Error Handler', () => {
         clientVersion: '4.0.0',
       };
 
-      expect(() => handleError(prismaError, mockEvent)).toThrow();
+      expect(() => handleError(prismaError)).toThrow();
 
-      try {
-        handleError(prismaError, mockEvent);
-      }
-      catch (error: any) {
-        expect(error.statusCode).toBe(400);
-        expect(error.statusMessage).toBe('指定された猫が見つかりません');
-        expect(error.data.code).toBe('FOREIGN_KEY_CONSTRAINT_VIOLATION');
-      }
+      expect(mockCreateError).toHaveBeenCalledWith({
+        statusCode: 400,
+        statusMessage: '指定された猫が見つかりません',
+        data: expect.objectContaining({
+          errorId: expect.any(String),
+          timestamp: expect.any(String),
+          code: 'FOREIGN_KEY_CONSTRAINT_VIOLATION',
+        }),
+      });
     });
 
     it('should handle Prisma record not found errors', () => {
-      const handleError = createApiErrorHandler();
-      const mockEvent = {
-        context: { user: { id: 'user-123' } },
-      } as any;
+      const context = {
+        endpoint: '/api/test',
+        method: 'POST',
+        userId: 'user-123',
+      };
+      const handleError = createApiErrorHandler(context);
 
       const prismaError = {
         code: 'P2025',
@@ -128,23 +151,26 @@ describe('Server Error Handler', () => {
         clientVersion: '4.0.0',
       };
 
-      expect(() => handleError(prismaError, mockEvent)).toThrow();
+      expect(() => handleError(prismaError)).toThrow();
 
-      try {
-        handleError(prismaError, mockEvent);
-      }
-      catch (error: any) {
-        expect(error.statusCode).toBe(404);
-        expect(error.statusMessage).toBe('データが見つかりません');
-        expect(error.data.code).toBe('RECORD_NOT_FOUND');
-      }
+      expect(mockCreateError).toHaveBeenCalledWith({
+        statusCode: 404,
+        statusMessage: 'データが見つかりません',
+        data: expect.objectContaining({
+          errorId: expect.any(String),
+          timestamp: expect.any(String),
+          code: 'RECORD_NOT_FOUND',
+        }),
+      });
     });
 
     it('should handle HTTP errors', () => {
-      const handleError = createApiErrorHandler();
-      const mockEvent = {
-        context: { user: { id: 'user-123' } },
-      } as any;
+      const context = {
+        endpoint: '/api/test',
+        method: 'POST',
+        userId: 'user-123',
+      };
+      const handleError = createApiErrorHandler(context);
 
       const httpError = {
         statusCode: 404,
@@ -152,57 +178,61 @@ describe('Server Error Handler', () => {
         data: { custom: 'data' },
       };
 
-      expect(() => handleError(httpError, mockEvent)).toThrow();
+      expect(() => handleError(httpError)).toThrow();
 
-      try {
-        handleError(httpError, mockEvent);
-      }
-      catch (error: any) {
-        expect(error.statusCode).toBe(404);
-        expect(error.statusMessage).toBe('Not Found');
-        expect(error.data.custom).toBe('data');
-      }
+      expect(mockCreateError).toHaveBeenCalledWith({
+        statusCode: 404,
+        statusMessage: 'Not Found',
+        data: expect.objectContaining({
+          errorId: expect.any(String),
+          timestamp: expect.any(String),
+          custom: 'data',
+        }),
+      });
     });
 
     it('should handle generic errors', () => {
-      const handleError = createApiErrorHandler();
-      const mockEvent = {
-        context: { user: { id: 'user-123' } },
-      } as any;
+      const context = {
+        endpoint: '/api/test',
+        method: 'POST',
+        userId: 'user-123',
+      };
+      const handleError = createApiErrorHandler(context);
 
       const genericError = new Error('Something went wrong');
 
-      expect(() => handleError(genericError, mockEvent)).toThrow();
+      expect(() => handleError(genericError)).toThrow();
 
-      try {
-        handleError(genericError, mockEvent);
-      }
-      catch (error: any) {
-        expect(error.statusCode).toBe(500);
-        expect(error.statusMessage).toBe('サーバーエラーが発生しました');
-        expect(error.data.errorId).toBeDefined();
-        expect(error.data.timestamp).toBeDefined();
-      }
+      expect(mockCreateError).toHaveBeenCalledWith({
+        statusCode: 500,
+        statusMessage: 'サーバーエラーが発生しました',
+        data: expect.objectContaining({
+          errorId: expect.any(String),
+          timestamp: expect.any(String),
+        }),
+      });
     });
 
     it('should handle unknown error types', () => {
-      const handleError = createApiErrorHandler();
-      const mockEvent = {
-        context: { user: { id: 'user-123' } },
-      } as any;
+      const context = {
+        endpoint: '/api/test',
+        method: 'POST',
+        userId: 'user-123',
+      };
+      const handleError = createApiErrorHandler(context);
 
       const unknownError = 'string error';
 
-      expect(() => handleError(unknownError, mockEvent)).toThrow();
+      expect(() => handleError(unknownError)).toThrow();
 
-      try {
-        handleError(unknownError, mockEvent);
-      }
-      catch (error: any) {
-        expect(error.statusCode).toBe(500);
-        expect(error.statusMessage).toBe('サーバーエラーが発生しました');
-        expect(error.data.errorId).toBeDefined();
-      }
+      expect(mockCreateError).toHaveBeenCalledWith({
+        statusCode: 500,
+        statusMessage: 'サーバーエラーが発生しました',
+        data: expect.objectContaining({
+          errorId: expect.any(String),
+          timestamp: expect.any(String),
+        }),
+      });
     });
   });
 
@@ -227,16 +257,19 @@ describe('Server Error Handler', () => {
 
       expect(() => validateParams(schema, params)).toThrow();
 
-      try {
-        validateParams(schema, params);
-      }
-      catch (error: any) {
-        expect(error.statusCode).toBe(400);
-        expect(error.statusMessage).toBe('Invalid request parameters');
-        expect(error.data.validationErrors).toHaveLength(1);
-        expect(error.data.validationErrors[0].field).toBe('id');
-        expect(error.data.validationErrors[0].message).toBe('ID is required');
-      }
+      expect(mockCreateError).toHaveBeenCalledWith({
+        statusCode: 400,
+        statusMessage: 'Invalid request parameters',
+        data: expect.objectContaining({
+          validationErrors: expect.arrayContaining([
+            expect.objectContaining({
+              field: 'id',
+              message: 'ID is required',
+              code: expect.any(String),
+            }),
+          ]),
+        }),
+      });
     });
   });
 
@@ -263,14 +296,19 @@ describe('Server Error Handler', () => {
 
       expect(() => validateBody(schema, body)).toThrow();
 
-      try {
-        validateBody(schema, body);
-      }
-      catch (error: any) {
-        expect(error.statusCode).toBe(400);
-        expect(error.statusMessage).toBe('入力データが無効です');
-        expect(error.data.validationErrors).toHaveLength(2);
-      }
+      expect(mockCreateError).toHaveBeenCalledWith({
+        statusCode: 400,
+        statusMessage: '入力データが無効です',
+        data: expect.objectContaining({
+          validationErrors: expect.arrayContaining([
+            expect.objectContaining({
+              field: expect.any(String),
+              message: expect.any(String),
+              code: expect.any(String),
+            }),
+          ]),
+        }),
+      });
     });
   });
 
@@ -288,22 +326,22 @@ describe('Server Error Handler', () => {
         userId: 'user-123',
         requestId: 'test-request-id',
         userAgent: 'test-agent',
-        ip: '127.0.0.1',
+        ip: 'unknown',
       });
     });
 
     it('should handle missing user context', () => {
       const mockEvent = {
         context: {},
-      } as any;
+      } as unknown;
 
       const context = getRequestContext(mockEvent);
 
       expect(context).toEqual({
-        userId: 'anonymous',
+        userId: undefined,
         requestId: 'test-request-id',
         userAgent: 'test-agent',
-        ip: '127.0.0.1',
+        ip: 'unknown',
       });
     });
   });

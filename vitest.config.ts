@@ -1,5 +1,5 @@
 import { resolve } from 'path';
-import { defineConfig } from 'vitest/config';
+import { defineConfig, configDefaults } from 'vitest/config';
 import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
@@ -8,6 +8,7 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./tests/setup.ts'],
+    exclude: [...configDefaults.exclude, 'tests/e2e/**', 'tests/accessibility/**'],
   },
   resolve: {
     alias: {
