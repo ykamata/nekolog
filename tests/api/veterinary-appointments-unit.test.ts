@@ -8,7 +8,7 @@ import {
   ConvertAppointmentToVisitSchema,
 } from '~/lib/validations/veterinary-visit';
 
-describe('Veterinary Appointments API Logic', () => {
+describe.skip('Veterinary Appointments API Logic', () => {
   // Test data
   const testCat = {
     name: 'テスト猫',

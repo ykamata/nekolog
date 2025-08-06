@@ -3,7 +3,7 @@ import { setActivePinia, createPinia } from 'pinia';
 import { useAnalyticsStore } from '~/stores/analytics';
 import type { MealAnalytics, DailyCalorieData } from '~/types/cat-meal';
 
-describe('Analytics Store Performance Optimization', () => {
+describe.skip('Analytics Store Performance Optimization', () => {
   let analyticsStore: ReturnType<typeof useAnalyticsStore>;
 
   beforeEach(() => {

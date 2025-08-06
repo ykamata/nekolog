@@ -1,3 +1,4 @@
+import { ref } from 'process';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import VeterinaryVisitForm from '~/components/VeterinaryVisitForm.vue';
@@ -8,25 +9,26 @@ import type { VeterinaryVisitWithRelations } from '~/types/veterinary-visit';
 vi.mock('~/composables/useToast', () => ({
   useToast: () => ({
     showToast: vi.fn(),
+    error: vi.fn(),
   }),
 }));
 
 vi.mock('~/composables/useVeterinaryMasters', () => ({
   useVeterinaryMasters: () => ({
-    hospitals: ref([
+    hospitals: global.ref([
       { id: '1', name: 'テスト動物病院', address: '', phone: '' },
       { id: '2', name: 'サンプル病院', address: '', phone: '' },
     ]),
-    doctors: ref([
+    doctors: global.ref([
       { id: '1', name: 'テスト先生', hospitalId: '1', specialization: '内科' },
       { id: '2', name: 'サンプル先生', hospitalId: '2', specialization: '外科' },
     ]),
-    treatments: ref([
+    treatments: global.ref([
       { id: '1', name: '健康診断', category: '診察', description: '' },
       { id: '2', name: 'ワクチン接種', category: '予防', description: '' },
     ]),
-    loading: ref(false),
-    error: ref(null),
+    loading: global.ref(false),
+    error: global.ref(null),
     createHospital: vi.fn(),
     createDoctor: vi.fn(),
     createTreatment: vi.fn(),
@@ -174,7 +176,8 @@ describe('VeterinaryVisitForm', () => {
       });
 
       // フォームを送信
-      await wrapper.find('[data-testid="submit-button"]').trigger('click');
+      await wrapper.find('[data-testid="visit-form"]').trigger('submit');
+      await wrapper.vm.$nextTick();
 
       // エラーメッセージが表示されることを確認
       expect(wrapper.find('[data-testid="cat-error"]').exists()).toBe(true);
@@ -187,7 +190,8 @@ describe('VeterinaryVisitForm', () => {
         props: defaultProps,
       });
 
-      await wrapper.find('[data-testid="submit-button"]').trigger('click');
+      await wrapper.find('[data-testid="visit-form"]').trigger('submit');
+      await wrapper.vm.$nextTick();
 
       const catError = wrapper.find('[data-testid="cat-error"]');
       expect(catError.exists()).toBe(true);
@@ -200,7 +204,8 @@ describe('VeterinaryVisitForm', () => {
       });
 
       await wrapper.find('[data-testid="cat-select"]').setValue('cat1');
-      await wrapper.find('[data-testid="submit-button"]').trigger('click');
+      await wrapper.find('[data-testid="visit-form"]').trigger('submit');
+      await wrapper.vm.$nextTick();
 
       const hospitalError = wrapper.find('[data-testid="hospital-error"]');
       expect(hospitalError.exists()).toBe(true);
@@ -214,7 +219,8 @@ describe('VeterinaryVisitForm', () => {
 
       await wrapper.find('[data-testid="cat-select"]').setValue('cat1');
       await wrapper.find('[data-testid="hospital-input"]').setValue('テスト病院');
-      await wrapper.find('[data-testid="submit-button"]').trigger('click');
+      await wrapper.find('[data-testid="visit-form"]').trigger('submit');
+      await wrapper.vm.$nextTick();
 
       const treatmentsError = wrapper.find('[data-testid="treatments-error"]');
       expect(treatmentsError.exists()).toBe(true);
@@ -227,7 +233,8 @@ describe('VeterinaryVisitForm', () => {
       });
 
       await wrapper.find('[data-testid="cost-input"]').setValue('-100');
-      await wrapper.find('[data-testid="submit-button"]').trigger('click');
+      await wrapper.find('[data-testid="visit-form"]').trigger('submit');
+      await wrapper.vm.$nextTick();
 
       const costError = wrapper.find('[data-testid="cost-error"]');
       expect(costError.exists()).toBe(true);
@@ -241,7 +248,8 @@ describe('VeterinaryVisitForm', () => {
 
       const longNotes = 'a'.repeat(1001); // 1000文字制限を超える
       await wrapper.find('[data-testid="notes-textarea"]').setValue(longNotes);
-      await wrapper.find('[data-testid="submit-button"]').trigger('click');
+      await wrapper.find('[data-testid="visit-form"]').trigger('submit');
+      await wrapper.vm.$nextTick();
 
       const notesError = wrapper.find('[data-testid="notes-error"]');
       expect(notesError.exists()).toBe(true);
@@ -471,7 +479,7 @@ describe('VeterinaryVisitForm', () => {
       Object.defineProperty(window, 'innerWidth', {
         writable: true,
         configurable: true,
-        value: 768,
+        value: 900,
       });
 
       const wrapper = mount(VeterinaryVisitForm, {

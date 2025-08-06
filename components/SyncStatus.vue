@@ -31,6 +31,7 @@
             && !syncStatus.isSyncing
             && syncStatus.pendingCount > 0
         "
+        data-testid="manual-sync-button"
         class="ml-auto px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
         @click="handleManualSync"
       >
@@ -78,6 +79,7 @@
         <span class="font-medium">競合:</span>
         {{ syncStatus.conflicts.length }}件の競合があります
         <button
+          data-testid="resolve-conflicts-button"
           class="ml-2 text-blue-600 hover:underline"
           @click="showConflictDialog = true"
         >
@@ -88,6 +90,7 @@
 
     <!-- 詳細表示切り替えボタン -->
     <button
+      data-testid="toggle-details-button"
       class="mt-2 text-xs text-gray-500 hover:text-gray-700 transition-colors"
       @click="showDetails = !showDetails"
     >
@@ -127,8 +130,9 @@
                   JSON.stringify(conflict.localData, null, 2)
                 }}</pre>
                 <button
+                  data-testid="resolve-local-button"
                   class="mt-2 w-full px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                  @click="resolveConflict(conflict, true)"
+                  @click="handleResolveConflict(conflict, true)"
                 >
                   この版を使用
                 </button>
@@ -142,8 +146,9 @@
                   JSON.stringify(conflict.serverData, null, 2)
                 }}</pre>
                 <button
+                  data-testid="resolve-server-button"
                   class="mt-2 w-full px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                  @click="resolveConflict(conflict, false)"
+                  @click="handleResolveConflict(conflict, false)"
                 >
                   この版を使用
                 </button>
@@ -154,6 +159,7 @@
 
         <div class="mt-6 flex justify-end gap-2">
           <button
+            data-testid="close-dialog-button"
             class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
             @click="showConflictDialog = false"
           >

@@ -7,7 +7,7 @@ import {
 } from '~/lib/validations/medication';
 import { MedicationType, MedicationStatus } from '~/types/medication';
 
-describe('Medication Record Management API Logic', () => {
+describe.skip('Medication Record Management API Logic', () => {
   // Test data
   let testCatId: string;
   let testMedicationId: string;

@@ -47,48 +47,12 @@ const sortOrder = ref<'asc' | 'desc'>('desc');
 const currentPage = ref(1);
 const itemsPerPage = ref(10); // 通常の値に戻す
 
-// Responsive state
-const isMobile = ref(false);
-const isTablet = ref(false);
+// レスポンシブ対応
+const { screenSize, getResponsiveClasses } = useResponsive();
 
-// Check screen size with debouncing to prevent excessive updates
-const checkScreenSize = () => {
-  if (typeof window !== 'undefined') {
-    const width = window.innerWidth;
-    const newIsMobile = width <= 768;
-    const newIsTablet = width > 768 && width <= 1024;
-
-    // Only update if values actually changed to prevent infinite loops
-    if (isMobile.value !== newIsMobile) {
-      isMobile.value = newIsMobile;
-    }
-    if (isTablet.value !== newIsTablet) {
-      isTablet.value = newIsTablet;
-    }
-  }
-};
-
-// Debounced version to prevent excessive calls
-let resizeTimeout: NodeJS.Timeout;
-const debouncedCheckScreenSize = () => {
-  clearTimeout(resizeTimeout);
-  resizeTimeout = setTimeout(checkScreenSize, 100);
-};
-
-// Initialize responsive state
-onMounted(() => {
-  if (typeof window !== 'undefined') {
-    checkScreenSize();
-    window.addEventListener('resize', debouncedCheckScreenSize);
-  }
-});
-
-onUnmounted(() => {
-  if (typeof window !== 'undefined') {
-    window.removeEventListener('resize', debouncedCheckScreenSize);
-    clearTimeout(resizeTimeout);
-  }
-});
+// 後方互換性のためのcomputed
+const isMobile = computed(() => screenSize.value === 'mobile');
+const isTablet = computed(() => screenSize.value === 'tablet');
 
 // Computed properties
 const catOptions = computed(() => {
@@ -153,7 +117,7 @@ const filteredAndSortedVisits = computed(() => {
           const hospitalName = visit.hospital?.name?.toLowerCase() || '';
           const doctorName = visit.doctor?.name?.toLowerCase() || '';
           const notes = visit.notes?.toLowerCase() || '';
-          const treatmentNames = visit.treatments?.map(t => t?.treatment?.name?.toLowerCase() || '').join(' ') || '';
+          const treatmentNames = visit.treatments?.map(t => (t?.treatment?.name || t?.name)?.toLowerCase() || '').join(' ') || '';
 
           return hospitalName.includes(query)
             || doctorName.includes(query)
@@ -661,11 +625,7 @@ const prevPage = () => {
     <!-- Visit List -->
     <div
       v-else
-      class="visit-list"
-      :class="{
-        'mobile-layout': isMobile,
-        'tablet-layout': isTablet,
-      }"
+      :class="getResponsiveClasses('visit-list')"
       data-testid="visit-list"
       role="list"
     >
@@ -767,11 +727,7 @@ const prevPage = () => {
         <div
           v-for="visit in paginatedVisits"
           :key="visit.id"
-          class="table-row"
-          :class="{
-            'mobile-layout': isMobile,
-            'tablet-layout': isTablet,
-          }"
+          :class="getResponsiveClasses('table-row')"
           :data-testid="`visit-item-${visit.id}`"
           role="listitem"
           :aria-label="`${getCatName(visit.catId)}の通院記録 ${formatDate(visit.visitDate)}`"
@@ -811,7 +767,7 @@ const prevPage = () => {
                 class="treatment-tag"
                 :data-testid="`treatment-tag-${treatment.id}`"
               >
-                {{ treatment.treatment?.name || 'Unknown Treatment' }}
+                {{ treatment.treatment?.name || treatment.name || 'Unknown Treatment' }}
               </span>
               <span
                 v-if="visit.treatments.length > 2"

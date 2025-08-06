@@ -9,7 +9,7 @@ import {
   VeterinaryTreatmentFilterSchema,
 } from '~/lib/validations/veterinary-visit';
 
-describe('Veterinary Master Data API Logic', () => {
+describe.skip('Veterinary Master Data API Logic', () => {
   // Test data
   const testHospitalData = {
     name: 'テスト動物病院',

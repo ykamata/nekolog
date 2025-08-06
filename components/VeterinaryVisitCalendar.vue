@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useResponsive } from '~/composables/useResponsive';
 import type { Cat } from '~/types/cat-meal';
 import type {
   VeterinaryVisitWithRelations,
@@ -18,6 +19,7 @@ interface Props {
   viewMode?: 'calendar' | 'list';
   showBloodTestFilter?: boolean;
   showVisitTypeFilter?: boolean;
+  initialDate?: Date;
 }
 
 interface Emits {
@@ -40,12 +42,13 @@ const props = withDefaults(defineProps<Props>(), {
   viewMode: 'calendar',
   showBloodTestFilter: true,
   showVisitTypeFilter: true,
+  initialDate: () => new Date(),
 });
 
 const emit = defineEmits<Emits>();
 
 // Calendar state
-const currentDate = ref(new Date());
+const currentDate = ref(props.initialDate);
 const selectedDate = ref<Date | null>(null);
 const showDetailModal = ref(false);
 const selectedDateEvents = ref<CalendarEventData[]>([]);
@@ -59,6 +62,9 @@ const appointmentFilter = ref(props.showAppointments);
 // Detail modal state
 const editingEventId = ref<string | null>(null);
 const editingNotes = ref('');
+
+// レスポンシブ対応
+const { screenSize, getResponsiveClasses } = useResponsive();
 
 // Computed properties
 const currentYear = computed(() => currentDate.value.getFullYear());
@@ -237,7 +243,10 @@ const handleDateClick = (day: CalendarDay) => {
     showDetailModal.value = true;
   }
 
-  emit('dateSelected', day.date, day.events);
+  // 日付の時間部分を00:00:00にして発火
+  const dateOnly = new Date(day.date);
+  dateOnly.setHours(0, 0, 0, 0);
+  emit('dateSelected', dateOnly, day.events);
 };
 
 const handleDateDoubleClick = (day: CalendarDay) => {
@@ -341,10 +350,12 @@ const getDayClasses = (day: CalendarDay): string[] => {
 
   if (day.hasVisits) {
     classes.push('calendar-day--has-visits');
+    classes.push('has-visit'); // テスト用のクラス名
   }
 
   if (day.hasAppointments) {
     classes.push('calendar-day--has-appointments');
+    classes.push('has-appointment'); // テスト用のクラス名
   }
 
   if (day.hasBloodTest) {
@@ -385,6 +396,45 @@ const getEventDots = (day: CalendarDay) => {
   });
 
   return dots.slice(0, 3); // 最大3つまで表示
+};
+
+// 通院記録IDを取得するヘルパー関数
+const getVisitId = (day: CalendarDay): string => {
+  const visitEvent = day.events.find(e => e.type === 'visit');
+  return visitEvent ? visitEvent.id : '';
+};
+
+// 予約IDを取得するヘルパー関数
+const getAppointmentId = (day: CalendarDay): string => {
+  const appointmentEvent = day.events.find(e => e.type === 'appointment');
+  return appointmentEvent ? appointmentEvent.id : '';
+};
+
+// カレンダーコンテナのCSSクラスを取得
+const calendarClasses = computed(() => getResponsiveClasses('veterinary-calendar'));
+
+// 日付セルのaria-label属性を生成
+const getDateAriaLabel = (day: CalendarDay): string => {
+  const dateStr = day.date.toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const eventDescriptions: string[] = [];
+  if (day.hasVisits) {
+    eventDescriptions.push('通院記録あり');
+  }
+  if (day.hasAppointments) {
+    eventDescriptions.push('予約あり');
+  }
+  if (day.hasBloodTest) {
+    eventDescriptions.push('血液検査実施');
+  }
+
+  return eventDescriptions.length > 0
+    ? `${dateStr} ${eventDescriptions.join(', ')}`
+    : dateStr;
 };
 
 // 型定義
@@ -445,11 +495,19 @@ watch(
     appointmentFilter.value = newShow;
   },
 );
+
+// モバイルの場合はデフォルトでリスト表示
+watch(screenSize, (newSize) => {
+  if (newSize === 'mobile' && internalViewMode.value === 'calendar') {
+    internalViewMode.value = 'list';
+    emit('viewModeChanged', 'list');
+  }
+});
 </script>
 
 <template>
   <div
-    class="veterinary-calendar"
+    :class="calendarClasses"
     data-testid="calendar-container"
   >
     <!-- Calendar Header -->
@@ -538,7 +596,7 @@ watch(
           <button
             class="toggle-btn"
             :class="{ 'toggle-btn--active': internalViewMode === 'list' }"
-            data-testid="list-view"
+            data-testid="list-mode-button"
             @click="handleViewModeChange('list')"
           >
             <svg
@@ -569,6 +627,8 @@ watch(
           id="cat-filter"
           :value="internalCatFilter"
           class="filter-select"
+          data-testid="cat-filter"
+          aria-describedby="cat-filter-description"
           @change="handleCatFilterChange(($event.target as HTMLSelectElement).value)"
         >
           <option value="">
@@ -582,6 +642,12 @@ watch(
             {{ cat.name }}
           </option>
         </select>
+        <div
+          id="cat-filter-description"
+          class="sr-only"
+        >
+          特定の猫の記録のみを表示するためのフィルター
+        </div>
       </div>
 
       <!-- Blood Test Filter -->
@@ -589,26 +655,26 @@ watch(
         v-if="showBloodTestFilter"
         class="filter-group"
       >
-        <label
-          for="blood-test-filter"
-          class="filter-label"
-        >血液検査</label>
-        <select
-          id="blood-test-filter"
-          :value="bloodTestFilter"
-          class="filter-select"
-          @change="handleBloodTestFilterChange(($event.target as HTMLSelectElement).value as 'all' | 'bloodTest' | 'noBloodTest')"
-        >
-          <option value="all">
-            すべて
-          </option>
-          <option value="bloodTest">
-            血液検査あり
-          </option>
-          <option value="noBloodTest">
-            血液検査なし
-          </option>
-        </select>
+        <label class="filter-label">血液検査フィルター</label>
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              :checked="bloodTestFilter === 'bloodTest'"
+              class="checkbox-input"
+              data-testid="blood-test-filter"
+              aria-describedby="blood-test-filter-description"
+              @change="handleBloodTestFilterChange(($event.target as HTMLInputElement).checked ? 'bloodTest' : 'all')"
+            >
+            <span class="checkbox-text">血液検査のみ表示</span>
+          </label>
+          <div
+            id="blood-test-filter-description"
+            class="sr-only"
+          >
+            血液検査を実施した通院記録のみを表示
+          </div>
+        </div>
       </div>
 
       <!-- Appointment Filter -->
@@ -662,61 +728,184 @@ watch(
       <p>カレンダーを読み込み中...</p>
     </div>
 
-    <!-- Calendar Grid -->
+    <!-- Calendar View -->
     <div
-      v-else
-      class="calendar-grid"
-      data-testid="calendar-grid"
+      v-if="internalViewMode === 'calendar'"
+      data-testid="calendar-view"
     >
-      <!-- Week Header -->
-      <div class="calendar-week-header">
-        <div
-          v-for="day in weekDays"
-          :key="day"
-          class="week-day-header"
-          :class="{ 'week-day-header--weekend': day === '日' || day === '土' }"
-        >
-          {{ day }}
+      <!-- Calendar Grid -->
+      <div
+        v-if="!loading"
+        class="calendar-grid"
+        data-testid="calendar-grid"
+      >
+        <!-- Week Header -->
+        <div class="calendar-week-header">
+          <div
+            v-for="day in weekDays"
+            :key="day"
+            class="week-day-header"
+            :class="{ 'week-day-header--weekend': day === '日' || day === '土' }"
+          >
+            {{ day }}
+          </div>
+        </div>
+
+        <!-- Calendar Days -->
+        <div class="calendar-days">
+          <div
+            v-for="day in calendarDays"
+            :key="day.date.toISOString()"
+            :class="getDayClasses(day)"
+            :data-date="day.date.toISOString().split('T')[0]"
+            role="button"
+            :aria-label="getDateAriaLabel(day)"
+            :aria-pressed="day.isSelected"
+            :aria-current="day.isToday ? 'date' : undefined"
+            :aria-describedby="day.events.length > 0 ? `events-${day.date.toISOString().split('T')[0]}` : undefined"
+            tabindex="0"
+            @click="handleDateClick(day)"
+            @dblclick="handleDateDoubleClick(day)"
+            @contextmenu="handleDateRightClick($event, day)"
+            @keydown.enter="handleDateClick(day)"
+            @keydown.space.prevent="handleDateClick(day)"
+          >
+            <div class="day-number">
+              {{ day.date.getDate() }}
+            </div>
+
+            <!-- 通院記録マーク -->
+            <div
+              v-if="day.hasVisits"
+              :data-testid="`visit-mark-${getVisitId(day)}`"
+              class="visit-mark"
+              aria-label="通院記録あり"
+            />
+
+            <!-- 血液検査マーク -->
+            <div
+              v-if="day.hasBloodTest"
+              :data-testid="`blood-test-mark-${getVisitId(day)}`"
+              class="blood-test-mark"
+              aria-label="血液検査実施"
+            />
+
+            <!-- 予約マーク -->
+            <div
+              v-if="day.hasAppointments"
+              :data-testid="`appointment-mark-${getAppointmentId(day)}`"
+              class="appointment-mark"
+              aria-label="予約あり"
+            />
+
+            <!-- Event Dots -->
+            <div
+              v-if="day.events.length > 0"
+              :id="`events-${day.date.toISOString().split('T')[0]}`"
+              class="event-dots"
+              role="group"
+              :aria-label="`${day.date.toLocaleDateString('ja-JP')}のイベント`"
+            >
+              <div
+                v-for="dot in getEventDots(day)"
+                :key="dot.catId"
+                class="event-dot"
+                :class="{
+                  'event-dot--visit': dot.hasVisit,
+                  'event-dot--appointment': dot.hasAppointment,
+                  'event-dot--blood-test': dot.hasBloodTest,
+                }"
+                :title="`${dot.catName}: ${dot.eventCount}件`"
+                :aria-label="`${dot.catName}: ${dot.eventCount}件のイベント`"
+              />
+              <div
+                v-if="day.events.length > 3"
+                class="event-dot event-dot--more"
+                :title="`他 ${day.events.length - 3}件`"
+                :aria-label="`他 ${day.events.length - 3}件のイベント`"
+              >
+                +{{ day.events.length - 3 }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- Calendar Days -->
-      <div class="calendar-days">
+    <!-- データなしメッセージ（全体用） -->
+    <div
+      v-if="!loading && filteredVisits.length === 0 && filteredAppointments.length === 0"
+      data-testid="no-data-message"
+      class="no-data-message"
+    >
+      記録がありません
+    </div>
+
+    <!-- List View -->
+    <div
+      v-else-if="internalViewMode === 'list'"
+      data-testid="list-view"
+    >
+      <!-- リスト表示の実装は既存のコードを使用 -->
+      <div
+        v-if="filteredVisits.length > 0 || filteredAppointments.length > 0"
+        class="visit-list"
+      >
+        <!-- 通院記録のリスト表示 -->
         <div
-          v-for="day in calendarDays"
-          :key="day.date.toISOString()"
-          :class="getDayClasses(day)"
-          :data-date="day.date.toISOString().split('T')[0]"
-          @click="handleDateClick(day)"
-          @dblclick="handleDateDoubleClick(day)"
-          @contextmenu="handleDateRightClick($event, day)"
+          v-for="visit in filteredVisits"
+          :key="visit.id"
+          class="visit-item"
         >
-          <div class="day-number">
-            {{ day.date.getDate() }}
+          <div class="visit-date">
+            {{ new Date(visit.visitDate).toLocaleDateString('ja-JP') }}
           </div>
-
-          <!-- Event Dots -->
-          <div
-            v-if="day.events.length > 0"
-            class="event-dots"
-          >
+          <div class="visit-details">
+            <div class="visit-cat">
+              {{ visit.cat.name }}
+            </div>
+            <div class="visit-hospital">
+              {{ visit.hospital.name }}
+            </div>
             <div
-              v-for="dot in getEventDots(day)"
-              :key="dot.catId"
-              class="event-dot"
-              :class="{
-                'event-dot--visit': dot.hasVisit,
-                'event-dot--appointment': dot.hasAppointment,
-                'event-dot--blood-test': dot.hasBloodTest,
-              }"
-              :title="`${dot.catName}: ${dot.eventCount}件`"
-            />
-            <div
-              v-if="day.events.length > 3"
-              class="event-dot event-dot--more"
-              :title="`他 ${day.events.length - 3}件`"
+              v-if="visit.doctor"
+              class="visit-doctor"
             >
-              +{{ day.events.length - 3 }}
+              {{ visit.doctor.name }}
+            </div>
+            <div
+              v-if="visit.hasBloodTest"
+              class="blood-test-indicator"
+            >
+              🩸 血液検査実施
+            </div>
+          </div>
+        </div>
+
+        <!-- 予約のリスト表示 -->
+        <div
+          v-for="appointment in filteredAppointments"
+          :key="appointment.id"
+          class="appointment-item"
+        >
+          <div class="appointment-date">
+            {{ new Date(appointment.appointmentDate).toLocaleDateString('ja-JP') }}
+          </div>
+          <div class="appointment-details">
+            <div class="appointment-cat">
+              {{ appointment.cat.name }}
+            </div>
+            <div class="appointment-hospital">
+              {{ appointment.hospital.name }}
+            </div>
+            <div
+              v-if="appointment.doctor"
+              class="appointment-doctor"
+            >
+              {{ appointment.doctor.name }}
+            </div>
+            <div class="appointment-status">
+              {{ appointment.status }}
             </div>
           </div>
         </div>
@@ -737,7 +926,10 @@ watch(
       class="modal-overlay"
       @click.self="closeDetailModal"
     >
-      <div class="detail-modal">
+      <div
+        class="detail-modal"
+        data-testid="detail-modal"
+      >
         <div class="modal-header">
           <h3 class="modal-title">
             {{ selectedDate?.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' }) }}の記録
@@ -754,7 +946,6 @@ watch(
           <div
             v-if="selectedDateEvents.length === 0"
             class="empty-events"
-            data-testid="no-data-message"
           >
             <p>この日の記録はありません</p>
           </div>
@@ -771,6 +962,7 @@ watch(
                 'event-item--visit': event.type === 'visit',
                 'event-item--appointment': event.type === 'appointment',
               }"
+              :data-testid="`${event.type}-item-${event.id}`"
             >
               <div class="event-header">
                 <div class="event-type-badge">
@@ -803,6 +995,7 @@ watch(
                   <div
                     v-if="(event as CalendarVisitData).hasBloodTest"
                     class="blood-test-indicator"
+                    data-testid="blood-test-indicator"
                   >
                     🩸 血液検査実施
                   </div>
@@ -855,8 +1048,10 @@ watch(
                     <textarea
                       v-model="editingNotes"
                       class="notes-textarea"
+                      data-testid="notes-input"
                       placeholder="メモを入力してください"
                       rows="3"
+                      @blur="saveNotes(event)"
                     />
                     <div class="notes-actions">
                       <button
@@ -882,15 +1077,24 @@ watch(
         <div class="modal-footer">
           <button
             class="btn btn--secondary"
+            data-testid="close-modal-button"
             @click="closeDetailModal"
           >
             閉じる
           </button>
           <button
             class="btn btn--primary"
+            data-testid="add-visit-button"
             @click="emit('visitCreate', selectedDate!); closeDetailModal()"
           >
             新規記録追加
+          </button>
+          <button
+            class="btn btn--secondary"
+            data-testid="add-appointment-button"
+            @click="emit('appointmentCreate', selectedDate!); closeDetailModal()"
+          >
+            予約追加
           </button>
         </div>
       </div>
@@ -901,6 +1105,20 @@ watch(
 <style scoped>
 .veterinary-calendar {
   background: white;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -1172,6 +1390,212 @@ watch(
   transition: all 0.2s;
   display: flex;
   flex-direction: column;
+}
+
+.calendar-day:hover {
+  background-color: #f5f5f5;
+}
+
+.calendar-day:focus {
+  outline: 2px solid #4caf50;
+  outline-offset: -2px;
+}
+
+.calendar-day--other-month {
+  color: #ccc;
+  background-color: #fafafa;
+}
+
+.calendar-day--today {
+  background-color: #e8f5e8;
+  font-weight: bold;
+}
+
+.calendar-day--selected {
+  background-color: #4caf50;
+  color: white;
+}
+
+.calendar-day--has-visits {
+  border-left: 4px solid #4caf50;
+}
+
+.calendar-day--has-appointments {
+  border-right: 4px solid #2196f3;
+}
+
+.calendar-day--has-blood-test {
+  border-top: 4px solid #f44336;
+}
+
+.day-number {
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+
+/* マーク要素のスタイル */
+.visit-mark,
+.blood-test-mark,
+.appointment-mark {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.visit-mark {
+  top: 4px;
+  left: 4px;
+  background-color: #4caf50;
+}
+
+.blood-test-mark {
+  top: 4px;
+  right: 4px;
+  background-color: #f44336;
+}
+
+.appointment-mark {
+  bottom: 4px;
+  left: 4px;
+  background-color: #2196f3;
+}
+
+/* データなしメッセージのスタイル */
+.no-data-message {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+/* リスト表示のスタイル */
+.visit-list {
+  padding: 1rem;
+}
+
+.visit-item,
+.appointment-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+  align-items: center;
+}
+
+.visit-date,
+.appointment-date {
+  min-width: 120px;
+  font-weight: 600;
+  color: #333;
+}
+
+.visit-details,
+.appointment-details {
+  flex: 1;
+}
+
+.visit-cat,
+.appointment-cat {
+  font-weight: 600;
+  color: #4caf50;
+}
+
+.visit-hospital,
+.appointment-hospital {
+  color: #666;
+  margin-top: 0.25rem;
+}
+
+.visit-doctor,
+.appointment-doctor {
+  color: #888;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.appointment-status {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 0.25rem;
+}
+
+.blood-test-indicator {
+  color: #f44336;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+/* Mobile layout styles */
+.veterinary-calendar.mobile-layout {
+  font-size: 0.875rem;
+}
+
+.veterinary-calendar.mobile-layout .calendar-header {
+  padding: 1rem;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.veterinary-calendar.mobile-layout .calendar-title {
+  font-size: 1.25rem;
+  min-width: auto;
+}
+
+.veterinary-calendar.mobile-layout .calendar-filters {
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.veterinary-calendar.mobile-layout .filter-group {
+  min-width: auto;
+}
+
+.veterinary-calendar.mobile-layout .calendar-day {
+  min-height: 4rem;
+  padding: 0.25rem;
+}
+
+.veterinary-calendar.mobile-layout .day-number {
+  font-size: 0.75rem;
+}
+
+.veterinary-calendar.mobile-layout .visit-mark,
+.veterinary-calendar.mobile-layout .blood-test-mark,
+.veterinary-calendar.mobile-layout .appointment-mark {
+  width: 6px;
+  height: 6px;
+}
+
+/* Tablet layout styles */
+.veterinary-calendar.tablet-layout {
+  font-size: 0.9rem;
+}
+
+.veterinary-calendar.tablet-layout .calendar-header {
+  padding: 1.25rem;
+}
+
+.veterinary-calendar.tablet-layout .calendar-title {
+  font-size: 1.375rem;
+}
+
+.veterinary-calendar.tablet-layout .calendar-filters {
+  padding: 1.25rem;
+  gap: 1.25rem;
+}
+
+.veterinary-calendar.tablet-layout .calendar-day {
+  min-height: 5rem;
+  padding: 0.375rem;
+}
+
+.veterinary-calendar.tablet-layout .day-number {
+  font-size: 0.8125rem;
 }
 
 /* Desktop optimizations */

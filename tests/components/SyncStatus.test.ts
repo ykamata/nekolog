@@ -103,7 +103,7 @@ describe('SyncStatus', () => {
 
       const wrapper = mount(SyncStatus);
 
-      const syncButton = wrapper.find('button:contains("同期実行")');
+      const syncButton = wrapper.find('[data-testid="manual-sync-button"]');
       expect(syncButton.exists()).toBe(true);
     });
 
@@ -113,7 +113,7 @@ describe('SyncStatus', () => {
 
       const wrapper = mount(SyncStatus);
 
-      const syncButton = wrapper.find('button:contains("同期実行")');
+      const syncButton = wrapper.find('[data-testid="manual-sync-button"]');
       expect(syncButton.exists()).toBe(false);
     });
 
@@ -123,7 +123,7 @@ describe('SyncStatus', () => {
 
       const wrapper = mount(SyncStatus);
 
-      const syncButton = wrapper.find('button:contains("同期実行")');
+      const syncButton = wrapper.find('[data-testid="manual-sync-button"]');
       expect(syncButton.exists()).toBe(false);
     });
 
@@ -132,7 +132,7 @@ describe('SyncStatus', () => {
 
       const wrapper = mount(SyncStatus);
 
-      const syncButton = wrapper.find('button:contains("同期実行")');
+      const syncButton = wrapper.find('[data-testid="manual-sync-button"]');
       expect(syncButton.exists()).toBe(false);
     });
 
@@ -146,7 +146,7 @@ describe('SyncStatus', () => {
 
       const wrapper = mount(SyncStatus);
 
-      const syncButton = wrapper.find('button:contains("同期実行")');
+      const syncButton = wrapper.find('[data-testid="manual-sync-button"]');
       await syncButton.trigger('click');
 
       expect(mockManualSync).toHaveBeenCalled();
@@ -157,10 +157,7 @@ describe('SyncStatus', () => {
     it('should show details when showDetails is true', async () => {
       const wrapper = mount(SyncStatus);
 
-      // Click to show details
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
+      // Details should be shown by default (showDetails = true initially)
       expect(wrapper.text()).toContain('最後の同期:');
       expect(wrapper.text()).toContain('2024/01/01 21:00'); // JST time
     });
@@ -178,10 +175,7 @@ describe('SyncStatus', () => {
 
       const wrapper = mount(SyncStatus);
 
-      // Show details
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
+      // Details should be shown by default
       expect(wrapper.text()).toContain('同期待ち:');
       expect(wrapper.text()).toContain('5件');
     });
@@ -191,10 +185,7 @@ describe('SyncStatus', () => {
 
       const wrapper = mount(SyncStatus);
 
-      // Show details
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
+      // Details should be shown by default
       expect(wrapper.text()).toContain('エラー:');
       expect(wrapper.text()).toContain('Network connection failed');
     });
@@ -221,13 +212,10 @@ describe('SyncStatus', () => {
 
       const wrapper = mount(SyncStatus);
 
-      // Show details
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
+      // Details should be shown by default
       expect(wrapper.text()).toContain('競合:');
       expect(wrapper.text()).toContain('2件の競合があります');
-      expect(wrapper.find('button:contains("解決する")').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="resolve-conflicts-button"]').exists()).toBe(true);
     });
   });
 
@@ -248,12 +236,8 @@ describe('SyncStatus', () => {
     it('should open conflict dialog when resolve button is clicked', async () => {
       const wrapper = mount(SyncStatus);
 
-      // Show details first
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
-      // Click resolve button
-      const resolveButton = wrapper.find('button:contains("解決する")');
+      // Details should be shown by default, click resolve button
+      const resolveButton = wrapper.find('[data-testid="resolve-conflicts-button"]');
       await resolveButton.trigger('click');
 
       expect(wrapper.find('.fixed.inset-0').exists()).toBe(true);
@@ -263,11 +247,8 @@ describe('SyncStatus', () => {
     it('should display conflict data in dialog', async () => {
       const wrapper = mount(SyncStatus);
 
-      // Show details and open dialog
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
-      const resolveButton = wrapper.find('button:contains("解決する")');
+      // Details should be shown by default, open dialog
+      const resolveButton = wrapper.find('[data-testid="resolve-conflicts-button"]');
       await resolveButton.trigger('click');
 
       expect(wrapper.text()).toContain('猫の競合');
@@ -281,14 +262,11 @@ describe('SyncStatus', () => {
       const wrapper = mount(SyncStatus);
 
       // Open dialog
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
-      const resolveButton = wrapper.find('button:contains("解決する")');
+      const resolveButton = wrapper.find('[data-testid="resolve-conflicts-button"]');
       await resolveButton.trigger('click');
 
       // Close dialog
-      const closeButton = wrapper.find('button:contains("閉じる")');
+      const closeButton = wrapper.find('[data-testid="close-dialog-button"]');
       await closeButton.trigger('click');
 
       expect(wrapper.find('.fixed.inset-0').exists()).toBe(false);
@@ -298,10 +276,7 @@ describe('SyncStatus', () => {
       const wrapper = mount(SyncStatus);
 
       // Open dialog
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
-      const resolveButton = wrapper.find('button:contains("解決する")');
+      const resolveButton = wrapper.find('[data-testid="resolve-conflicts-button"]');
       await resolveButton.trigger('click');
 
       // Click outside (on backdrop)
@@ -317,15 +292,12 @@ describe('SyncStatus', () => {
       const wrapper = mount(SyncStatus);
 
       // Open dialog
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
-      const resolveButton = wrapper.find('button:contains("解決する")');
+      const resolveButton = wrapper.find('[data-testid="resolve-conflicts-button"]');
       await resolveButton.trigger('click');
 
       // Click local version button
-      const localButtons = wrapper.findAll('button:contains("この版を使用")');
-      await localButtons[0].trigger('click'); // First button is local version
+      const localButton = wrapper.find('[data-testid="resolve-local-button"]');
+      await localButton.trigger('click');
 
       expect(mockResolveConflict).toHaveBeenCalledWith(
         mockSyncStatus.value.conflicts[0],
@@ -339,15 +311,12 @@ describe('SyncStatus', () => {
       const wrapper = mount(SyncStatus);
 
       // Open dialog
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
-      const resolveButton = wrapper.find('button:contains("解決する")');
+      const resolveButton = wrapper.find('[data-testid="resolve-conflicts-button"]');
       await resolveButton.trigger('click');
 
       // Click server version button
-      const serverButtons = wrapper.findAll('button:contains("この版を使用")');
-      await serverButtons[1].trigger('click'); // Second button is server version
+      const serverButton = wrapper.find('[data-testid="resolve-server-button"]');
+      await serverButton.trigger('click');
 
       expect(mockResolveConflict).toHaveBeenCalledWith(
         mockSyncStatus.value.conflicts[0],
@@ -370,7 +339,11 @@ describe('SyncStatus', () => {
         props: { compact: true },
       });
 
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
+      // In compact mode, details are hidden initially
+      expect(wrapper.find('.mt-2.p-3.bg-gray-50').exists()).toBe(false);
+
+      // Click to show details
+      const detailsButton = wrapper.find('[data-testid="toggle-details-button"]');
       await detailsButton.trigger('click');
 
       expect(wrapper.find('.mt-2.p-3.bg-gray-50').exists()).toBe(true);
@@ -383,10 +356,7 @@ describe('SyncStatus', () => {
 
       const wrapper = mount(SyncStatus);
 
-      // Show details
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
+      // Details should be shown by default
       // Check for Japanese date format (JST)
       expect(wrapper.text()).toMatch(/2024\/03\/15.*23:30/);
     });
@@ -424,10 +394,7 @@ describe('SyncStatus', () => {
       const wrapper = mount(SyncStatus);
 
       // Open dialog
-      const detailsButton = wrapper.find('button:contains("詳細を表示")');
-      await detailsButton.trigger('click');
-
-      const resolveButton = wrapper.find('button:contains("解決する")');
+      const resolveButton = wrapper.find('[data-testid="resolve-conflicts-button"]');
       await resolveButton.trigger('click');
 
       expect(wrapper.text()).toContain('猫の競合 (name)');

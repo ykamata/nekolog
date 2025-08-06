@@ -10,6 +10,7 @@ import type {
 import { VeterinaryAppointmentFormSchema } from '~/lib/validations/veterinary-visit';
 import { parseApiError, formatValidationErrors, createDebouncedValidator, isRetryableError, errorInfoToApiError } from '~/utils/error-handling';
 import { useToast } from '~/composables/useToast';
+import { useResponsive } from '~/composables/useResponsive';
 
 interface Props {
   appointment?: VeterinaryAppointmentWithRelations;
@@ -32,7 +33,7 @@ const formData = reactive<CreateVeterinaryAppointmentInput>({
   catId: '',
   appointmentDate: new Date(),
   hospitalName: '',
-  doctorName: undefined,
+  doctorName: '',
   plannedTreatments: '',
   notes: '',
 });
@@ -50,6 +51,9 @@ const doctors = ref<VeterinaryDoctor[]>([]);
 const loadingHospitals = ref(false);
 const loadingDoctors = ref(false);
 
+// Generate unique IDs for accessibility
+const generateId = (base: string) => `${base}-${Math.random().toString(36).substr(2, 9)}`;
+
 // Validation
 const debouncedValidator = createDebouncedValidator((data: CreateVeterinaryAppointmentInput) => {
   VeterinaryAppointmentFormSchema.parse(data);
@@ -57,6 +61,9 @@ const debouncedValidator = createDebouncedValidator((data: CreateVeterinaryAppoi
 
 // Toast
 const toast = useToast();
+
+// レスポンシブ対応
+const { screenSize, getResponsiveClasses } = useResponsive();
 
 // Computed
 const isEditMode = computed(() => !!props.appointment);
@@ -66,50 +73,59 @@ const selectedCat = computed(() => {
   return props.cats.find(cat => cat.id === formData.catId);
 });
 
+const formClasses = computed(() => {
+  const baseClasses = ['appointment-form'];
+  const responsiveClasses = getResponsiveClasses('appointment-form');
+
+  // レスポンシブクラスを追加
+  if (screenSize.value === 'mobile') {
+    baseClasses.push('mobile-layout');
+  }
+  else if (screenSize.value === 'tablet') {
+    baseClasses.push('tablet-layout');
+  }
+
+  return [...baseClasses, ...responsiveClasses];
+});
+
 const canConvertToVisit = computed(() => {
-  return isEditMode.value && props.appointment && new Date(props.appointment.appointmentDate) < new Date();
+  return isEditMode.value && props.appointment && props.appointment.status !== 'COMPLETED';
 });
 
 // Methods
 const initializeForm = () => {
-  if (props.appointment) {
-    // Edit mode - populate with existing data
-    Object.assign(formData, {
-      catId: props.appointment.catId,
-      appointmentDate: new Date(props.appointment.appointmentDate),
-      hospitalName: props.appointment.hospital.name,
-      doctorName: props.appointment.doctor?.name || '',
-      plannedTreatments: props.appointment.plannedTreatments || '',
-      notes: props.appointment.notes || '',
-    });
-  }
-  else if (props.initialData) {
-    // New appointment with initial data
-    Object.assign(formData, {
-      catId: props.initialData.catId || '',
-      appointmentDate: props.initialData.appointmentDate || new Date(),
-      hospitalName: props.initialData.hospitalName || '',
-      doctorName: props.initialData.doctorName || undefined,
-      plannedTreatments: props.initialData.plannedTreatments || '',
-      notes: props.initialData.notes || '',
-    });
-  }
-  else {
-    // New appointment - reset to defaults
-    Object.assign(formData, {
-      catId: props.cats.length === 1 ? props.cats[0]?.id || '' : '',
-      appointmentDate: new Date(),
-      hospitalName: '',
-      doctorName: undefined,
-      plannedTreatments: '',
-      notes: '',
-    });
-  }
-
-  // Clear errors
+  // Clear errors first
   errors.value = {};
   submitError.value = '';
   retryCount.value = 0;
+
+  if (props.appointment) {
+    // Edit mode - populate with existing data
+    formData.catId = props.appointment.catId;
+    formData.appointmentDate = new Date(props.appointment.appointmentDate);
+    formData.hospitalName = props.appointment.hospital.name;
+    formData.doctorName = props.appointment.doctor?.name || '';
+    formData.plannedTreatments = props.appointment.plannedTreatments || '';
+    formData.notes = props.appointment.notes || '';
+  }
+  else if (props.initialData) {
+    // New appointment with initial data
+    formData.catId = props.initialData.catId || '';
+    formData.appointmentDate = props.initialData.appointmentDate || new Date();
+    formData.hospitalName = props.initialData.hospitalName || '';
+    formData.doctorName = props.initialData.doctorName || '';
+    formData.plannedTreatments = props.initialData.plannedTreatments || '';
+    formData.notes = props.initialData.notes || '';
+  }
+  else {
+    // New appointment - reset to defaults
+    formData.catId = props.cats.length === 1 ? props.cats[0]?.id || '' : '';
+    formData.appointmentDate = new Date();
+    formData.hospitalName = '';
+    formData.doctorName = '';
+    formData.plannedTreatments = '';
+    formData.notes = '';
+  }
 };
 
 const fetchMasterData = async () => {
@@ -191,6 +207,49 @@ const validateField = async (field: keyof CreateVeterinaryAppointmentInput) => {
   }
 };
 
+const validateForm = () => {
+  const newErrors: Record<string, string> = {};
+
+  // 猫の選択チェック
+  if (!formData.catId.trim()) {
+    newErrors.catId = '猫を選択してください';
+  }
+
+  // 予約日時チェック
+  if (!formData.appointmentDate) {
+    newErrors.appointmentDate = '予約日時を入力してください';
+  }
+  else if (formData.appointmentDate <= new Date()) {
+    newErrors.appointmentDate = '予約日時は未来の日時を選択してください';
+  }
+
+  // 病院名チェック
+  if (!formData.hospitalName.trim()) {
+    newErrors.hospitalName = '病院名を入力してください';
+  }
+  else if (formData.hospitalName.length > 100) {
+    newErrors.hospitalName = '病院名は100文字以内で入力してください';
+  }
+
+  // 先生名チェック（任意項目だが、入力されている場合は文字数制限）
+  if (formData.doctorName && formData.doctorName.length > 50) {
+    newErrors.doctorName = '先生名は50文字以内で入力してください';
+  }
+
+  // 予定処方内容チェック（任意項目だが、入力されている場合は文字数制限）
+  if (formData.plannedTreatments && formData.plannedTreatments.length > 500) {
+    newErrors.plannedTreatments = '予定処方内容は500文字以内で入力してください';
+  }
+
+  // メモチェック（任意項目だが、入力されている場合は文字数制限）
+  if (formData.notes && formData.notes.length > 1000) {
+    newErrors.notes = 'メモは1000文字以内で入力してください';
+  }
+
+  errors.value = newErrors;
+  return Object.keys(newErrors).length === 0;
+};
+
 const handleSubmit = async () => {
   if (isSubmitting.value) return;
 
@@ -198,7 +257,14 @@ const handleSubmit = async () => {
   submitError.value = '';
 
   try {
-    // Validate form
+    // Manual validation first
+    if (!validateForm()) {
+      submitError.value = '入力内容に誤りがあります。確認してください。';
+      await nextTick(); // Wait for DOM updates
+      return;
+    }
+
+    // Validate form with Zod schema
     const validatedData = VeterinaryAppointmentFormSchema.parse(formData);
 
     // Emit save event
@@ -240,10 +306,26 @@ const handleSubmit = async () => {
   }
 };
 
+const handleRetry = () => {
+  handleSubmit();
+};
+
+const showConvertDialog = ref(false);
+
 const handleConvertToVisit = () => {
+  showConvertDialog.value = true;
+};
+
+const confirmConvertToVisit = () => {
   if (props.appointment) {
     emit('convertToVisit', props.appointment.id);
+    showConvertDialog.value = false;
+    handleClose();
   }
+};
+
+const cancelConvertToVisit = () => {
+  showConvertDialog.value = false;
 };
 
 const handleClose = () => {
@@ -254,21 +336,74 @@ const handleClose = () => {
 // Watchers
 watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
-    initializeForm();
-    fetchMasterData();
+    nextTick(() => {
+      initializeForm();
+      fetchMasterData();
+    });
+  }
+});
+
+// Watch for prop changes to reinitialize form
+watch(() => props.appointment, () => {
+  if (props.isOpen) {
+    nextTick(() => {
+      initializeForm();
+    });
+  }
+});
+
+watch(() => props.initialData, () => {
+  if (props.isOpen) {
+    nextTick(() => {
+      initializeForm();
+    });
   }
 });
 
 // Field validation watchers
-watch(() => formData.catId, () => validateField('catId'));
-watch(() => formData.appointmentDate, () => validateField('appointmentDate'));
-watch(() => formData.hospitalName, () => validateField('hospitalName'));
+watch(() => formData.catId, () => {
+  if (errors.value.catId && formData.catId.trim()) {
+    delete errors.value.catId;
+  }
+});
+
+watch(() => formData.appointmentDate, () => {
+  if (errors.value.appointmentDate && formData.appointmentDate && formData.appointmentDate > new Date()) {
+    delete errors.value.appointmentDate;
+  }
+});
+
+watch(() => formData.hospitalName, () => {
+  if (errors.value.hospitalName && formData.hospitalName.trim() && formData.hospitalName.length <= 100) {
+    delete errors.value.hospitalName;
+  }
+});
+
+watch(() => formData.doctorName, () => {
+  if (errors.value.doctorName && (!formData.doctorName || formData.doctorName.length <= 50)) {
+    delete errors.value.doctorName;
+  }
+});
+
+watch(() => formData.plannedTreatments, () => {
+  if (errors.value.plannedTreatments && (!formData.plannedTreatments || formData.plannedTreatments.length <= 500)) {
+    delete errors.value.plannedTreatments;
+  }
+});
+
+watch(() => formData.notes, () => {
+  if (errors.value.notes && (!formData.notes || formData.notes.length <= 1000)) {
+    delete errors.value.notes;
+  }
+});
 
 // Initialize on mount
 onMounted(() => {
   if (props.isOpen) {
-    initializeForm();
-    fetchMasterData();
+    nextTick(() => {
+      initializeForm();
+      fetchMasterData();
+    });
   }
 });
 </script>
@@ -306,7 +441,7 @@ onMounted(() => {
       </div>
 
       <form
-        class="appointment-form"
+        :class="formClasses"
         data-testid="appointment-form"
         @submit.prevent="handleSubmit"
       >
@@ -326,6 +461,7 @@ onMounted(() => {
             :disabled="isSubmitting"
             data-testid="cat-select"
             aria-required="true"
+            :aria-describedby="errors.catId ? 'cat-error' : undefined"
             required
           >
             <option value="">
@@ -341,6 +477,7 @@ onMounted(() => {
           </select>
           <div
             v-if="errors.catId"
+            id="cat-error"
             class="form-error"
             data-testid="cat-error"
           >
@@ -363,10 +500,12 @@ onMounted(() => {
             :min-date="new Date()"
             data-testid="appointment-date"
             aria-required="true"
+            :aria-describedby="errors.appointmentDate ? 'appointment-date-error' : undefined"
             @change="formData.appointmentDate = $event"
           />
           <div
             v-if="errors.appointmentDate"
+            id="appointment-date-error"
             class="form-error"
             data-testid="appointment-date-error"
           >
@@ -392,11 +531,13 @@ onMounted(() => {
             placeholder="病院を選択または入力してください"
             data-testid="hospital-input"
             aria-required="true"
+            :aria-describedby="errors.hospitalName ? 'hospital-error' : undefined"
             required
             @create="handleHospitalCreate"
           />
           <div
             v-if="errors.hospitalName"
+            id="hospital-error"
             class="form-error"
             data-testid="hospital-error"
           >
@@ -414,18 +555,19 @@ onMounted(() => {
           </label>
           <VeterinaryMasterSelector
             id="doctor-input"
-            :model-value="formData.doctorName || ''"
+            v-model="formData.doctorName"
             :items="doctors"
             :loading="loadingDoctors"
             :disabled="isSubmitting"
             :error="errors.doctorName"
             placeholder="先生を選択または入力してください（任意）"
             data-testid="doctor-input"
-            @update:model-value="formData.doctorName = $event"
+            :aria-describedby="errors.doctorName ? 'doctor-error' : undefined"
             @create="handleDoctorCreate"
           />
           <div
             v-if="errors.doctorName"
+            id="doctor-error"
             class="form-error"
             data-testid="doctor-error"
           >
@@ -449,10 +591,12 @@ onMounted(() => {
             :disabled="isSubmitting"
             placeholder="予定している診察や処置内容を入力してください"
             data-testid="planned-treatments-textarea"
+            :aria-describedby="errors.plannedTreatments ? 'planned-treatments-error' : undefined"
             rows="3"
           />
           <div
             v-if="errors.plannedTreatments"
+            id="planned-treatments-error"
             class="form-error"
             data-testid="planned-treatments-error"
           >
@@ -463,23 +607,25 @@ onMounted(() => {
         <!-- Notes -->
         <div class="form-group">
           <label
-            for="notes"
+            for="notes-textarea"
             class="form-label"
           >
             メモ
           </label>
           <textarea
-            id="notes"
+            id="notes-textarea"
             v-model="formData.notes"
             class="form-textarea"
             :class="{ 'form-textarea--error': errors.notes }"
             :disabled="isSubmitting"
             placeholder="その他のメモがあれば入力してください"
-            data-testid="notes"
+            data-testid="notes-textarea"
+            :aria-describedby="errors.notes ? 'notes-error' : undefined"
             rows="3"
           />
           <div
             v-if="errors.notes"
+            id="notes-error"
             class="form-error"
             data-testid="notes-error"
           >
@@ -493,13 +639,22 @@ onMounted(() => {
           class="submit-error"
           data-testid="submit-error"
         >
-          {{ submitError }}
+          <span class="error-message">{{ submitError }}</span>
           <span
             v-if="retryCount > 0"
             class="retry-info"
           >
             (再試行中... {{ retryCount }}/3)
           </span>
+          <button
+            v-if="submitError && retryCount < 3"
+            type="button"
+            class="retry-button"
+            data-testid="retry-button"
+            @click="handleRetry"
+          >
+            再試行
+          </button>
         </div>
 
         <!-- Form Actions -->
@@ -535,11 +690,46 @@ onMounted(() => {
                 v-if="isSubmitting"
                 class="loading-spinner"
               />
-              {{ isEditMode ? '更新' : '作成' }}
+              {{ isSubmitting ? '保存中' : (isEditMode ? '更新' : '作成') }}
             </button>
           </div>
         </div>
       </form>
+
+      <!-- Convert Confirmation Dialog -->
+      <div
+        v-if="showConvertDialog"
+        class="convert-confirmation-dialog"
+        data-testid="convert-confirmation-dialog"
+      >
+        <div class="dialog-content">
+          <h3 class="dialog-title">
+            通院記録に変換
+          </h3>
+          <p class="dialog-message">
+            この予約を通院記録に変換しますか？<br>
+            変換後は予約として編集できなくなります。
+          </p>
+          <div class="dialog-actions">
+            <button
+              type="button"
+              class="dialog-cancel-button"
+              data-testid="convert-cancel-button"
+              @click="cancelConvertToVisit"
+            >
+              キャンセル
+            </button>
+            <button
+              type="button"
+              class="dialog-confirm-button"
+              data-testid="convert-confirm-button"
+              @click="confirmConvertToVisit"
+            >
+              変換する
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -1187,3 +1377,15 @@ onMounted(() => {
   }
 }
 </style>
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
