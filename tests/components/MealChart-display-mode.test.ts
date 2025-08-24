@@ -5,37 +5,30 @@ import MealChart from '~/components/MealChart.vue';
 import { useAnalyticsStore } from '~/stores/analytics';
 
 // Chart.js のモック
-vi.mock('chart.js', () => ({
-  Chart: vi.fn().mockImplementation(() => ({
+vi.mock('chart.js', () => {
+  const mockChartInstance = {
     destroy: vi.fn(),
     update: vi.fn(),
     resize: vi.fn(),
-  })),
-  CategoryScale: vi.fn(),
-  LinearScale: vi.fn(),
-  PointElement: vi.fn(),
-  LineElement: vi.fn(),
-  BarElement: vi.fn(),
-  Title: vi.fn(),
-  Tooltip: vi.fn(),
-  Legend: vi.fn(),
-}));
+    data: {},
+    options: {},
+  };
 
-// Chart.register のモック
-const mockRegister = vi.fn();
-vi.doMock('chart.js', () => ({
-  Chart: {
-    register: mockRegister,
-  },
-  CategoryScale: vi.fn(),
-  LinearScale: vi.fn(),
-  PointElement: vi.fn(),
-  LineElement: vi.fn(),
-  BarElement: vi.fn(),
-  Title: vi.fn(),
-  Tooltip: vi.fn(),
-  Legend: vi.fn(),
-}));
+  const mockChart = vi.fn().mockImplementation(() => mockChartInstance);
+  mockChart.register = vi.fn();
+
+  return {
+    Chart: mockChart,
+    CategoryScale: vi.fn(),
+    LinearScale: vi.fn(),
+    PointElement: vi.fn(),
+    LineElement: vi.fn(),
+    BarElement: vi.fn(),
+    Title: vi.fn(),
+    Tooltip: vi.fn(),
+    Legend: vi.fn(),
+  };
+});
 
 // $fetch のモック
 global.$fetch = vi.fn().mockResolvedValue({
@@ -198,20 +191,20 @@ describe('Analytics Store - 表示モード管理', () => {
   it('表示モードを設定できる', () => {
     analyticsStore.setChartDisplayMode('bar');
 
-    expect(analyticsStore.currentChartMode).toBe('bar');
-    expect(analyticsStore.isLineChartMode).toBe(false);
-    expect(analyticsStore.isBarChartMode).toBe(true);
+    expect(analyticsStore.currentChartMode.value).toBe('bar');
+    expect(analyticsStore.isLineChartMode.value).toBe(false);
+    expect(analyticsStore.isBarChartMode.value).toBe(true);
     expect(localStorageMock.setItem).toHaveBeenCalledWith('analytics-chart-mode', 'bar');
   });
 
   it('表示モードをトグルできる', () => {
-    expect(analyticsStore.currentChartMode).toBe('line');
+    expect(analyticsStore.currentChartMode.value).toBe('line');
 
     analyticsStore.toggleChartDisplayMode();
-    expect(analyticsStore.currentChartMode).toBe('bar');
+    expect(analyticsStore.currentChartMode.value).toBe('bar');
 
     analyticsStore.toggleChartDisplayMode();
-    expect(analyticsStore.currentChartMode).toBe('line');
+    expect(analyticsStore.currentChartMode.value).toBe('line');
   });
 
   it('localStorageから設定を復元できる', () => {
@@ -219,7 +212,7 @@ describe('Analytics Store - 表示モード管理', () => {
 
     analyticsStore.restoreDisplaySettings();
 
-    expect(analyticsStore.currentChartMode).toBe('bar');
+    expect(analyticsStore.currentChartMode.value).toBe('bar');
   });
 
   it('無効な値がlocalStorageにある場合はデフォルト値を使用する', () => {
@@ -227,6 +220,6 @@ describe('Analytics Store - 表示モード管理', () => {
 
     analyticsStore.restoreDisplaySettings();
 
-    expect(analyticsStore.currentChartMode).toBe('line');
+    expect(analyticsStore.currentChartMode.value).toBe('line');
   });
 });

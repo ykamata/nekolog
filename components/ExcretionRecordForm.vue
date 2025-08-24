@@ -3,6 +3,7 @@ import type { Cat } from '~/types/cat-meal';
 import type { ExcretionRecordInput } from '~/types/excretion';
 import { ExcretionType, ExcretionTypeOptions } from '~/types/excretion';
 import { ExcretionRecordFormSchema } from '~/lib/validations/excretion';
+import { createUnifiedErrorHandler } from '~/utils/error-handling';
 
 interface Props {
   cats: Cat[];
@@ -34,6 +35,13 @@ const formData = ref({
 // Form validation state
 const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
+
+// 統一エラーハンドラーの初期化
+const errorHandler = createUnifiedErrorHandler('ExcretionRecordForm', {
+  maxRetries: 3,
+  baseDelay: 1000,
+  maxDelay: 5000,
+});
 
 // Computed properties (removed unused selectedCat)
 

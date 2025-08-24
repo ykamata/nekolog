@@ -21,6 +21,9 @@ const error = ref<string | null>(null);
 const selectedCatId = ref<string>('');
 const selectedPeriod = ref<number>(30);
 
+// Analytics Store
+const analyticsStore = useAnalyticsStore();
+
 // Chart container references
 const chartContainerRef = ref<HTMLElement>();
 
@@ -72,6 +75,9 @@ const handlePeriodChange = (period: number) => {
 // Lifecycle
 onMounted(() => {
   fetchCats();
+
+  // リアルタイム更新を開始（1分間隔）
+  analyticsStore.startAutoRefresh(60000);
 
   // タッチデバイスの検出とレスポンシブ対応
   if (import.meta.client) {
@@ -129,6 +135,11 @@ onMounted(() => {
     }
   }
 });
+
+// コンポーネント破棄時にリアルタイム更新を停止
+onUnmounted(() => {
+  analyticsStore.stopAutoRefresh();
+});
 </script>
 
 <template>
@@ -137,10 +148,16 @@ onMounted(() => {
     <div class="page-header">
       <div class="header-content">
         <div class="header-main">
-          <h1 class="page-title">
+          <h1
+            id="main-title"
+            class="page-title"
+          >
             データ分析
           </h1>
-          <p class="page-description">
+          <p
+            class="page-description"
+            aria-describedby="main-title"
+          >
             猫の食事データを分析・可視化します
           </p>
         </div>
@@ -213,16 +230,32 @@ onMounted(() => {
       class="page-content"
     >
       <!-- Filters Section -->
-      <div class="filters-section">
+      <div
+        class="filters-section"
+        role="region"
+        aria-label="フィルター設定"
+      >
         <div class="filter-group">
-          <label class="filter-label">猫を選択</label>
-          <div class="cat-selector">
+          <label
+            id="cat-selector-label"
+            class="filter-label"
+          >
+            猫を選択
+          </label>
+          <div
+            class="cat-selector"
+            role="radiogroup"
+            aria-labelledby="cat-selector-label"
+          >
             <button
               v-for="cat in cats"
               :key="cat.id"
               type="button"
+              role="radio"
+              :aria-checked="cat.id === selectedCatId"
               class="cat-button"
               :class="{ 'cat-button--active': cat.id === selectedCatId }"
+              :aria-label="`${cat.name}を選択${cat.weight ? ` (体重: ${cat.weight}kg)` : ''}`"
               @click="handleCatSelect(cat.id)"
             >
               <div class="cat-info">
@@ -232,6 +265,7 @@ onMounted(() => {
                 <div
                   v-if="cat.weight"
                   class="cat-weight"
+                  aria-hidden="true"
                 >
                   {{ cat.weight }}kg
                 </div>
@@ -241,16 +275,28 @@ onMounted(() => {
         </div>
 
         <div class="filter-group">
-          <label class="filter-label">期間を選択</label>
-          <div class="period-selector">
+          <label
+            id="period-selector-label"
+            class="filter-label"
+          >
+            期間を選択
+          </label>
+          <div
+            class="period-selector"
+            role="radiogroup"
+            aria-labelledby="period-selector-label"
+          >
             <button
               v-for="option in periodOptions"
               :key="option.value"
               type="button"
+              role="radio"
+              :aria-checked="option.value === selectedPeriod"
               class="period-button"
               :class="{
                 'period-button--active': option.value === selectedPeriod,
               }"
+              :aria-label="`${option.label}を選択`"
               @click="handlePeriodChange(option.value)"
             >
               {{ option.label }}
@@ -260,12 +306,22 @@ onMounted(() => {
       </div>
 
       <!-- Chart Section -->
-      <div class="chart-section">
+      <div
+        class="chart-section"
+        role="region"
+        aria-labelledby="chart-section-title"
+      >
         <div class="chart-header">
-          <h2 class="chart-title">
+          <h2
+            id="chart-section-title"
+            class="chart-title"
+          >
             {{ selectedCat?.name }}の食事データ
           </h2>
-          <p class="chart-subtitle">
+          <p
+            class="chart-subtitle"
+            aria-describedby="chart-section-title"
+          >
             {{
               periodOptions.find((p) => p.value === selectedPeriod)?.label
             }}の推移
@@ -276,6 +332,8 @@ onMounted(() => {
         <div
           ref="chartContainerRef"
           class="chart-container"
+          role="img"
+          :aria-label="`${selectedCat?.name}の${periodOptions.find((p) => p.value === selectedPeriod)?.label}の食事データチャート`"
         >
           <AsyncComponent
             component-name="MealChart"
@@ -289,48 +347,94 @@ onMounted(() => {
       </div>
 
       <!-- Summary Cards -->
-      <div class="summary-section">
-        <h3 class="summary-title">
+      <div
+        class="summary-section"
+        role="region"
+        aria-labelledby="summary-title"
+      >
+        <h3
+          id="summary-title"
+          class="summary-title"
+        >
           データサマリー
         </h3>
         <div class="summary-grid">
-          <div class="summary-card">
-            <div class="summary-icon">
+          <div
+            class="summary-card"
+            role="article"
+            aria-labelledby="analysis-target-label"
+          >
+            <div
+              class="summary-icon"
+              aria-hidden="true"
+            >
               📊
             </div>
             <div class="summary-content">
-              <div class="summary-label">
+              <div
+                id="analysis-target-label"
+                class="summary-label"
+              >
                 分析対象
               </div>
-              <div class="summary-value">
+              <div
+                class="summary-value"
+                aria-label="分析対象: {{ selectedCat?.name }}"
+              >
                 {{ selectedCat?.name }}
               </div>
             </div>
           </div>
-          <div class="summary-card">
-            <div class="summary-icon">
+          <div
+            class="summary-card"
+            role="article"
+            aria-labelledby="period-label"
+          >
+            <div
+              class="summary-icon"
+              aria-hidden="true"
+            >
               📅
             </div>
             <div class="summary-content">
-              <div class="summary-label">
+              <div
+                id="period-label"
+                class="summary-label"
+              >
                 期間
               </div>
-              <div class="summary-value">
+              <div
+                class="summary-value"
+                aria-label="期間: {{ periodOptions.find((p) => p.value === selectedPeriod)?.label }}"
+              >
                 {{
                   periodOptions.find((p) => p.value === selectedPeriod)?.label
                 }}
               </div>
             </div>
           </div>
-          <div class="summary-card">
-            <div class="summary-icon">
+          <div
+            class="summary-card"
+            role="article"
+            aria-labelledby="weight-label"
+          >
+            <div
+              class="summary-icon"
+              aria-hidden="true"
+            >
               ⚖️
             </div>
             <div class="summary-content">
-              <div class="summary-label">
+              <div
+                id="weight-label"
+                class="summary-label"
+              >
                 体重
               </div>
-              <div class="summary-value">
+              <div
+                class="summary-value"
+                :aria-label="`体重: ${selectedCat?.weight ? `${selectedCat.weight}キログラム` : '未記録'}`"
+              >
                 {{ selectedCat?.weight ? `${selectedCat.weight}kg` : "未記録" }}
               </div>
             </div>
@@ -339,37 +443,64 @@ onMounted(() => {
       </div>
 
       <!-- Quick Actions -->
-      <div class="quick-actions">
-        <h3 class="quick-actions-title">
+      <div
+        class="quick-actions"
+        role="region"
+        aria-labelledby="quick-actions-title"
+      >
+        <h3
+          id="quick-actions-title"
+          class="quick-actions-title"
+        >
           関連機能
         </h3>
-        <div class="action-buttons">
+        <div
+          class="action-buttons"
+          role="navigation"
+          aria-label="関連機能へのナビゲーション"
+        >
           <NuxtLink
             to="/meals/record"
             class="action-button action-button--primary"
+            aria-label="食事を記録するページに移動"
           >
-            <span class="action-icon">📝</span>
+            <span
+              class="action-icon"
+              aria-hidden="true"
+            >📝</span>
             <span class="action-text">食事を記録</span>
           </NuxtLink>
           <NuxtLink
             to="/meals/history"
             class="action-button"
+            aria-label="食事履歴ページに移動"
           >
-            <span class="action-icon">📋</span>
+            <span
+              class="action-icon"
+              aria-hidden="true"
+            >📋</span>
             <span class="action-text">食事履歴</span>
           </NuxtLink>
           <NuxtLink
             to="/cats"
             class="action-button"
+            aria-label="猫の管理ページに移動"
           >
-            <span class="action-icon">🐱</span>
+            <span
+              class="action-icon"
+              aria-hidden="true"
+            >🐱</span>
             <span class="action-text">猫の管理</span>
           </NuxtLink>
           <NuxtLink
             to="/foods"
             class="action-button"
+            aria-label="フード管理ページに移動"
           >
-            <span class="action-icon">🥫</span>
+            <span
+              class="action-icon"
+              aria-hidden="true"
+            >🥫</span>
             <span class="action-text">フード管理</span>
           </NuxtLink>
         </div>

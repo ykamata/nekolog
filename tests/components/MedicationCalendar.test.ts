@@ -129,10 +129,10 @@ describe('MedicationCalendar', () => {
     catsStore.cats = mockCats;
 
     // Mock store methods
-    vi.spyOn(medicationsStore, 'fetchMedications').mockResolvedValue(mockMedications);
-    vi.spyOn(medicationsStore, 'fetchMedicationRecords').mockResolvedValue(mockMedicationRecords);
-    vi.spyOn(medicationsStore, 'fetchMedicationReminders').mockResolvedValue(mockMedicationReminders);
-    vi.spyOn(catsStore, 'fetchCats').mockResolvedValue(mockCats);
+    vi.spyOn(medicationsStore, 'fetchMedications').mockResolvedValue(undefined);
+    vi.spyOn(medicationsStore, 'fetchMedicationRecords').mockResolvedValue(undefined);
+    vi.spyOn(medicationsStore, 'fetchMedicationReminders').mockResolvedValue(undefined);
+    vi.spyOn(catsStore, 'fetchCats').mockResolvedValue(undefined);
   });
 
   it('renders calendar component correctly', () => {

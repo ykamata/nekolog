@@ -18,18 +18,23 @@ describe('DateTimePicker', () => {
   describe('Component Rendering', () => {
     it('renders the datetime picker input element', () => {
       expect(wrapper.find('.datetime-picker').exists()).toBe(true);
-      expect(wrapper.find('input[type="datetime-local"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="date-input"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="time-input"]').exists()).toBe(true);
     });
 
     it('displays the current selected date/time in input value', () => {
-      const input = wrapper.find('input[type="datetime-local"]');
-      expect(input.exists()).toBe(true);
-      expect(input.element.value).toBe('2024-01-15T14:30');
+      const dateInput = wrapper.find('[data-testid="date-input"]');
+      const timeInput = wrapper.find('[data-testid="time-input"]');
+      expect(dateInput.exists()).toBe(true);
+      expect(timeInput.exists()).toBe(true);
+      expect((dateInput.element as HTMLInputElement).value).toBe('2024-01-15');
+      expect((timeInput.element as HTMLInputElement).value).toBe('14:30');
     });
 
     it('applies correct CSS classes', () => {
-      const input = wrapper.find('input[type="datetime-local"]');
-      expect(input.classes()).toContain('datetime-picker');
+      const container = wrapper.find('.datetime-picker');
+      expect(container.exists()).toBe(true);
+      expect(container.classes()).toContain('datetime-picker');
     });
   });
 
@@ -42,8 +47,10 @@ describe('DateTimePicker', () => {
         },
       });
 
-      const input = disabledWrapper.find('input[type="datetime-local"]');
-      expect(input.attributes('disabled')).toBeDefined();
+      const dateInput = disabledWrapper.find('[data-testid="date-input"]');
+      const timeInput = disabledWrapper.find('[data-testid="time-input"]');
+      expect(dateInput.attributes('disabled')).toBeDefined();
+      expect(timeInput.attributes('disabled')).toBeDefined();
     });
 
     it('applies id attribute correctly', () => {

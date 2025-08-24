@@ -76,10 +76,10 @@ describe('MedicationCalendar - Time Grouping', () => {
     catsStore.cats = mockCats;
 
     // Mock store methods
-    vi.spyOn(medicationsStore, 'fetchMedications').mockResolvedValue(mockMedications);
-    vi.spyOn(medicationsStore, 'fetchMedicationRecords').mockResolvedValue([]);
-    vi.spyOn(medicationsStore, 'fetchMedicationReminders').mockResolvedValue([]);
-    vi.spyOn(catsStore, 'fetchCats').mockResolvedValue(mockCats);
+    vi.spyOn(medicationsStore, 'fetchMedications').mockResolvedValue(undefined);
+    vi.spyOn(medicationsStore, 'fetchMedicationRecords').mockResolvedValue(undefined);
+    vi.spyOn(medicationsStore, 'fetchMedicationReminders').mockResolvedValue(undefined);
+    vi.spyOn(catsStore, 'fetchCats').mockResolvedValue(undefined);
   });
 
   it('groups medication records by time periods', async () => {

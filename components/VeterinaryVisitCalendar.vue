@@ -411,7 +411,20 @@ const getAppointmentId = (day: CalendarDay): string => {
 };
 
 // カレンダーコンテナのCSSクラスを取得
-const calendarClasses = computed(() => getResponsiveClasses('veterinary-calendar'));
+const calendarClasses = computed(() => {
+  const baseClasses = ['veterinary-calendar'];
+  const responsiveClasses = getResponsiveClasses('veterinary-calendar');
+
+  // レスポンシブクラスを追加
+  if (screenSize.value === 'mobile') {
+    baseClasses.push('mobile-layout');
+  }
+  else if (screenSize.value === 'tablet') {
+    baseClasses.push('tablet-layout');
+  }
+
+  return [...baseClasses, ...responsiveClasses];
+});
 
 // 日付セルのaria-label属性を生成
 const getDateAriaLabel = (day: CalendarDay): string => {
@@ -1119,6 +1132,8 @@ watch(screenSize, (newSize) => {
   white-space: nowrap;
   border: 0;
 }
+
+.veterinary-calendar {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;

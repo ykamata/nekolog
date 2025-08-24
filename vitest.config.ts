@@ -8,7 +8,7 @@ export default defineConfig({
     environment: 'happy-dom',
     globals: true,
     setupFiles: ['./tests/setup.ts'],
-    exclude: [...configDefaults.exclude, 'tests/e2e/**', 'tests/accessibility/**'],
+    exclude: [...configDefaults.exclude, 'tests/e2e/**'],
     // テスト環境でのモジュール解決を改善
     server: {
       deps: {

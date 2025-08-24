@@ -407,6 +407,7 @@ onUnmounted(() => {
           <span
             v-if="errors.name"
             class="form-error"
+            data-testid="name-error"
           >{{ errors.name }}</span>
         </div>
 
@@ -498,6 +499,7 @@ onUnmounted(() => {
           <span
             v-if="errors.caloriesPerGram"
             class="form-error"
+            data-testid="calories-error"
           >{{
             errors.caloriesPerGram
           }}</span>

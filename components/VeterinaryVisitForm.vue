@@ -9,7 +9,7 @@ import type {
   VeterinaryTreatment,
 } from '~/types/veterinary-visit';
 import { VeterinaryVisitFormSchema } from '~/lib/validations/veterinary-visit';
-import { parseApiError, formatValidationErrors, createDebouncedValidator, errorInfoToApiError } from '~/utils/error-handling';
+import { parseApiError, formatValidationErrors, createDebouncedValidator, errorInfoToApiError, createUnifiedErrorHandler } from '~/utils/error-handling';
 import { useToast } from '~/composables/useToast';
 import { useVeterinaryMasters } from '~/composables/useVeterinaryMasters';
 import { useResponsive } from '~/composables/useResponsive';
@@ -45,6 +45,13 @@ const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
 const submitError = ref<string>('');
 const retryCount = ref(0);
+
+// 統一エラーハンドラーの初期化
+const errorHandler = createUnifiedErrorHandler('VeterinaryVisitForm', {
+  maxRetries: 3,
+  baseDelay: 1000,
+  maxDelay: 5000,
+});
 
 // Master data
 const hospitals = ref<VeterinaryHospital[]>([]);
@@ -124,9 +131,9 @@ const loadMasterData = async () => {
     console.error('Failed to load master data:', error);
     // In test environment, use the mock data from composable
     if (import.meta.env.NODE_ENV === 'test') {
-      hospitals.value = masterHospitals.value;
-      doctors.value = masterDoctors.value;
-      treatments.value = masterTreatments.value;
+      hospitals.value = [...masterHospitals.value];
+      doctors.value = [...masterDoctors.value];
+      treatments.value = [...masterTreatments.value];
     }
     else {
       showErrorToast({
@@ -148,9 +155,9 @@ watch(
       await loadMasterData();
       // In test environment, ensure we have the mock data
       if (import.meta.env.NODE_ENV === 'test') {
-        hospitals.value = masterHospitals.value;
-        doctors.value = masterDoctors.value;
-        treatments.value = masterTreatments.value;
+        hospitals.value = [...masterHospitals.value];
+        doctors.value = [...masterDoctors.value];
+        treatments.value = [...masterTreatments.value];
       }
     }
   },
@@ -315,75 +322,100 @@ const parseDateTimeLocal = (dateTimeString: string): Date => {
 };
 
 const handleSubmit = async () => {
-  if (!validateForm()) {
-    showErrorToast({
-      title: 'バリデーションエラー',
-      message: '入力内容を確認してください',
-    });
-    return;
-  }
-
-  isSubmitting.value = true;
-  submitError.value = '';
-
-  try {
-    // Create new hospital if it doesn't exist
-    const existingHospital = hospitals.value.find(h => h.name === formData.hospitalName.trim());
-    if (!existingHospital) {
-      await createHospital(formData.hospitalName.trim());
-    }
-
-    // Create new doctor if it doesn't exist and is provided
-    if (formData.doctorName?.trim()) {
-      const existingDoctor = doctors.value.find(d => d.name === formData.doctorName.trim());
-      if (!existingDoctor) {
-        await createDoctor(formData.doctorName.trim());
+  const result = await errorHandler.handleFormSubmission(
+    // バリデーション関数
+    async () => {
+      if (!validateForm()) {
+        // 基本バリデーションエラーをZodエラー形式で投げる
+        const validationErrors = Object.entries(errors.value).map(([field, message]) => ({
+          field,
+          message,
+        }));
+        const error = new Error('Validation failed');
+        (error as any).validationErrors = validationErrors;
+        throw error;
       }
-    }
+      // Zodスキーマバリデーション
+      VeterinaryVisitFormSchema.parse(formData);
+    },
+    // 送信関数
+    async () => {
+      // Create new hospital if it doesn't exist
+      const existingHospital = hospitals.value.find(h => h.name === formData.hospitalName.trim());
+      if (!existingHospital) {
+        await createHospital(formData.hospitalName.trim());
+      }
 
-    // Clean up empty strings to undefined for optional fields
-    const cleanedData: CreateVeterinaryVisitInput = {
-      catId: formData.catId,
-      visitDate: formData.visitDate,
-      hospitalName: formData.hospitalName.trim(),
-      doctorName: formData.doctorName?.trim() || undefined,
-      treatments: formData.treatments,
-      cost: formData.cost,
-      notes: formData.notes?.trim() || undefined,
-      hasBloodTest: formData.hasBloodTest,
-    };
+      // Create new doctor if it doesn't exist and is provided
+      if (formData.doctorName?.trim()) {
+        const existingDoctor = doctors.value.find(d => d.name === formData.doctorName!.trim());
+        if (!existingDoctor) {
+          await createDoctor(formData.doctorName!.trim());
+        }
+      }
 
-    emit('save', cleanedData);
-    retryCount.value = 0;
-  }
-  catch (error) {
-    const errorInfo = parseApiError(error);
-    const apiError = errorInfoToApiError(errorInfo);
+      // Clean up empty strings to undefined for optional fields
+      const cleanedData: CreateVeterinaryVisitInput = {
+        catId: formData.catId,
+        visitDate: formData.visitDate,
+        hospitalName: formData.hospitalName.trim(),
+        doctorName: formData.doctorName?.trim() || undefined,
+        treatments: formData.treatments,
+        cost: formData.cost,
+        notes: formData.notes?.trim() || undefined,
+        hasBloodTest: formData.hasBloodTest,
+      };
 
-    // Handle validation errors from server
-    if (apiError.validationErrors) {
-      const validationErrors = formatValidationErrors(apiError.validationErrors);
-      Object.assign(errors.value, validationErrors);
-    }
+      emit('save', cleanedData);
+      return cleanedData;
+    },
+    {
+      retryable: true,
+      successMessage: '通院記録を保存しました',
+      onValidationError: (validationErrors) => {
+        errors.value = validationErrors;
+        showErrorToast({
+          title: 'バリデーションエラー',
+          message: '入力内容を確認してください',
+        });
+      },
+      onSubmitStart: () => {
+        isSubmitting.value = true;
+        submitError.value = '';
+      },
+      onSubmitSuccess: () => {
+        retryCount.value = 0;
+      },
+      onSubmitError: (error, userMessage) => {
+        submitError.value = userMessage;
+        errors.value.submit = userMessage;
+        showErrorToast({
+          title: '通院記録の保存に失敗しました',
+          message: userMessage,
+          action: error.statusCode >= 500
+            ? {
+                label: '再試行',
+                handler: () => handleRetry(),
+              }
+            : undefined,
+        });
+      },
+      onRetry: (attempt) => {
+        retryCount.value = attempt;
+        showErrorToast({
+          title: '再試行中',
+          message: `通院記録の保存を再試行しています... (${attempt}/3)`,
+        });
+      },
+    },
+  );
 
-    // Set submit error
-    submitError.value = apiError.message;
-    errors.value.submit = apiError.message;
+  // 最終的な状態更新
+  isSubmitting.value = false;
+  retryCount.value = result.retryCount;
 
-    // Show toast notification
-    showErrorToast({
-      title: '通院記録の保存に失敗しました',
-      message: apiError.message,
-      action: apiError.statusCode >= 500
-        ? {
-            label: '再試行',
-            handler: () => handleRetry(),
-          }
-        : undefined,
-    });
-  }
-  finally {
-    isSubmitting.value = false;
+  if (!result.success && result.validationErrors) {
+    errors.value = result.validationErrors;
   }
 };
 

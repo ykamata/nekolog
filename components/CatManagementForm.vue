@@ -2,6 +2,7 @@
 import { z } from 'zod';
 import type { Cat, CatInput } from '~/types/cat-meal';
 import { CatInputSchema } from '~/lib/validations/cat-meal';
+import { createUnifiedErrorHandler } from '~/utils/error-handling';
 
 interface Props {
   cat?: Cat;
@@ -26,6 +27,13 @@ const formData = reactive<CatInput>({
 
 const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
+
+// 統一エラーハンドラーの初期化
+const errorHandler = createUnifiedErrorHandler('CatManagementForm', {
+  maxRetries: 3,
+  baseDelay: 1000,
+  maxDelay: 5000,
+});
 
 // Initialize form data when cat prop changes
 watch(

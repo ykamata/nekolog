@@ -8,7 +8,7 @@ import type {
   VeterinaryDoctor,
 } from '~/types/veterinary-visit';
 import { VeterinaryAppointmentFormSchema } from '~/lib/validations/veterinary-visit';
-import { parseApiError, formatValidationErrors, createDebouncedValidator, isRetryableError, errorInfoToApiError } from '~/utils/error-handling';
+import { parseApiError, formatValidationErrors, createDebouncedValidator, isRetryableError, errorInfoToApiError, createUnifiedErrorHandler } from '~/utils/error-handling';
 import { useToast } from '~/composables/useToast';
 import { useResponsive } from '~/composables/useResponsive';
 
@@ -50,6 +50,13 @@ const doctors = ref<VeterinaryDoctor[]>([]);
 // Loading states
 const loadingHospitals = ref(false);
 const loadingDoctors = ref(false);
+
+// 統一エラーハンドラーの初期化
+const errorHandler = createUnifiedErrorHandler('VeterinaryAppointmentForm', {
+  maxRetries: 3,
+  baseDelay: 1000,
+  maxDelay: 5000,
+});
 
 // Generate unique IDs for accessibility
 const generateId = (base: string) => `${base}-${Math.random().toString(36).substr(2, 9)}`;
@@ -129,61 +136,98 @@ const initializeForm = () => {
 };
 
 const fetchMasterData = async () => {
-  try {
-    const [hospitalsResponse, doctorsResponse] = await Promise.all([
-      $fetch<VeterinaryHospital[]>('/api/veterinary-hospitals'),
-      $fetch<VeterinaryDoctor[]>('/api/veterinary-doctors'),
-    ]);
-
-    hospitals.value = hospitalsResponse;
-    doctors.value = doctorsResponse;
-  }
-  catch (error) {
-    console.error('Failed to fetch master data:', error);
-    toast.error({ message: 'マスタデータの取得に失敗しました' });
-  }
+  const result = await errorHandler.handleDataFetch(
+    async () => {
+      const [hospitalsResponse, doctorsResponse] = await Promise.all([
+        $fetch<VeterinaryHospital[]>('/api/veterinary-hospitals'),
+        $fetch<VeterinaryDoctor[]>('/api/veterinary-doctors'),
+      ]);
+      return { hospitals: hospitalsResponse, doctors: doctorsResponse };
+    },
+    {
+      retryable: true,
+      fallbackMessage: 'マスタデータの取得に失敗しました',
+      onSuccess: (data) => {
+        hospitals.value = data.hospitals;
+        doctors.value = data.doctors;
+      },
+      onError: (error, userMessage) => {
+        toast.error({ message: userMessage });
+      },
+      onRetry: (attempt) => {
+        toast.info({
+          message: `マスタデータを再取得中... (${attempt}/3)`,
+          duration: 2000,
+        });
+      },
+    },
+  );
 };
 
 const handleHospitalCreate = async (name: string) => {
   loadingHospitals.value = true;
-  try {
-    const newHospital = await $fetch<VeterinaryHospital>('/api/veterinary-hospitals', {
-      method: 'POST',
-      body: { name },
-    });
 
-    hospitals.value.push(newHospital);
-    formData.hospitalName = name;
-    toast.success({ message: '病院を追加しました' });
-  }
-  catch (error) {
-    console.error('Failed to create hospital:', error);
-    toast.error({ message: '病院の追加に失敗しました' });
-  }
-  finally {
-    loadingHospitals.value = false;
-  }
+  const result = await errorHandler.handleAsyncOperation(
+    async () => {
+      return await $fetch<VeterinaryHospital>('/api/veterinary-hospitals', {
+        method: 'POST',
+        body: { name },
+      });
+    },
+    {
+      retryable: true,
+      fallbackMessage: '病院の追加に失敗しました',
+      onSuccess: (newHospital) => {
+        hospitals.value.push(newHospital);
+        formData.hospitalName = name;
+        toast.success({ message: '病院を追加しました' });
+      },
+      onFinalError: (error) => {
+        toast.error({ message: '病院の追加に失敗しました' });
+      },
+      onRetry: (attempt) => {
+        toast.info({
+          message: `病院の追加を再試行中... (${attempt}/3)`,
+          duration: 2000,
+        });
+      },
+    },
+  );
+
+  loadingHospitals.value = false;
 };
 
 const handleDoctorCreate = async (name: string) => {
   loadingDoctors.value = true;
-  try {
-    const newDoctor = await $fetch<VeterinaryDoctor>('/api/veterinary-doctors', {
-      method: 'POST',
-      body: { name },
-    });
 
-    doctors.value.push(newDoctor);
-    formData.doctorName = name;
-    toast.success({ message: '先生を追加しました' });
-  }
-  catch (error) {
-    console.error('Failed to create doctor:', error);
-    toast.error({ message: '先生の追加に失敗しました' });
-  }
-  finally {
-    loadingDoctors.value = false;
-  }
+  const result = await errorHandler.handleAsyncOperation(
+    async () => {
+      return await $fetch<VeterinaryDoctor>('/api/veterinary-doctors', {
+        method: 'POST',
+        body: { name },
+      });
+    },
+    {
+      retryable: true,
+      fallbackMessage: '先生の追加に失敗しました',
+      onSuccess: (newDoctor) => {
+        doctors.value.push(newDoctor);
+        formData.doctorName = name;
+        toast.success({ message: '先生を追加しました' });
+      },
+      onFinalError: (error) => {
+        toast.error({ message: '先生の追加に失敗しました' });
+      },
+      onRetry: (attempt) => {
+        toast.info({
+          message: `先生の追加を再試行中... (${attempt}/3)`,
+          duration: 2000,
+        });
+      },
+    },
+  );
+
+  loadingDoctors.value = false;
 };
 
 const validateField = async (field: keyof CreateVeterinaryAppointmentInput) => {
@@ -253,60 +297,71 @@ const validateForm = () => {
 const handleSubmit = async () => {
   if (isSubmitting.value) return;
 
-  isSubmitting.value = true;
-  submitError.value = '';
-
-  try {
-    // Manual validation first
-    if (!validateForm()) {
-      submitError.value = '入力内容に誤りがあります。確認してください。';
-      await nextTick(); // Wait for DOM updates
-      return;
-    }
-
-    // Validate form with Zod schema
-    const validatedData = VeterinaryAppointmentFormSchema.parse(formData);
-
-    // Emit save event
-    emit('save', validatedData);
-
-    toast.success({
-      message: isEditMode.value ? '予約を更新しました' : '予約を作成しました',
-    });
-
-    handleClose();
-  }
-  catch (error) {
-    if (error instanceof z.ZodError) {
-      const errorInfo = parseApiError(error);
-      const apiError = errorInfoToApiError(errorInfo);
-      if (apiError.validationErrors) {
-        errors.value = formatValidationErrors(apiError.validationErrors);
+  const result = await errorHandler.handleFormSubmission(
+    // バリデーション関数
+    async () => {
+      // 基本バリデーション
+      if (!validateForm()) {
+        // 基本バリデーションエラーをZodエラー形式で投げる
+        const validationErrors = Object.entries(errors.value).map(([field, message]) => ({
+          field,
+          message,
+        }));
+        const error = new Error('Validation failed') as any;
+        error.validationErrors = validationErrors;
+        throw error;
       }
-      submitError.value = '入力内容に誤りがあります。確認してください。';
-    }
-    else {
-      const errorInfo = parseApiError(error);
-      const apiError = errorInfoToApiError(errorInfo);
-      submitError.value = apiError.message;
+      // Zodスキーマバリデーション
+      VeterinaryAppointmentFormSchema.parse(formData);
+    },
+    // 送信関数
+    async () => {
+      const validatedData = VeterinaryAppointmentFormSchema.parse(formData);
+      emit('save', validatedData);
+      return validatedData;
+    },
+    {
+      retryable: true,
+      successMessage: isEditMode.value ? '予約を更新しました' : '予約を作成しました',
+      onValidationError: (validationErrors) => {
+        errors.value = validationErrors;
+      },
+      onSubmitStart: () => {
+        isSubmitting.value = true;
+        submitError.value = '';
+      },
+      onSubmitSuccess: () => {
+        toast.success({
+          message: isEditMode.value ? '予約を更新しました' : '予約を作成しました',
+        });
+        handleClose();
+      },
+      onSubmitError: (error, userMessage) => {
+        submitError.value = userMessage;
+        toast.error({ message: userMessage });
+      },
+      onRetry: (attempt) => {
+        retryCount.value = attempt;
+        toast.info({
+          message: `再試行中... (${attempt}/3)`,
+          duration: 2000,
+        });
+      },
+    },
+  );
 
-      if (isRetryableError(apiError) && retryCount.value < 3) {
-        retryCount.value++;
-        setTimeout(() => {
-          if (isSubmitting.value) {
-            handleSubmit();
-          }
-        }, 1000 * retryCount.value);
-        return;
-      }
-    }
-  }
-  finally {
-    isSubmitting.value = false;
+  // 最終的な状態更新
+  isSubmitting.value = false;
+  retryCount.value = result.retryCount;
+
+  if (!result.success && result.validationErrors) {
+    errors.value = result.validationErrors;
   }
 };
 
 const handleRetry = () => {
+  submitError.value = '';
+  retryCount.value = 0;
   handleSubmit();
 };
 
@@ -555,7 +610,7 @@ onMounted(() => {
           </label>
           <VeterinaryMasterSelector
             id="doctor-input"
-            v-model="formData.doctorName"
+            :model-value="formData.doctorName || ''"
             :items="doctors"
             :loading="loadingDoctors"
             :disabled="isSubmitting"
@@ -563,6 +618,7 @@ onMounted(() => {
             placeholder="先生を選択または入力してください（任意）"
             data-testid="doctor-input"
             :aria-describedby="errors.doctorName ? 'doctor-error' : undefined"
+            @update:model-value="(value: string) => formData.doctorName = value"
             @create="handleDoctorCreate"
           />
           <div
@@ -647,7 +703,7 @@ onMounted(() => {
             (再試行中... {{ retryCount }}/3)
           </span>
           <button
-            v-if="submitError && retryCount < 3"
+            v-if="submitError && !isSubmitting"
             type="button"
             class="retry-button"
             data-testid="retry-button"

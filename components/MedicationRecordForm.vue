@@ -11,6 +11,7 @@ import type {
 import { MedicationStatus } from '~/types/medication';
 import type { Cat } from '~/types/cat-meal';
 import { MedicationRecordInputSchema } from '~/lib/validations/medication';
+import { createUnifiedErrorHandler } from '~/utils/error-handling';
 
 interface Props {
   medicationRecord?: MedicationRecord;
@@ -48,6 +49,13 @@ const multipleDosesData = reactive({
 
 const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
+
+// 統一エラーハンドラーの初期化
+const errorHandler = createUnifiedErrorHandler('MedicationRecordForm', {
+  maxRetries: 3,
+  baseDelay: 1000,
+  maxDelay: 5000,
+});
 
 // Initialize form data when medicationRecord prop changes
 watch(

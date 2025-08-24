@@ -189,7 +189,7 @@ describe('MealChart レスポンシブ対応', () => {
 
       // モバイル用の高さが設定されることを確認
       const canvas = wrapper.find('canvas');
-      expect(canvas.attributes('style')).toContain('height: 300px');
+      expect(canvas.attributes('style')).toContain('height: 400px');
     });
 
     it('モバイルでチャートコントロールが縦並びで表示される', async () => {
@@ -299,7 +299,7 @@ describe('MealChart レスポンシブ対応', () => {
 
       // モバイル用の高さに更新されることを確認
       canvas = wrapper.find('canvas');
-      expect(canvas.attributes('style')).toContain('height: 300px');
+      expect(canvas.attributes('style')).toContain('height: 400px');
     });
 
     it('オリエンテーション変更時にチャートが適切に更新される', async () => {

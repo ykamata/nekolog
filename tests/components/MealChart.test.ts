@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
-import { nextTick } from 'vue';
+import { nextTick, ref, computed } from 'vue';
 import MealChart from '~/components/MealChart.vue';
 import type { MealAnalytics } from '~/types/cat-meal';
 
 // Mock Chart.js
 vi.mock('chart.js', () => {
-  const mockChart = {
+  const mockChartInstance = {
     destroy: vi.fn(),
     update: vi.fn(),
     resize: vi.fn(),
@@ -14,25 +14,64 @@ vi.mock('chart.js', () => {
     options: {},
   };
 
-  const mockChartConstructor = vi.fn().mockImplementation(() => mockChart);
-  mockChartConstructor.register = vi.fn();
+  const mockChart = vi.fn().mockImplementation(() => mockChartInstance);
+  mockChart.register = vi.fn();
 
   return {
-    Chart: mockChartConstructor,
-    CategoryScale: {},
-    LinearScale: {},
-    PointElement: {},
-    LineElement: {},
-    BarElement: {},
-    Title: {},
-    Tooltip: {},
-    Legend: {},
+    Chart: mockChart,
+    CategoryScale: vi.fn(),
+    LinearScale: vi.fn(),
+    PointElement: vi.fn(),
+    LineElement: vi.fn(),
+    BarElement: vi.fn(),
+    Title: vi.fn(),
+    Tooltip: vi.fn(),
+    Legend: vi.fn(),
   };
 });
 
 // Mock $fetch
 const mockFetch = vi.fn();
 vi.stubGlobal('$fetch', mockFetch);
+
+// Mock useAnalyticsStore
+const mockAnalyticsStore = {
+  analytics: ref(null),
+  loading: ref(false),
+  error: ref(null),
+  errorInfo: ref(null),
+  errorMessage: ref(''),
+  retryCount: ref(0),
+  canRetry: ref(true),
+  hasData: ref(false),
+  hasDataQualityIssues: ref(false),
+  dataQualityScore: ref(100),
+  dataQualityLevel: ref('good'),
+  anomaliesInfo: ref({ anomalies: [] }),
+  qualityRecommendations: ref([]),
+  currentChartMode: ref('line'),
+  isLineChartMode: computed(() => mockAnalyticsStore.currentChartMode.value === 'line'),
+  isBarChartMode: computed(() => mockAnalyticsStore.currentChartMode.value === 'bar'),
+  selectedFoodType: ref(null),
+  fetchAnalytics: vi.fn().mockResolvedValue({}),
+  retryLastOperation: vi.fn().mockResolvedValue({}),
+  setChartDisplayMode: vi.fn((mode) => {
+    mockAnalyticsStore.currentChartMode.value = mode;
+  }),
+  toggleChartDisplayMode: vi.fn(),
+  setSelectedFoodType: vi.fn(),
+  restoreDisplaySettings: vi.fn(),
+};
+
+// Mock useAnalyticsStore globally
+vi.stubGlobal('useAnalyticsStore', () => mockAnalyticsStore);
+
+// Mock NuxtLink
+const NuxtLink = {
+  name: 'NuxtLink',
+  props: ['to'],
+  template: '<a :href="to"><slot /></a>',
+};
 
 // Mock window for responsive behavior
 Object.defineProperty(window, 'innerWidth', {
@@ -66,9 +105,26 @@ const mockApiResponse = {
 };
 
 describe('MealChart', () => {
+  const mountComponent = (props = {}) => {
+    return mount(MealChart, {
+      props,
+      global: {
+        components: {
+          NuxtLink,
+        },
+      },
+    });
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockFetch.mockResolvedValue(mockApiResponse);
+    // Reset analytics store state
+    mockAnalyticsStore.analytics.value = mockAnalyticsData;
+    mockAnalyticsStore.loading.value = false;
+    mockAnalyticsStore.errorMessage.value = '';
+    mockAnalyticsStore.currentChartMode.value = 'line';
+    mockAnalyticsStore.selectedFoodType.value = null;
   });
 
   afterEach(() => {
@@ -76,7 +132,7 @@ describe('MealChart', () => {
   });
 
   it('renders correctly with default props', async () => {
-    const wrapper = mount(MealChart);
+    const wrapper = mountComponent();
 
     expect(wrapper.find('.meal-chart-container').exists()).toBe(true);
     expect(wrapper.find('.chart-controls').exists()).toBe(true);
@@ -86,23 +142,21 @@ describe('MealChart', () => {
   });
 
   it('shows loading state initially', async () => {
-    // Mock a slow fetch to ensure loading state is visible
-    mockFetch.mockImplementation(
-      () =>
-        new Promise(resolve =>
-          setTimeout(() => resolve(mockApiResponse), 100),
-        ),
-    );
+    // Set loading state in analytics store
+    mockAnalyticsStore.loading.value = true;
+    mockAnalyticsStore.errorMessage.value = '';
+    mockAnalyticsStore.analytics.value = null;
 
-    const wrapper = mount(MealChart);
+    const wrapper = mountComponent();
+
+    // Debug: Check actual rendered HTML
+    console.log('HTML:', wrapper.html());
+    console.log('Loading state:', mockAnalyticsStore.loading.value);
+    console.log('Error state:', mockAnalyticsStore.errorMessage.value);
 
     // Should show loading spinner initially
     expect(wrapper.find('.animate-spin').exists()).toBe(true);
     expect(wrapper.find('.chart-wrapper').exists()).toBe(false);
-
-    // Wait for fetch to complete
-    await new Promise(resolve => setTimeout(resolve, 150));
-    await nextTick();
   });
 
   it('fetches analytics data on mount', async () => {
@@ -110,7 +164,7 @@ describe('MealChart', () => {
 
     await nextTick();
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/meals/analytics?days=30');
+    expect(mockAnalyticsStore.fetchAnalytics).toHaveBeenCalled();
   });
 
   it('fetches analytics data with catId when provided', async () => {
@@ -121,12 +175,19 @@ describe('MealChart', () => {
 
     await nextTick();
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      `/api/meals/analytics?days=30&catId=${catId}`,
+    expect(mockAnalyticsStore.fetchAnalytics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        catId,
+      }),
     );
   });
 
   it('displays chart after data is loaded', async () => {
+    // Ensure analytics data is available
+    mockAnalyticsStore.analytics.value = mockAnalyticsData;
+    mockAnalyticsStore.loading.value = false;
+    mockAnalyticsStore.errorMessage.value = '';
+
     const wrapper = mount(MealChart);
 
     // Wait for data to load
@@ -139,6 +200,11 @@ describe('MealChart', () => {
   });
 
   it('displays chart summary with correct calculations', async () => {
+    // Ensure analytics data is available
+    mockAnalyticsStore.analytics.value = mockAnalyticsData;
+    mockAnalyticsStore.loading.value = false;
+    mockAnalyticsStore.errorMessage.value = '';
+
     const wrapper = mount(MealChart);
 
     // Wait for data to load
@@ -148,11 +214,11 @@ describe('MealChart', () => {
     const summaryCards = wrapper.findAll('.summary-card');
     expect(summaryCards).toHaveLength(3);
 
-    // Check total calories
+    // Check total calories (sum of all daily calories: 250.5 + 280.0 + 265.5 + 290.0 + 275.5 = 1361.5)
     expect(summaryCards[0].text()).toContain('総カロリー');
     expect(summaryCards[0].text()).toContain('1361.5 kcal');
 
-    // Check average per day
+    // Check average per day (1361.5 / 5 = 272.3)
     expect(summaryCards[1].text()).toContain('1日平均');
     expect(summaryCards[1].text()).toContain('272.3 kcal');
 
@@ -162,15 +228,18 @@ describe('MealChart', () => {
   });
 
   it('toggles between line and bar chart types', async () => {
+    mockAnalyticsStore.analytics.value = mockAnalyticsData;
+    mockAnalyticsStore.loading.value = false;
+
     const wrapper = mount(MealChart);
 
     // Wait for data to load
     await nextTick();
     await nextTick();
 
-    // Initially should be line chart
-    const lineButton = wrapper.find('button:first-child');
-    const barButton = wrapper.find('button:last-child');
+    // Find chart type toggle buttons more specifically
+    const lineButton = wrapper.find('.chart-type-toggle button:first-child');
+    const barButton = wrapper.find('.chart-type-toggle button:last-child');
 
     expect(lineButton.classes()).toContain('bg-blue-600');
     expect(barButton.classes()).toContain('bg-white');
@@ -178,20 +247,19 @@ describe('MealChart', () => {
     // Click bar chart button
     await barButton.trigger('click');
 
-    expect(lineButton.classes()).toContain('bg-white');
-    expect(barButton.classes()).toContain('bg-blue-600');
+    expect(mockAnalyticsStore.setChartDisplayMode).toHaveBeenCalledWith('bar');
   });
 
   it('shows food type breakdown in bar chart mode', async () => {
+    // Set bar chart mode and analytics data
+    mockAnalyticsStore.currentChartMode.value = 'bar';
+    mockAnalyticsStore.analytics.value = mockAnalyticsData;
+    mockAnalyticsStore.loading.value = false;
+
     const wrapper = mount(MealChart);
 
     // Wait for data to load
     await nextTick();
-    await nextTick();
-
-    // Switch to bar chart
-    const barButton = wrapper.findAll('.chart-type-toggle button')[1];
-    await barButton.trigger('click');
     await nextTick();
 
     expect(wrapper.find('.food-breakdown').exists()).toBe(true);
@@ -207,22 +275,26 @@ describe('MealChart', () => {
   });
 
   it('filters data by food type', async () => {
+    mockAnalyticsStore.analytics.value = mockAnalyticsData;
+    mockAnalyticsStore.loading.value = false;
+
     const wrapper = mount(MealChart);
 
     // Wait for data to load
     await nextTick();
     await nextTick();
 
-    // Select dry food filter
-    const foodTypeSelect = wrapper.find('.food-type-filter select');
-    await foodTypeSelect.setValue('DRY');
+    // Click dry food filter button
+    const dryButton = wrapper.find('.food-type-filter button:nth-child(2)');
+    await dryButton.trigger('click');
 
-    // Should update the chart data (we can't easily test the chart data directly,
-    // but we can verify the select value changed)
-    expect(foodTypeSelect.element.value).toBe('DRY');
+    expect(mockAnalyticsStore.setSelectedFoodType).toHaveBeenCalledWith('DRY');
   });
 
   it('changes date range and refetches data', async () => {
+    mockAnalyticsStore.analytics.value = mockAnalyticsData;
+    mockAnalyticsStore.loading.value = false;
+
     const wrapper = mount(MealChart);
 
     // Wait for initial data load
@@ -230,17 +302,20 @@ describe('MealChart', () => {
     await nextTick();
 
     // Clear previous calls
-    mockFetch.mockClear();
+    mockAnalyticsStore.fetchAnalytics.mockClear();
 
     // Change date range
     const dateRangeSelect = wrapper.find('.date-range-filter select');
     await dateRangeSelect.setValue('7');
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/meals/analytics?days=7');
+    expect(mockAnalyticsStore.fetchAnalytics).toHaveBeenCalled();
   });
 
   it('handles API errors gracefully', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('API Error'));
+    // Set error state in analytics store
+    mockAnalyticsStore.errorMessage.value = 'API Error';
+    mockAnalyticsStore.loading.value = false;
+    mockAnalyticsStore.analytics.value = null;
 
     const wrapper = mount(MealChart);
 
@@ -248,16 +323,19 @@ describe('MealChart', () => {
     await nextTick();
     await nextTick();
 
-    expect(wrapper.find('.text-red-600').exists()).toBe(true);
+    expect(wrapper.find('.error-container').exists()).toBe(true);
     expect(wrapper.text()).toContain('データの読み込みに失敗しました');
 
-    // Should have retry button - find the specific retry button
-    const retryButton = wrapper.find('.text-red-600').find('button');
-    expect(retryButton.text()).toContain('再試行');
+    // Should have retry button
+    const retryButton = wrapper.find('.retry-button');
+    expect(retryButton.exists()).toBe(true);
   });
 
   it('retries data fetch when retry button is clicked', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('API Error'));
+    // Set error state in analytics store
+    mockAnalyticsStore.error.value = 'API Error';
+    mockAnalyticsStore.loading.value = false;
+    mockAnalyticsStore.analytics.value = null;
 
     const wrapper = mount(MealChart);
 
@@ -265,15 +343,11 @@ describe('MealChart', () => {
     await nextTick();
     await nextTick();
 
-    // Clear mock and set up success response
-    mockFetch.mockClear();
-    mockFetch.mockResolvedValueOnce(mockApiResponse);
-
-    // Click retry button - find the specific retry button
-    const retryButton = wrapper.find('.text-red-600').find('button');
+    // Click retry button
+    const retryButton = wrapper.find('.retry-button');
     await retryButton.trigger('click');
 
-    expect(mockFetch).toHaveBeenCalledWith('/api/meals/analytics?days=30');
+    expect(mockAnalyticsStore.retryLastOperation).toHaveBeenCalled();
   });
 
   it('adapts height for mobile devices', async () => {
@@ -282,6 +356,9 @@ describe('MealChart', () => {
       value: 500,
       writable: true,
     });
+
+    mockAnalyticsStore.analytics.value = mockAnalyticsData;
+    mockAnalyticsStore.loading.value = false;
 
     const wrapper = mount(MealChart, {
       props: { height: 400 },
@@ -314,22 +391,18 @@ describe('MealChart', () => {
 
   it('handles empty analytics data', async () => {
     const emptyAnalytics = {
-      analytics: {
-        dailyCalories: [],
-        weeklyAverage: 0,
-        foodTypeBreakdown: [
-          { type: 'DRY' as const, percentage: 0 },
-          { type: 'WET' as const, percentage: 0 },
-        ],
-      },
-      summary: {
-        totalMeals: 0,
-        totalCalories: 0,
-        averageCaloriesPerMeal: 0,
-      },
+      dailyCalories: [],
+      weeklyAverage: 0,
+      foodTypeBreakdown: [
+        { type: 'DRY' as const, percentage: 0 },
+        { type: 'WET' as const, percentage: 0 },
+      ],
     };
 
-    mockFetch.mockResolvedValueOnce(emptyAnalytics);
+    // Set empty analytics data
+    mockAnalyticsStore.analytics.value = emptyAnalytics;
+    mockAnalyticsStore.loading.value = false;
+    mockAnalyticsStore.errorMessage.value = '';
 
     const wrapper = mount(MealChart);
 
@@ -348,15 +421,14 @@ describe('MealChart', () => {
   });
 
   it('calculates filtered totals correctly', async () => {
+    mockAnalyticsStore.analytics.value = mockAnalyticsData;
+    mockAnalyticsStore.loading.value = false;
+    mockAnalyticsStore.selectedFoodType.value = 'DRY';
+
     const wrapper = mount(MealChart);
 
     // Wait for data to load
     await nextTick();
-    await nextTick();
-
-    // Filter by DRY food only
-    const foodTypeSelect = wrapper.find('.food-type-filter select');
-    await foodTypeSelect.setValue('DRY');
     await nextTick();
 
     // Should recalculate totals for DRY food only

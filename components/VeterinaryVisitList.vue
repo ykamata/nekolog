@@ -117,7 +117,7 @@ const filteredAndSortedVisits = computed(() => {
           const hospitalName = visit.hospital?.name?.toLowerCase() || '';
           const doctorName = visit.doctor?.name?.toLowerCase() || '';
           const notes = visit.notes?.toLowerCase() || '';
-          const treatmentNames = visit.treatments?.map(t => (t?.treatment?.name || t?.name)?.toLowerCase() || '').join(' ') || '';
+          const treatmentNames = visit.treatments?.map(t => t?.treatment?.name?.toLowerCase() || '').join(' ') || '';
 
           return hospitalName.includes(query)
             || doctorName.includes(query)
@@ -767,7 +767,7 @@ const prevPage = () => {
                 class="treatment-tag"
                 :data-testid="`treatment-tag-${treatment.id}`"
               >
-                {{ treatment.treatment?.name || treatment.name || 'Unknown Treatment' }}
+                {{ treatment.treatment?.name || 'Unknown Treatment' }}
               </span>
               <span
                 v-if="visit.treatments.length > 2"

@@ -68,7 +68,12 @@ watch(
       formData.catId = schedule.catId;
       formData.medicationId = schedule.medicationId;
       formData.frequency = schedule.frequency;
-      formData.times = [...schedule.times];
+      // Ensure times is always an array of strings
+      formData.times = Array.isArray(schedule.times)
+        ? [...schedule.times]
+        : typeof schedule.times === 'string'
+          ? JSON.parse(schedule.times)
+          : ['08:00'];
       formData.startDate = new Date(schedule.startDate);
       formData.endDate = schedule.endDate ? new Date(schedule.endDate) : undefined;
     }

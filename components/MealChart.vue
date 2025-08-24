@@ -4,15 +4,24 @@
     <div class="chart-controls mb-4 flex flex-wrap gap-4 items-center">
       <!-- Chart Type Toggle -->
       <div class="chart-type-toggle">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+        <label
+          id="chart-type-label"
+          class="block text-sm font-medium text-gray-700 mb-2"
+        >
           表示タイプ
           <span class="text-xs text-gray-500 ml-1">
             (設定は自動保存されます)
           </span>
         </label>
-        <div class="flex rounded-lg border border-gray-300 overflow-hidden shadow-sm">
+        <div
+          class="flex rounded-lg border border-gray-300 overflow-hidden shadow-sm"
+          role="radiogroup"
+          aria-labelledby="chart-type-label"
+        >
           <button
             type="button"
+            role="radio"
+            :aria-checked="chartType === 'line'"
             :class="[
               'px-4 py-2 text-sm font-medium transition-all duration-200 flex items-center gap-2',
               chartType === 'line'
@@ -20,6 +29,7 @@
                 : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-blue-600',
             ]"
             :title="'線グラフ表示に切り替え'"
+            aria-label="線グラフ表示"
             @click="chartType = 'line'"
           >
             <svg
@@ -27,6 +37,7 @@
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 stroke-linecap="round"
@@ -39,6 +50,8 @@
           </button>
           <button
             type="button"
+            role="radio"
+            :aria-checked="chartType === 'bar'"
             :class="[
               'px-4 py-2 text-sm font-medium transition-all duration-200 border-l border-gray-300 flex items-center gap-2',
               chartType === 'bar'
@@ -46,6 +59,7 @@
                 : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-blue-600',
             ]"
             :title="'積み上げ棒グラフ表示に切り替え'"
+            aria-label="積み上げ棒グラフ表示"
             @click="chartType = 'bar'"
           >
             <svg
@@ -53,6 +67,7 @@
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 stroke-linecap="round"
@@ -68,7 +83,10 @@
 
       <!-- Food Type Filter -->
       <div class="food-type-filter">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+        <label
+          id="food-type-label"
+          class="block text-sm font-medium text-gray-700 mb-2"
+        >
           フードタイプ
           <span
             v-if="chartType === 'bar'"
@@ -77,9 +95,16 @@
             （積み上げ表示では無効）
           </span>
         </label>
-        <div class="flex rounded-lg border border-gray-300 overflow-hidden shadow-sm">
+        <div
+          class="flex rounded-lg border border-gray-300 overflow-hidden shadow-sm"
+          role="radiogroup"
+          aria-labelledby="food-type-label"
+          :aria-disabled="chartType === 'bar'"
+        >
           <button
             type="button"
+            role="radio"
+            :aria-checked="selectedFoodType === ''"
             :disabled="chartType === 'bar'"
             :class="[
               'px-4 py-2 text-sm font-medium transition-all duration-200 flex items-center gap-2 flex-1',
@@ -90,6 +115,7 @@
                   : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-blue-600',
             ]"
             :title="chartType === 'bar' ? '積み上げ表示では無効' : 'すべてのフードタイプを表示'"
+            aria-label="すべてのフードタイプを表示"
             @click="setFoodTypeFilter('')"
           >
             <svg
@@ -97,6 +123,7 @@
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 stroke-linecap="round"
@@ -109,6 +136,8 @@
           </button>
           <button
             type="button"
+            role="radio"
+            :aria-checked="selectedFoodType === FoodType.DRY"
             :disabled="chartType === 'bar'"
             :class="[
               'px-4 py-2 text-sm font-medium transition-all duration-200 border-l border-gray-300 flex items-center gap-2 flex-1',
@@ -119,6 +148,7 @@
                   : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-blue-600',
             ]"
             :title="chartType === 'bar' ? '積み上げ表示では無効' : 'ドライフードのみ表示'"
+            aria-label="ドライフードのみ表示"
             @click="setFoodTypeFilter(FoodType.DRY)"
           >
             <svg
@@ -126,6 +156,7 @@
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 stroke-linecap="round"
@@ -138,6 +169,8 @@
           </button>
           <button
             type="button"
+            role="radio"
+            :aria-checked="selectedFoodType === FoodType.WET"
             :disabled="chartType === 'bar'"
             :class="[
               'px-4 py-2 text-sm font-medium transition-all duration-200 border-l border-gray-300 flex items-center gap-2 flex-1',
@@ -148,6 +181,7 @@
                   : 'bg-white text-gray-700 hover:bg-gray-50 hover:text-blue-600',
             ]"
             :title="chartType === 'bar' ? '積み上げ表示では無効' : 'ウェットフードのみ表示'"
+            aria-label="ウェットフードのみ表示"
             @click="setFoodTypeFilter(FoodType.WET)"
           >
             <svg
@@ -155,6 +189,7 @@
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 stroke-linecap="round"
@@ -170,12 +205,17 @@
 
       <!-- Date Range -->
       <div class="date-range-filter">
-        <label class="block text-sm font-medium text-gray-700 mb-2">
+        <label
+          for="date-range-select"
+          class="block text-sm font-medium text-gray-700 mb-2"
+        >
           期間
         </label>
         <select
+          id="date-range-select"
           v-model="selectedDays"
           class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          aria-label="表示期間を選択"
           @change="refreshData"
         >
           <option value="7">
@@ -266,9 +306,92 @@
       </div>
     </div>
 
+    <!-- Real-time Update Status -->
+    <div
+      v-if="autoRefreshEnabled && lastUpdateTime"
+      class="realtime-status bg-green-50 border border-green-200 rounded-lg p-3 mb-4"
+    >
+      <div class="flex items-center gap-2">
+        <div class="status-indicator w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+        <span class="text-sm text-green-800">
+          リアルタイム更新中 - 最終更新: {{ lastUpdateTime ? lastUpdateTime.toLocaleTimeString() : '未更新' }}
+        </span>
+        <button
+          type="button"
+          class="ml-auto text-xs text-green-600 hover:text-green-800 underline"
+          @click="analyticsStore.stopAutoRefresh()"
+        >
+          停止
+        </button>
+      </div>
+    </div>
+
+    <!-- Data Gap Warning -->
+    <div
+      v-if="missingDataInfo && missingDataInfo.hasGaps"
+      class="data-gap-warning bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4"
+    >
+      <div class="flex items-start gap-3">
+        <div class="warning-icon text-orange-500 text-xl flex-shrink-0">
+          📊
+        </div>
+        <div class="warning-content flex-1">
+          <h4 class="warning-title font-semibold text-orange-800 mb-2">
+            データ欠損期間があります
+          </h4>
+          <div class="warning-details text-orange-700 text-sm space-y-1">
+            <p>
+              データ完全性: <strong>{{ missingDataInfo.completeness }}%</strong>
+              ({{ missingDataInfo.totalDays }}日中{{ missingDataInfo.totalDays - missingDataInfo.missingDays }}日分のデータ)
+            </p>
+            <p v-if="missingDataInfo.longestGap > 0">
+              最長欠損期間: <strong>{{ missingDataInfo.longestGap }}日間</strong>
+            </p>
+          </div>
+
+          <!-- 欠損期間の詳細 -->
+          <div
+            v-if="missingDataInfo.missingRanges.length > 0"
+            class="missing-ranges mt-3"
+          >
+            <details class="cursor-pointer">
+              <summary class="font-medium text-orange-800 hover:text-orange-900">
+                欠損期間の詳細を表示 ({{ missingDataInfo.missingRanges.length }}件)
+              </summary>
+              <ul class="mt-2 space-y-1 text-sm text-orange-700">
+                <li
+                  v-for="(range, index) in missingDataInfo.missingRanges.slice(0, 5)"
+                  :key="index"
+                  class="flex justify-between"
+                >
+                  <span>{{ range.start }} 〜 {{ range.end }}</span>
+                  <span class="font-medium">{{ range.days }}日間</span>
+                </li>
+                <li
+                  v-if="missingDataInfo.missingRanges.length > 5"
+                  class="text-xs text-orange-600"
+                >
+                  他{{ missingDataInfo.missingRanges.length - 5 }}件...
+                </li>
+              </ul>
+            </details>
+          </div>
+
+          <!-- 警告を閉じるボタン -->
+          <button
+            type="button"
+            class="dismiss-warning mt-3 text-xs text-orange-600 hover:text-orange-800 underline"
+            @click="missingDataInfo.hasGaps = false"
+          >
+            この警告を閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Data Quality Warning -->
     <div
-      v-if="showDataQualityWarning && dataQualityInfo"
+      v-if="showDataQualityWarning && localDataQualityInfo"
       class="data-quality-warning bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4"
     >
       <div class="flex items-start gap-3">
@@ -281,17 +404,17 @@
           </h4>
           <div class="warning-details text-yellow-700 text-sm space-y-1">
             <p>
-              データ品質スコア: <strong>{{ dataQualityInfo.score }}/100</strong>
-              ({{ dataQualityInfo.level === 'poor' ? '低い' : '普通' }})
+              データ品質スコア: <strong>{{ localDataQualityInfo.score }}/100</strong>
+              ({{ localDataQualityInfo.level === 'poor' ? '低い' : '普通' }})
             </p>
-            <p v-if="dataQualityInfo.anomaliesCount > 0">
-              {{ dataQualityInfo.anomaliesCount }}件の異常値が検出され、除外されました。
+            <p v-if="localDataQualityInfo.anomaliesCount > 0">
+              {{ localDataQualityInfo.anomaliesCount }}件の異常値が検出され、除外されました。
             </p>
           </div>
 
           <!-- 推奨事項 -->
           <div
-            v-if="dataQualityInfo.recommendations.length > 0"
+            v-if="localDataQualityInfo.recommendations.length > 0"
             class="recommendations mt-3"
           >
             <details class="cursor-pointer">
@@ -300,7 +423,7 @@
               </summary>
               <ul class="mt-2 space-y-1 text-sm text-yellow-700 list-disc list-inside">
                 <li
-                  v-for="recommendation in dataQualityInfo.recommendations"
+                  v-for="recommendation in localDataQualityInfo.recommendations"
                   :key="recommendation"
                 >
                   {{ recommendation }}
@@ -327,40 +450,113 @@
       class="chart-wrapper"
     >
       <div class="chart-canvas-container relative">
+        <!-- Chart Canvas with Accessibility Support -->
         <canvas
           ref="chartCanvas"
           class="max-w-full h-auto"
           :style="{ height: chartHeight + 'px' }"
+          :aria-label="chartAriaLabel"
+          :aria-describedby="chartDescriptionId"
+          role="img"
+          tabindex="0"
+          @keydown="handleChartKeydown"
+          @focus="handleChartFocus"
+          @blur="handleChartBlur"
         />
+
+        <!-- Screen Reader Description -->
+        <div
+          :id="chartDescriptionId"
+          class="sr-only"
+          aria-live="polite"
+        >
+          {{ chartDescription }}
+        </div>
+
+        <!-- Keyboard Navigation Instructions -->
+        <div
+          v-if="showKeyboardInstructions"
+          class="keyboard-instructions absolute top-2 left-2 bg-black bg-opacity-75 text-white text-xs p-2 rounded z-10"
+          role="tooltip"
+        >
+          <div class="mb-1">
+            <strong>キーボード操作:</strong>
+          </div>
+          <div>← → : データポイント移動</div>
+          <div>↑ ↓ : データセット切り替え</div>
+          <div>Enter/Space : 詳細表示</div>
+          <div>Esc : 操作終了</div>
+        </div>
+
+        <!-- Data Point Details for Screen Readers -->
+        <div
+          v-if="currentDataPoint"
+          class="sr-only"
+          aria-live="assertive"
+        >
+          {{ currentDataPointDescription }}
+        </div>
       </div>
 
       <!-- Chart Summary -->
       <div
         v-if="analytics"
         class="chart-summary mt-4 grid grid-cols-1 md:grid-cols-3 gap-4"
+        role="region"
+        aria-label="チャートサマリー"
       >
-        <div class="summary-card bg-gray-50 p-4 rounded-lg">
-          <h3 class="text-sm font-medium text-gray-700">
+        <div
+          class="summary-card bg-gray-50 p-4 rounded-lg"
+          role="article"
+          aria-labelledby="total-calories-title"
+        >
+          <h3
+            id="total-calories-title"
+            class="text-sm font-medium text-gray-700"
+          >
             総カロリー
           </h3>
-          <p class="text-2xl font-bold text-gray-900">
+          <p
+            class="text-2xl font-bold text-gray-900"
+            aria-label="総カロリー {{ totalCalories.toFixed(1) }}キロカロリー"
+          >
             {{ totalCalories.toFixed(1) }} kcal
           </p>
         </div>
-        <div class="summary-card bg-gray-50 p-4 rounded-lg">
-          <h3 class="text-sm font-medium text-gray-700">
+        <div
+          class="summary-card bg-gray-50 p-4 rounded-lg"
+          role="article"
+          aria-labelledby="daily-average-title"
+        >
+          <h3
+            id="daily-average-title"
+            class="text-sm font-medium text-gray-700"
+          >
             1日平均
           </h3>
-          <p class="text-2xl font-bold text-gray-900">
+          <p
+            class="text-2xl font-bold text-gray-900"
+            aria-label="1日平均 {{ averageCaloriesPerDay.toFixed(1) }}キロカロリー"
+          >
             {{ averageCaloriesPerDay.toFixed(1) }} kcal
           </p>
         </div>
-        <div class="summary-card bg-gray-50 p-4 rounded-lg">
-          <h3 class="text-sm font-medium text-gray-700">
+        <div
+          class="summary-card bg-gray-50 p-4 rounded-lg"
+          role="article"
+          aria-labelledby="weekly-average-title"
+        >
+          <h3
+            id="weekly-average-title"
+            class="text-sm font-medium text-gray-700"
+          >
             週平均
           </h3>
-          <p class="text-2xl font-bold text-gray-900">
-            {{ analytics.weeklyAverage.toFixed(1) }} kcal
+          <p
+            class="text-2xl font-bold text-gray-900"
+            aria-label="週平均 {{ (analytics?.weeklyAverage || 0).toFixed(1) }}キロカロリー"
+          >
+            {{ (analytics?.weeklyAverage || 0).toFixed(1) }} kcal
           </p>
         </div>
       </div>
@@ -375,7 +571,7 @@
         </h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div
-            v-for="breakdown in analytics.foodTypeBreakdown"
+            v-for="breakdown in (analytics?.foodTypeBreakdown || [])"
             :key="breakdown.type"
             class="breakdown-item bg-gray-50 p-4 rounded-lg"
           >
@@ -490,14 +686,11 @@ const props = withDefaults(defineProps<Props>(), {
 // Reactive data
 const chartCanvas = ref<HTMLCanvasElement>();
 const chart = ref<Chart>();
-const loading = ref(false);
-const error = ref<string>();
-const analytics = ref<MealAnalytics>();
 
 // エラーハンドリング強化用の状態
 const retryCount = ref(0);
 const showDataQualityWarning = ref(false);
-const dataQualityInfo = ref<{
+const localDataQualityInfo = ref<{
   hasIssues: boolean;
   score: number;
   level: string;
@@ -507,6 +700,15 @@ const dataQualityInfo = ref<{
 
 // Analytics Store
 const analyticsStore = useAnalyticsStore();
+
+// Use analytics store data directly
+const loading = computed(() => analyticsStore.loading);
+const error = computed(() => analyticsStore.errorMessage);
+const analytics = computed(() => analyticsStore.analytics);
+
+// リアルタイム更新関連の状態
+const lastUpdateTime = computed(() => analyticsStore.lastDataUpdate);
+const autoRefreshEnabled = computed(() => analyticsStore.autoRefreshEnabled);
 
 // Chart configuration - Analytics Storeから状態を取得
 const chartType = computed({
@@ -548,7 +750,7 @@ const totalCalories = computed(() => {
       0,
     );
   }
-  return filteredDailyCalories.value.reduce(
+  return (filteredDailyCalories.value || []).reduce(
     (sum, item) => sum + item.calories,
     0,
   );
@@ -568,7 +770,7 @@ const averageCaloriesPerDay = computed(() => {
       : 0;
   }
 
-  const data = filteredDailyCalories.value;
+  const data = filteredDailyCalories.value || [];
   return data.length > 0 ? totalCalories.value / data.length : 0;
 });
 
@@ -576,7 +778,7 @@ const averageCaloriesPerDay = computed(() => {
 const chartData = computed((): ChartData => {
   if (chartType.value === 'line') {
     // Line chart - show filtered data based on food type selection
-    const data = filteredDailyCalories.value;
+    const data = filteredDailyCalories.value || [];
     return {
       labels: data.map(item => item.date),
       datasets: [
@@ -599,7 +801,7 @@ const chartData = computed((): ChartData => {
     }
 
     // Get all daily calories data (not filtered by food type for stacked view)
-    const allDailyData = analytics.value.dailyCalories;
+    const allDailyData = analytics.value.dailyCalories || [];
 
     // Create a map to aggregate calories by date and food type
     const dateMap = new Map<string, { dry: number; wet: number }>();
@@ -815,12 +1017,90 @@ const isDevelopment = computed(() => {
   return import.meta.dev;
 });
 
+// アクセシビリティ関連の状態
+const showKeyboardInstructions = ref(false);
+const currentDataPoint = ref<{
+  datasetIndex: number;
+  dataIndex: number;
+  value: number;
+  label: string;
+  datasetLabel: string;
+} | null>(null);
+const chartDescriptionId = `chart-description-${Math.random().toString(36).substr(2, 9)}`;
+
+// キーボードナビゲーション用の状態
+const keyboardNavigation = ref({
+  activeDatasetIndex: 0,
+  activeDataIndex: 0,
+  isNavigating: false,
+});
+
+// アクセシビリティ用のcomputed properties
+const chartAriaLabel = computed(() => {
+  const chartTypeText = chartType.value === 'line' ? '線グラフ' : '積み上げ棒グラフ';
+  const foodTypeText = selectedFoodType.value
+    ? (selectedFoodType.value === 'DRY' ? 'ドライフード' : 'ウェットフード')
+    : 'すべてのフードタイプ';
+  const periodText = `過去${selectedDays.value}日間`;
+
+  return `${chartTypeText}による食事カロリー推移。${foodTypeText}の${periodText}のデータを表示。キーボードで操作可能。`;
+});
+
+const chartDescription = computed(() => {
+  if (!analytics.value || !chartData.value.labels) {
+    return 'データを読み込み中です。';
+  }
+
+  const dataCount = chartData.value.labels.length;
+  const datasetCount = chartData.value.datasets.length;
+  const totalCaloriesText = totalCalories.value.toFixed(1);
+  const averageCaloriesText = averageCaloriesPerDay.value.toFixed(1);
+
+  let description = `${dataCount}日分のデータを含む${chartType.value === 'line' ? '線グラフ' : '積み上げ棒グラフ'}。`;
+  description += `${datasetCount}つのデータセットがあります。`;
+  description += `総カロリー: ${totalCaloriesText}kcal、1日平均: ${averageCaloriesText}kcal。`;
+
+  if (chartType.value === 'bar') {
+    description += 'ドライフードとウェットフードの内訳を積み上げ表示しています。';
+  }
+
+  description += 'キーボードの矢印キーでデータポイントを移動できます。';
+
+  return description;
+});
+
+const currentDataPointDescription = computed(() => {
+  if (!currentDataPoint.value || !chartData.value.labels) {
+    return '';
+  }
+
+  const point = currentDataPoint.value;
+  const date = chartData.value.labels[point.dataIndex];
+  const value = point.value.toFixed(1);
+  const datasetLabel = point.datasetLabel;
+
+  return `${date}の${datasetLabel}: ${value}kcal`;
+});
+
+// データ欠損情報の取得
+const dataQualityInfo = computed(() => analyticsStore.dataQualityInfo);
+const missingDataInfo = computed(() => {
+  const quality = dataQualityInfo.value;
+  if (!quality) return null;
+
+  return {
+    hasGaps: quality.hasSignificantGaps,
+    missingDays: quality.missingDays,
+    totalDays: quality.totalDays,
+    completeness: quality.dataCompleteness,
+    missingRanges: quality.missingDateRanges || [],
+    longestGap: quality.longestMissingPeriod || 0,
+  };
+});
+
 // Methods
 async function fetchAnalytics() {
   try {
-    loading.value = true;
-    error.value = undefined;
-
     // Analytics Storeを使用してデータを取得（エラーハンドリング強化済み）
     await analyticsStore.fetchAnalytics({
       catId: props.catId,
@@ -829,8 +1109,6 @@ async function fetchAnalytics() {
       foodType: selectedFoodType.value || undefined,
     });
 
-    analytics.value = analyticsStore.analytics || undefined;
-
     // データ品質情報を更新
     updateDataQualityInfo();
 
@@ -838,28 +1116,15 @@ async function fetchAnalytics() {
     retryCount.value = 0;
   }
   catch (err) {
-    // Analytics Storeのエラー情報を使用
-    const storeError = analyticsStore.errorInfo;
-    if (storeError) {
-      error.value = storeError.userMessage;
-      retryCount.value = analyticsStore.retryCount;
-    }
-    else {
-      error.value = 'データの取得に失敗しました';
-      retryCount.value++;
-    }
-
     // エラーログを記録
-  }
-  finally {
-    loading.value = false;
+    console.error('Failed to fetch analytics:', err);
   }
 }
 
 // データ品質情報を更新
 function updateDataQualityInfo() {
   if (!analyticsStore.hasData) {
-    dataQualityInfo.value = null;
+    localDataQualityInfo.value = null;
     showDataQualityWarning.value = false;
     return;
   }
@@ -870,16 +1135,16 @@ function updateDataQualityInfo() {
   const anomalies = analyticsStore.anomaliesInfo;
   const recommendations = analyticsStore.qualityRecommendations;
 
-  dataQualityInfo.value = {
+  localDataQualityInfo.value = {
     hasIssues,
     score,
     level,
-    anomaliesCount: anomalies?.anomalies.length || 0,
+    anomaliesCount: anomalies?.anomalies?.length || 0,
     recommendations,
   };
 
   // 品質が低い場合は警告を表示
-  showDataQualityWarning.value = hasIssues && (level === 'poor' || level === 'fair');
+  showDataQualityWarning.value = hasIssues && level !== 'good' && level !== 'unknown';
 }
 
 // リトライ機能
@@ -887,12 +1152,10 @@ async function retryFetch() {
   if (analyticsStore.canRetry) {
     try {
       await analyticsStore.retryLastOperation();
-      analytics.value = analyticsStore.analytics || undefined;
       updateDataQualityInfo();
-      error.value = undefined;
     }
     catch (err) {
-      error.value = analyticsStore.errorMessage || 'リトライに失敗しました';
+      console.error('Retry failed:', err);
     }
   }
   else {
@@ -904,6 +1167,7 @@ async function retryFetch() {
 // フード種別フィルターの設定とリアルタイム更新
 function setFoodTypeFilter(foodType: FoodType | '') {
   selectedFoodType.value = foodType;
+  analyticsStore.setSelectedFoodType(foodType || null);
 
   // フィルター設定をlocalStorageに永続化
   if (typeof window !== 'undefined' && window.localStorage) {
@@ -1055,6 +1319,156 @@ async function refreshData() {
   await fetchAnalytics();
 }
 
+// アクセシビリティ関連のメソッド
+function handleChartFocus() {
+  showKeyboardInstructions.value = true;
+  keyboardNavigation.value.isNavigating = true;
+
+  // 初期データポイントを設定
+  if (chartData.value.labels && chartData.value.labels.length > 0) {
+    updateCurrentDataPoint(0, 0);
+  }
+}
+
+function handleChartBlur() {
+  showKeyboardInstructions.value = false;
+  keyboardNavigation.value.isNavigating = false;
+  currentDataPoint.value = null;
+}
+
+function handleChartKeydown(event: KeyboardEvent) {
+  if (!keyboardNavigation.value.isNavigating || !chartData.value.labels) {
+    return;
+  }
+
+  const maxDataIndex = chartData.value.labels.length - 1;
+  const maxDatasetIndex = chartData.value.datasets.length - 1;
+
+  let { activeDatasetIndex, activeDataIndex } = keyboardNavigation.value;
+  let handled = true;
+
+  switch (event.key) {
+    case 'ArrowLeft':
+      // 前のデータポイントに移動
+      activeDataIndex = Math.max(0, activeDataIndex - 1);
+      break;
+
+    case 'ArrowRight':
+      // 次のデータポイントに移動
+      activeDataIndex = Math.min(maxDataIndex, activeDataIndex + 1);
+      break;
+
+    case 'ArrowUp':
+      // 前のデータセットに移動（積み上げ棒グラフの場合）
+      if (chartType.value === 'bar' && maxDatasetIndex > 0) {
+        activeDatasetIndex = Math.max(0, activeDatasetIndex - 1);
+      }
+      break;
+
+    case 'ArrowDown':
+      // 次のデータセットに移動（積み上げ棒グラフの場合）
+      if (chartType.value === 'bar' && maxDatasetIndex > 0) {
+        activeDatasetIndex = Math.min(maxDatasetIndex, activeDatasetIndex + 1);
+      }
+      break;
+
+    case 'Enter':
+    case ' ':
+      // 現在のデータポイントの詳細を表示
+      announceDataPointDetails();
+      break;
+
+    case 'Home':
+      // 最初のデータポイントに移動
+      activeDataIndex = 0;
+      activeDatasetIndex = 0;
+      break;
+
+    case 'End':
+      // 最後のデータポイントに移動
+      activeDataIndex = maxDataIndex;
+      activeDatasetIndex = maxDatasetIndex;
+      break;
+
+    case 'Escape':
+      // キーボードナビゲーションを終了
+      if (chartCanvas.value) {
+        chartCanvas.value.blur();
+      }
+      break;
+
+    default:
+      handled = false;
+  }
+
+  if (handled) {
+    event.preventDefault();
+    keyboardNavigation.value.activeDatasetIndex = activeDatasetIndex;
+    keyboardNavigation.value.activeDataIndex = activeDataIndex;
+    updateCurrentDataPoint(activeDatasetIndex, activeDataIndex);
+
+    // チャート上でのハイライト表示
+    highlightDataPoint(activeDatasetIndex, activeDataIndex);
+  }
+}
+
+function updateCurrentDataPoint(datasetIndex: number, dataIndex: number) {
+  if (!chartData.value.labels || !chartData.value.datasets[datasetIndex]) {
+    return;
+  }
+
+  const dataset = chartData.value.datasets[datasetIndex];
+  const value = dataset.data[dataIndex] as number;
+  const label = chartData.value.labels[dataIndex] as string;
+
+  currentDataPoint.value = {
+    datasetIndex,
+    dataIndex,
+    value,
+    label,
+    datasetLabel: dataset.label || '',
+  };
+}
+
+function highlightDataPoint(datasetIndex: number, dataIndex: number) {
+  if (!chart.value) return;
+
+  // 既存のハイライトをクリア
+  chart.value.setActiveElements([]);
+
+  // 新しいデータポイントをハイライト
+  chart.value.setActiveElements([{
+    datasetIndex,
+    index: dataIndex,
+  }]);
+
+  chart.value.update('none');
+}
+
+function announceDataPointDetails() {
+  if (!currentDataPoint.value) return;
+
+  const point = currentDataPoint.value;
+  const announcement = `詳細: ${point.label}の${point.datasetLabel}は${point.value.toFixed(1)}キロカロリーです。`;
+
+  // スクリーンリーダー用の詳細情報を更新
+  const detailsElement = document.createElement('div');
+  detailsElement.setAttribute('aria-live', 'assertive');
+  detailsElement.className = 'sr-only';
+  detailsElement.textContent = announcement;
+
+  if (chartCanvas.value?.parentElement) {
+    chartCanvas.value.parentElement.appendChild(detailsElement);
+
+    // 少し遅れて要素を削除
+    setTimeout(() => {
+      if (detailsElement.parentElement) {
+        detailsElement.parentElement.removeChild(detailsElement);
+      }
+    }, 1000);
+  }
+}
+
 // Watchers
 watch(chartType, (newType) => {
   // Reset food type filter when switching to bar chart
@@ -1084,6 +1498,15 @@ watch(analytics, () => {
   nextTick(() => {
     createChart();
   });
+});
+
+// リアルタイム更新の監視
+watch(lastUpdateTime, (newTime) => {
+  if (newTime && analytics.value) {
+    nextTick(() => {
+      updateChart();
+    });
+  }
 });
 
 // Lifecycle
@@ -1144,8 +1567,15 @@ onMounted(async () => {
     // タッチデバイスの検出
     const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
+    // リアルタイム更新イベントリスナー
+    const handleDataUpdate = (event: CustomEvent) => {
+      console.log('Analytics data updated:', event.detail);
+      // チャートの更新は watch で自動的に行われる
+    };
+
     // イベントリスナーの追加
     window.addEventListener('resize', handleResize);
+    window.addEventListener('analytics-data-updated', handleDataUpdate as EventListener);
     if (isTouchDevice) {
       window.addEventListener('orientationchange', handleOrientationChange);
     }
@@ -1170,6 +1600,7 @@ onMounted(async () => {
     onUnmounted(() => {
       clearTimeout(resizeTimeout);
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('analytics-data-updated', handleDataUpdate as EventListener);
       if (isTouchDevice) {
         window.removeEventListener('orientationchange', handleOrientationChange);
       }
@@ -1489,6 +1920,33 @@ onUnmounted(() => {
   }
 }
 
+/* アクセシビリティ対応 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* キーボードナビゲーション用のスタイル */
+.keyboard-instructions {
+  font-family: monospace;
+  line-height: 1.4;
+  max-width: 200px;
+  z-index: 1000;
+}
+
+/* チャートキャンバスのフォーカス表示 */
+.chart-canvas-container canvas:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  outline-offset: 2px;
+}
+
 /* フォーカス表示の改善（アクセシビリティ） */
 .chart-controls button:focus {
   @apply outline-none ring-2 ring-blue-500 ring-offset-2;
@@ -1496,6 +1954,20 @@ onUnmounted(() => {
 
 .date-range-filter select:focus {
   @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* ハイコントラストモード対応 */
+@media (prefers-contrast: high) {
+  .keyboard-instructions {
+    background-color: black !important;
+    color: white !important;
+    border: 2px solid white;
+  }
+
+  .chart-canvas-container canvas:focus {
+    outline: 3px solid #ffffff;
+    outline-offset: 2px;
+  }
 }
 
 /* タッチターゲットサイズの確保 */

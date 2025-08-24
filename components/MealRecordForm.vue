@@ -2,6 +2,7 @@
 import type { Cat, Food, MealRecordInput } from '~/types/cat-meal';
 import { MealRecordFormSchema } from '~/lib/validations/cat-meal';
 import type { MealRecordForm } from '~/lib/validations/cat-meal';
+import { createUnifiedErrorHandler } from '~/utils/error-handling';
 
 interface Props {
   cats: Cat[];
@@ -36,6 +37,13 @@ const formData = ref<MealRecordForm>({
 // Form validation state
 const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
+
+// 統一エラーハンドラーの初期化
+const errorHandler = createUnifiedErrorHandler('MealRecordForm', {
+  maxRetries: 3,
+  baseDelay: 1000,
+  maxDelay: 5000,
+});
 
 // Quantity input mode (grams or calories)
 const quantityMode = ref<'grams' | 'calories'>('grams');

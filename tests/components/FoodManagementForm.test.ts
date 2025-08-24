@@ -108,7 +108,7 @@ describe('FoodManagementForm', () => {
 
     it('should show required indicators for mandatory fields', () => {
       const requiredFields = wrapper.findAll('.required');
-      expect(requiredFields).toHaveLength(3); // name, type, calories, unit
+      expect(requiredFields).toHaveLength(4); // name, type, calories, unit
     });
 
     it('should have correct food type options', () => {
@@ -231,7 +231,7 @@ describe('FoodManagementForm', () => {
 
       await wrapper.vm.$nextTick();
 
-      const nameError = wrapper.find('#food-name').parent().find('.form-error');
+      const nameError = wrapper.find('[data-testid="name-error"]');
       expect(nameError.exists()).toBe(true);
     });
 
@@ -247,10 +247,7 @@ describe('FoodManagementForm', () => {
 
       await wrapper.vm.$nextTick();
 
-      const caloriesError = wrapper
-        .find('#food-calories')
-        .parent()
-        .find('.form-error');
+      const caloriesError = wrapper.find('[data-testid="calories-error"]');
       expect(caloriesError.exists()).toBe(true);
     });
 
@@ -265,7 +262,7 @@ describe('FoodManagementForm', () => {
 
       await wrapper.vm.$nextTick();
 
-      const nameError = wrapper.find('#food-name').parent().find('.form-error');
+      const nameError = wrapper.find('[data-testid="name-error"]');
       expect(nameError.exists()).toBe(true);
     });
   });

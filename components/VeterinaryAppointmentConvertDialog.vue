@@ -399,7 +399,7 @@ const newTreatmentName = ref('');
                 :loading="loadingTreatments"
                 :disabled="isSubmitting"
                 placeholder="処方内容を選択または入力してください"
-                @select="(treatment) => {
+                @select="(treatment: any) => {
                   if (!formData.actualTreatments) formData.actualTreatments = [];
                   if (!formData.actualTreatments.includes(treatment.name)) {
                     formData.actualTreatments.push(treatment.name);

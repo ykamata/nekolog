@@ -2,6 +2,7 @@ import { ref } from 'process';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import VeterinaryVisitForm from '~/components/VeterinaryVisitForm.vue';
+import { useVeterinaryMasters } from '~/composables/useVeterinaryMasters';
 import type { Cat } from '~/types/cat-meal';
 import type { VeterinaryVisitWithRelations } from '~/types/veterinary-visit';
 
@@ -324,7 +325,8 @@ describe('VeterinaryVisitForm', () => {
 
   describe('マスタデータ管理', () => {
     it('新しい病院名を入力した場合、マスタに追加される', async () => {
-      const { createHospital } = useVeterinaryMasters();
+      const mockUseVeterinaryMasters = vi.mocked(useVeterinaryMasters);
+      const { createHospital } = mockUseVeterinaryMasters();
       const wrapper = mount(VeterinaryVisitForm, {
         props: defaultProps,
       });
@@ -342,7 +344,8 @@ describe('VeterinaryVisitForm', () => {
     });
 
     it('新しい先生名を入力した場合、マスタに追加される', async () => {
-      const { createDoctor } = useVeterinaryMasters();
+      const mockUseVeterinaryMasters = vi.mocked(useVeterinaryMasters);
+      const { createDoctor } = mockUseVeterinaryMasters();
       const wrapper = mount(VeterinaryVisitForm, {
         props: defaultProps,
       });
@@ -364,7 +367,8 @@ describe('VeterinaryVisitForm', () => {
     });
 
     it('新しい処方内容を入力した場合、マスタに追加される', async () => {
-      const { createTreatment } = useVeterinaryMasters();
+      const mockUseVeterinaryMasters = vi.mocked(useVeterinaryMasters);
+      const { createTreatment } = mockUseVeterinaryMasters();
       const wrapper = mount(VeterinaryVisitForm, {
         props: defaultProps,
       });

@@ -25,10 +25,13 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const selectedCatId = ref<string | null>(null);
   const selectedFoodType = ref<FoodType | null>(null);
   const chartDisplayMode = ref<'line' | 'bar'>('line');
-  const cache = ref<Record<string, unknown>>({});
+  const cache = ref<Record<string, { data: any; timestamp: Date; ttl: number }>>({});
   const retryCount = ref(0);
   const lastErrorTime = ref<Date | null>(null);
   const dataQuality = ref<unknown>(null);
+  const lastDataUpdate = ref<Date | null>(null);
+  const autoRefreshEnabled = ref(true);
+  const refreshInterval = ref<NodeJS.Timeout | null>(null);
 
   // Getters
   const currentFilters = computed((): AnalyticsFilter => ({
@@ -159,11 +162,18 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     const missingDays = totalDays - daysWithData;
     const dataCompleteness = (daysWithData / totalDays) * 100;
 
+    // 欠損期間の詳細分析
+    const missingDateRanges = getMissingDateRanges(startDate, endDate, uniqueDates);
+    const longestMissingPeriod = getLongestMissingPeriod(missingDateRanges);
+
     return {
       totalDays,
       daysWithData,
       missingDays,
       dataCompleteness: Math.round(dataCompleteness),
+      missingDateRanges,
+      longestMissingPeriod,
+      hasSignificantGaps: missingDays > 3 || longestMissingPeriod > 2,
     };
   });
 
@@ -251,11 +261,20 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         ttl: 5 * 60 * 1000, // 5 minutes
       };
 
+      // データ更新を通知
+      notifyDataUpdate();
+
       return response.data;
     }
     catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analytics';
-      error.value = errorMessage;
+      error.value = {
+        code: 'FETCH_ERROR',
+        message: errorMessage,
+        userMessage: 'データの取得に失敗しました',
+        severity: 'medium',
+        timestamp: new Date(),
+      };
       throw err;
     }
     finally {
@@ -442,6 +461,118 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     cache.value = {};
   };
 
+  // リアルタイムデータ更新機能
+  const startAutoRefresh = (intervalMs: number = 60000) => {
+    if (refreshInterval.value) {
+      clearInterval(refreshInterval.value);
+    }
+
+    autoRefreshEnabled.value = true;
+    refreshInterval.value = setInterval(async () => {
+      if (autoRefreshEnabled.value && !loading.value) {
+        try {
+          await fetchAnalytics(currentFilters.value, true);
+          lastDataUpdate.value = new Date();
+        }
+        catch (err) {
+
+        }
+      }
+    }, intervalMs);
+  };
+
+  const stopAutoRefresh = () => {
+    if (refreshInterval.value) {
+      clearInterval(refreshInterval.value);
+      refreshInterval.value = null;
+    }
+    autoRefreshEnabled.value = false;
+  };
+
+  const toggleAutoRefresh = () => {
+    if (autoRefreshEnabled.value) {
+      stopAutoRefresh();
+    }
+    else {
+      startAutoRefresh();
+    }
+  };
+
+  // データ更新通知機能
+  const notifyDataUpdate = () => {
+    lastDataUpdate.value = new Date();
+
+    // カスタムイベントを発火してコンポーネントに通知
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('analytics-data-updated', {
+        detail: {
+          timestamp: lastDataUpdate.value,
+          filters: currentFilters.value,
+        },
+      }));
+    }
+  };
+
+  // データ欠損期間の分析ヘルパー関数
+  const getMissingDateRanges = (startDate: Date, endDate: Date, existingDates: string[]) => {
+    const ranges: Array<{ start: string; end: string; days: number }> = [];
+    const existingDateSet = new Set(existingDates);
+
+    let currentMissingStart: string | null = null;
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0] as string;
+
+      if (!existingDateSet.has(dateStr)) {
+        if (!currentMissingStart) {
+          currentMissingStart = dateStr;
+        }
+      }
+      else {
+        if (currentMissingStart) {
+          const prevDate = new Date(currentDate);
+          prevDate.setDate(prevDate.getDate() - 1);
+          const endDateStr = prevDate.toISOString().split('T')[0] as string;
+
+          const startDateObj = new Date(currentMissingStart);
+          const endDateObj = new Date(endDateStr);
+          const days = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+          ranges.push({
+            start: currentMissingStart,
+            end: endDateStr,
+            days,
+          });
+
+          currentMissingStart = null;
+        }
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // 最後の期間が欠損している場合
+    if (currentMissingStart) {
+      const endDateStr = endDate.toISOString().split('T')[0] as string;
+      const startDateObj = new Date(currentMissingStart);
+      const endDateObj = new Date(endDateStr);
+      const days = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+      ranges.push({
+        start: currentMissingStart,
+        end: endDateStr,
+        days,
+      });
+    }
+
+    return ranges;
+  };
+
+  const getLongestMissingPeriod = (missingRanges: Array<{ start: string; end: string; days: number }>) => {
+    return missingRanges.reduce((max, range) => Math.max(max, range.days), 0);
+  };
+
   return {
     // State
     analytics,
@@ -455,6 +586,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     retryCount,
     lastErrorTime,
     dataQuality,
+    lastDataUpdate,
+    autoRefreshEnabled,
 
     // Getters
     currentFilters,
@@ -507,5 +640,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     getEnhancedBarChartData,
     retryLastOperation,
     optimizeMemoryUsage,
+    startAutoRefresh,
+    stopAutoRefresh,
+    toggleAutoRefresh,
+    notifyDataUpdate,
   };
 });

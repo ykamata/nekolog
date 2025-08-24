@@ -627,8 +627,6 @@ export function createErrorHandler(context: string) {
 
       const message = getUserFriendlyErrorMessage(apiError, context);
 
-      console.error(`[${context}] Error:`, error);
-
       return {
         error: apiError,
         message: fallbackMessage || message,
@@ -681,4 +679,363 @@ export async function retryWithBackoff<T>(
   }
 
   throw lastError;
+}
+
+/**
+ * 統一的なエラーハンドリングクラス
+ * バリデーションエラーと非同期処理エラーの統一処理を提供
+ */
+export class UnifiedErrorHandler {
+  private context: string;
+  private retryConfig: {
+    maxRetries: number;
+    baseDelay: number;
+    maxDelay: number;
+  };
+
+  constructor(
+    context: string,
+    retryConfig: {
+      maxRetries?: number;
+      baseDelay?: number;
+      maxDelay?: number;
+    } = {},
+  ) {
+    this.context = context;
+    this.retryConfig = {
+      maxRetries: retryConfig.maxRetries ?? 3,
+      baseDelay: retryConfig.baseDelay ?? 1000,
+      maxDelay: retryConfig.maxDelay ?? 10000,
+    };
+  }
+
+  /**
+   * バリデーションエラーを処理
+   */
+  handleValidationError(error: unknown): {
+    errors: Record<string, string>;
+    hasErrors: boolean;
+    userMessage: string;
+  } {
+    const errors: Record<string, string> = {};
+    let userMessage = 'データの入力に問題があります。';
+
+    if (error instanceof Error && 'errors' in error) {
+      // Zod エラーの処理
+      const zodError = error as any;
+      if (Array.isArray(zodError.errors)) {
+        zodError.errors.forEach((err: any) => {
+          const field = err.path?.join('.') || 'unknown';
+          errors[field] = err.message;
+        });
+        userMessage = '入力内容を確認してください。';
+      }
+    }
+    else if (error instanceof Error && 'validationErrors' in error) {
+      // 基本バリデーションエラーの処理（validateForm関数から）
+      const validationError = error as any;
+      if (Array.isArray(validationError.validationErrors)) {
+        validationError.validationErrors.forEach((err: ValidationError) => {
+          errors[err.field] = err.message;
+        });
+        userMessage = '入力内容を確認してください。';
+      }
+    }
+    else if (typeof error === 'object' && error !== null && 'validationErrors' in error) {
+      // API バリデーションエラーの処理
+      const apiError = error as { validationErrors: ValidationError[] };
+      apiError.validationErrors.forEach((err) => {
+        errors[err.field] = err.message;
+      });
+      userMessage = '入力データに問題があります。各項目を確認してください。';
+    }
+    else {
+      // その他のバリデーションエラー
+      const errorInfo = parseApiError(error);
+      errors.general = errorInfo.userMessage;
+      userMessage = errorInfo.userMessage;
+    }
+
+    logError(createErrorInfo(
+      'VALIDATION_ERROR',
+      JSON.stringify(errors),
+      userMessage,
+      'medium',
+      { context: this.context, errors },
+    ));
+
+    return {
+      errors,
+      hasErrors: Object.keys(errors).length > 0,
+      userMessage,
+    };
+  }
+
+  /**
+   * 非同期処理エラーを処理（リトライ機能付き）
+   */
+  async handleAsyncOperation<T>(
+    operation: () => Promise<T>,
+    options: {
+      retryable?: boolean;
+      fallbackMessage?: string;
+      onRetry?: (attempt: number, error: unknown) => void;
+      onSuccess?: (result: T) => void;
+      onFinalError?: (error: unknown) => void;
+    } = {},
+  ): Promise<{
+      success: boolean;
+      data?: T;
+      error?: ApiError;
+      userMessage: string;
+      retryCount: number;
+    }> {
+    const {
+      retryable = true,
+      fallbackMessage,
+      onRetry,
+      onSuccess,
+      onFinalError,
+    } = options;
+
+    let lastError: unknown;
+    let retryCount = 0;
+
+    const maxRetries = retryable ? this.retryConfig.maxRetries : 0;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const result = await operation();
+
+        if (onSuccess) {
+          onSuccess(result);
+        }
+
+        return {
+          success: true,
+          data: result,
+          userMessage: '操作が正常に完了しました。',
+          retryCount,
+        };
+      }
+      catch (error) {
+        lastError = error;
+        retryCount = attempt;
+
+        const errorInfo = parseApiError(error);
+        const apiError = errorInfoToApiError(errorInfo);
+
+        // 最後の試行でない場合、リトライ可能かチェック
+        if (attempt < maxRetries && retryable && isRetryableError(apiError)) {
+          if (onRetry) {
+            onRetry(attempt + 1, error);
+          }
+
+          const delay = Math.min(
+            this.retryConfig.baseDelay * Math.pow(2, attempt) + Math.random() * 1000,
+            this.retryConfig.maxDelay,
+          );
+
+          logError(createErrorInfo(
+            'RETRY_ATTEMPT',
+            `Retry attempt ${attempt + 1}/${maxRetries}`,
+            `操作を再試行しています... (${attempt + 1}/${maxRetries})`,
+            'low',
+            { context: this.context, attempt: attempt + 1, delay },
+          ));
+
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        }
+
+        // 最終的なエラー処理
+        const finalApiError = errorInfoToApiError(errorInfo);
+        const userMessage = fallbackMessage || getUserFriendlyErrorMessage(finalApiError, this.context);
+
+        logError(createErrorInfo(
+          'ASYNC_OPERATION_FAILED',
+          errorInfo.message,
+          userMessage,
+          'high',
+          {
+            context: this.context,
+            retryCount,
+            maxRetries,
+            finalError: true,
+          },
+        ));
+
+        if (onFinalError) {
+          onFinalError(error);
+        }
+
+        return {
+          success: false,
+          error: finalApiError,
+          userMessage,
+          retryCount,
+        };
+      }
+    }
+
+    // この行に到達することはないが、TypeScriptの型チェックのため
+    const errorInfo = parseApiError(lastError);
+    return {
+      success: false,
+      error: errorInfoToApiError(errorInfo),
+      userMessage: fallbackMessage || '予期しないエラーが発生しました。',
+      retryCount,
+    };
+  }
+
+  /**
+   * フォーム送信の統一処理
+   */
+  async handleFormSubmission<T>(
+    validationFn: () => Promise<void> | void,
+    submitFn: () => Promise<T>,
+    options: {
+      retryable?: boolean;
+      successMessage?: string;
+      onValidationError?: (errors: Record<string, string>) => void;
+      onSubmitStart?: () => void;
+      onSubmitSuccess?: (result: T) => void;
+      onSubmitError?: (error: ApiError, userMessage: string) => void;
+      onRetry?: (attempt: number) => void;
+    } = {},
+  ): Promise<{
+      success: boolean;
+      data?: T;
+      validationErrors?: Record<string, string>;
+      submitError?: ApiError;
+      userMessage: string;
+      retryCount: number;
+    }> {
+    const {
+      retryable = true,
+      successMessage = '正常に保存されました。',
+      onValidationError,
+      onSubmitStart,
+      onSubmitSuccess,
+      onSubmitError,
+      onRetry,
+    } = options;
+
+    // バリデーション処理
+    try {
+      await validationFn();
+    }
+    catch (validationError) {
+      const validationResult = this.handleValidationError(validationError);
+
+      if (onValidationError) {
+        onValidationError(validationResult.errors);
+      }
+
+      return {
+        success: false,
+        validationErrors: validationResult.errors,
+        userMessage: validationResult.userMessage,
+        retryCount: 0,
+      };
+    }
+
+    // 送信開始の通知
+    if (onSubmitStart) {
+      onSubmitStart();
+    }
+
+    // 非同期送信処理
+    const submitResult = await this.handleAsyncOperation(
+      submitFn,
+      {
+        retryable,
+        fallbackMessage: 'データの保存に失敗しました。',
+        onRetry: (attempt, error) => {
+          if (onRetry) {
+            onRetry(attempt);
+          }
+        },
+        onSuccess: (result) => {
+          if (onSubmitSuccess) {
+            onSubmitSuccess(result);
+          }
+        },
+        onFinalError: (error) => {
+          const errorInfo = parseApiError(error);
+          const apiError = errorInfoToApiError(errorInfo);
+          if (onSubmitError) {
+            onSubmitError(apiError, getUserFriendlyErrorMessage(apiError, this.context));
+          }
+        },
+      },
+    );
+
+    return {
+      success: submitResult.success,
+      data: submitResult.data,
+      submitError: submitResult.error,
+      userMessage: submitResult.success ? successMessage : submitResult.userMessage,
+      retryCount: submitResult.retryCount,
+    };
+  }
+
+  /**
+   * データ取得の統一処理
+   */
+  async handleDataFetch<T>(
+    fetchFn: () => Promise<T>,
+    options: {
+      retryable?: boolean;
+      fallbackMessage?: string;
+      onSuccess?: (data: T) => void;
+      onError?: (error: ApiError, userMessage: string) => void;
+      onRetry?: (attempt: number) => void;
+    } = {},
+  ): Promise<{
+      success: boolean;
+      data?: T;
+      error?: ApiError;
+      userMessage: string;
+      retryCount: number;
+    }> {
+    const {
+      retryable = true,
+      fallbackMessage = 'データの取得に失敗しました。',
+      onSuccess,
+      onError,
+      onRetry,
+    } = options;
+
+    return await this.handleAsyncOperation(
+      fetchFn,
+      {
+        retryable,
+        fallbackMessage,
+        onSuccess,
+        onRetry,
+        onFinalError: (error) => {
+          const errorInfo = parseApiError(error);
+          const apiError = errorInfoToApiError(errorInfo);
+          if (onError) {
+            onError(apiError, getUserFriendlyErrorMessage(apiError, this.context));
+          }
+        },
+      },
+    );
+  }
+}
+
+/**
+ * コンポーネント用の統一エラーハンドラーを作成
+ */
+export function createUnifiedErrorHandler(
+  context: string,
+  retryConfig?: {
+    maxRetries?: number;
+    baseDelay?: number;
+    maxDelay?: number;
+  },
+): UnifiedErrorHandler {
+  return new UnifiedErrorHandler(context, retryConfig);
 }

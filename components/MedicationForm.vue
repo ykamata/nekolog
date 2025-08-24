@@ -37,6 +37,13 @@ const retryCount = ref(0);
 
 const { error: showErrorToast } = useToast();
 
+// Methods
+const clearErrors = () => {
+  errors.value = {};
+  submitError.value = '';
+  retryCount.value = 0;
+};
+
 // Initialize form data when medication prop changes
 watch(
   () => props.medication,
@@ -116,11 +123,7 @@ const medicationTypeOptions = [
   { value: 'VITAMIN', label: 'ビタミン' },
 ];
 
-// Methods
-const clearErrors = () => {
-  errors.value = {};
-  submitError.value = '';
-};
+// Methods (clearErrors is defined above)
 
 const validateForm = (): boolean => {
   // Clear previous field errors but keep submit errors
