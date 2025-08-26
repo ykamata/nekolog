@@ -109,14 +109,14 @@ export default defineEventHandler(async (event) => {
     // Add response caching headers for better performance
     setHeader(event, 'Cache-Control', 'public, max-age=60, s-maxage=120');
 
+    // フロントエンドが期待する形式でレスポンスを返す
     return {
-      data: mealRecords,
+      mealRecords,
       pagination: {
         total,
-        page: Math.floor(offset / limit) + 1,
-        pageSize: limit,
-        hasNext: offset + limit < total,
-        hasPrevious: offset > 0,
+        limit,
+        offset,
+        hasMore: offset + limit < total,
       },
     };
   }
