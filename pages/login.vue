@@ -11,10 +11,25 @@ definePageMeta({
 });
 
 // Auth composable
-const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
+const auth = useAuth();
+const { login, isLoading, error, clearError, isAuthenticated } = auth;
+
+// デバッグ: useAuthの状態を確認
+console.log('useAuth初期化:', {
+  login: typeof login,
+  isLoading: isLoading?.value,
+  error: error?.value,
+  isAuthenticated: isAuthenticated?.value,
+});
 
 // Redirect composable
-const { handleLoginRedirect } = useRedirect();
+const redirect = useRedirect();
+const { handleLoginRedirect } = redirect;
+
+// デバッグ: useRedirectの状態を確認
+console.log('useRedirect初期化:', {
+  handleLoginRedirect: typeof handleLoginRedirect,
+});
 
 // Form state
 const form = reactive({
@@ -44,7 +59,16 @@ watch(
 );
 
 // Handle form submission
-const handleSubmit = async () => {
+const handleSubmit = async (event?: Event) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.log('ログインフォーム送信開始', event?.type);
+  }
+
+  // Prevent default form submission if called directly
+  if (event) {
+    event.preventDefault();
+  }
+
   // Clear previous errors
   clearError();
   formErrors.value = {};
@@ -58,19 +82,34 @@ const handleSubmit = async () => {
   }
 
   if (Object.keys(formErrors.value).length > 0) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('バリデーションエラー:', formErrors.value);
+    }
     return;
   }
 
   try {
-    await login({
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ログイン試行中...', { email: form.email });
+      console.log('login関数の型:', typeof login);
+    }
+
+    const result = await login({
       email: form.email,
       password: form.password,
     });
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('ログイン成功:', result);
+    }
 
     // ログイン成功時のリダイレクト処理
     await handleLoginRedirect();
   }
   catch (err) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('ログインエラー:', err);
+    }
     // Error is handled by the auth composable
     // Login error will be displayed via the error state
   }
@@ -78,6 +117,7 @@ const handleSubmit = async () => {
 
 // Handle register navigation
 const goToRegister = () => {
+  console.log('新規登録ページへ移動');
   navigateTo('/register');
 };
 </script>

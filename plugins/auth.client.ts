@@ -84,8 +84,8 @@ export default defineNuxtPlugin({
             console.log('認証プラグインの初期化を開始します');
           }
 
-          // Nuxtのハイドレーション完了を確実に待機
-          await waitForHydration();
+          // 基本的なハイドレーション待機
+          await nextTick();
 
           // デバッグログ: ハイドレーション完了
           if (process.env.NODE_ENV === 'development') {
@@ -98,60 +98,44 @@ export default defineNuxtPlugin({
             }
           }
 
-          // useAuthの初期化状態を確認
-          const { isInitialized: authInitialized } = auth;
-          if (authInitialized.value) {
-            if (process.env.NODE_ENV === 'development') {
-              try {
-                const { logAuthStep } = useAuthDebug();
-                logAuthStep(processId, 'AUTH_ALREADY_INITIALIZED', {}, true);
-              }
-              catch {
-                // デバッグログでエラーが発生しても処理を継続
-              }
-              // eslint-disable-next-line no-console
-              console.log('認証プラグイン: useAuthは既に初期化済みです');
-            }
-          }
-          else {
-            // デバッグログ: 認証初期化開始
-            if (process.env.NODE_ENV === 'development') {
-              try {
-                const { logAuthStep } = useAuthDebug();
-                logAuthStep(processId, 'AUTH_INIT_START');
-              }
-              catch {
-                // デバッグログでエラーが発生しても処理を継続
-              }
-            }
-
-            // 認証状態の初期化
-            await auth.initializeAuth();
-
-            // デバッグログ: 認証初期化完了
-            if (process.env.NODE_ENV === 'development') {
-              try {
-                const { logAuthStep } = useAuthDebug();
-                logAuthStep(processId, 'AUTH_INIT_COMPLETE', {}, true);
-              }
-              catch {
-                // デバッグログでエラーが発生しても処理を継続
-              }
-            }
-          }
-
-          // リダイレクト機能の初期化
-          const { initializeRedirect } = useRedirect();
-          initializeRedirect();
-
-          // デバッグログ: リダイレクト初期化完了
+          // 認証状態の初期化（簡素化）
           if (process.env.NODE_ENV === 'development') {
             try {
               const { logAuthStep } = useAuthDebug();
-              logAuthStep(processId, 'REDIRECT_INIT_COMPLETE', {}, true);
+              logAuthStep(processId, 'AUTH_INIT_START');
             }
             catch {
               // デバッグログでエラーが発生しても処理を継続
+            }
+            console.log('認証状態の初期化を開始');
+          }
+
+          // 認証状態の初期化を実行（エラーが発生しても継続）
+          try {
+            await auth.initializeAuth();
+
+            if (process.env.NODE_ENV === 'development') {
+              console.log('認証状態の初期化完了');
+            }
+          }
+          catch (authError) {
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('認証状態の初期化でエラーが発生しましたが、処理を継続します:', authError);
+            }
+          }
+
+          // リダイレクト機能の初期化（簡素化）
+          try {
+            const { initializeRedirect } = useRedirect();
+            initializeRedirect();
+
+            if (process.env.NODE_ENV === 'development') {
+              console.log('リダイレクト機能の初期化完了');
+            }
+          }
+          catch (redirectError) {
+            if (process.env.NODE_ENV === 'development') {
+
             }
           }
 

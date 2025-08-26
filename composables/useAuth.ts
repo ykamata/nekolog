@@ -84,7 +84,7 @@ export const useAuth = () => {
 
     // 既に初期化済みの場合はスキップ
     if (authState.value.isInitialized) {
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         // eslint-disable-next-line no-console
         console.log('useAuth: 既に初期化済みのためスキップ');
       }
@@ -93,7 +93,7 @@ export const useAuth = () => {
 
     // 初期化中の場合は既存のPromiseを返す
     if (authState.value.initializationPromise) {
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         // eslint-disable-next-line no-console
         console.log('useAuth: 初期化中のため既存のPromiseを返す');
       }
@@ -103,26 +103,11 @@ export const useAuth = () => {
     // リダイレクト管理を初期化
     const { initializeRedirect } = useRedirect();
 
-    // プラグインの初期化状態を確認（可能な場合）
-    try {
-      const nuxtApp = useNuxtApp();
-      const authPluginState = nuxtApp.$authPluginState as unknown;
-
-      // プラグインが初期化中の場合は警告を出力（重複実行の可能性）
-      if ((authPluginState as { isInitializing?: boolean })?.isInitializing && process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.warn('useAuth: プラグインが初期化中ですが、useAuthでも初期化を実行します');
-      }
-    }
-    catch {
-      // プラグイン状態の取得に失敗した場合は処理を継続
-    }
-
     // 新しい初期化Promiseを作成
     const initPromise = (async () => {
       // 複数の同時初期化を防ぐ（ダブルチェック）
       if (authState.value.isLoading) {
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' && import.meta.client) {
           // eslint-disable-next-line no-console
           console.log('useAuth: 既にローディング中のためスキップ');
         }
@@ -136,7 +121,7 @@ export const useAuth = () => {
 
       // 認証プロセスの追跡を開始
       let processId = '';
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         try {
           const { startAuthProcess } = useAuthDebug();
           processId = startAuthProcess('AUTH_INITIALIZATION');
@@ -153,7 +138,7 @@ export const useAuth = () => {
       initializeRedirect();
 
       // デバッグログ（開発環境のみ）
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         try {
           const { logAuthStep } = useAuthDebug();
           logAuthStep(processId, 'INIT_START', {
@@ -173,7 +158,7 @@ export const useAuth = () => {
         const refreshTokenCookie = useCookie('refresh-token');
 
         // デバッグログ: トークン状態確認
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' && import.meta.client) {
           try {
             const { logAuthStep } = useAuthDebug();
             logAuthStep(processId, 'TOKEN_CHECK', {
@@ -196,7 +181,7 @@ export const useAuth = () => {
           authState.value.isAuthenticated = false;
 
           // デバッグログ: トークンなし
-          if (process.env.NODE_ENV === 'development') {
+          if (process.env.NODE_ENV === 'development' && import.meta.client) {
             try {
               const { logAuthStep } = useAuthDebug();
               logAuthStep(processId, 'NO_TOKENS', {}, true, undefined);
@@ -212,7 +197,7 @@ export const useAuth = () => {
         const hasPersistedAuth = hasValidPersistedAuth();
 
         // デバッグログ: 永続化状態確認
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' && import.meta.client) {
           try {
             const { logAuthStep } = useAuthDebug();
             logAuthStep(processId, 'PERSISTENCE_CHECK', {
@@ -235,7 +220,7 @@ export const useAuth = () => {
         if (accessToken.value) {
           try {
             // デバッグログ: アクセストークンでの認証開始
-            if (process.env.NODE_ENV === 'development') {
+            if (process.env.NODE_ENV === 'development' && import.meta.client) {
               try {
                 const { logAuthStep } = useAuthDebug();
                 logAuthStep(processId, 'ACCESS_TOKEN_AUTH_START');
@@ -258,7 +243,7 @@ export const useAuth = () => {
               saveAuthState(true, user.email);
 
               // デバッグログ: アクセストークン認証成功
-              if (process.env.NODE_ENV === 'development') {
+              if (process.env.NODE_ENV === 'development' && import.meta.client) {
                 try {
                   const { logAuthStep } = useAuthDebug();
                   logAuthStep(processId, 'ACCESS_TOKEN_AUTH_SUCCESS', {
@@ -276,7 +261,7 @@ export const useAuth = () => {
               // 非同期でリダイレクトを実行（初期化処理をブロックしない）
               nextTick(() => {
                 handleAutoLoginRedirect().catch((error) => {
-                  if (process.env.NODE_ENV === 'development') {
+                  if (process.env.NODE_ENV === 'development' && import.meta.client) {
                     console.warn('自動ログイン後のリダイレクトに失敗:', error);
                   }
                 });
@@ -292,7 +277,7 @@ export const useAuth = () => {
             const strategy = getErrorHandlingStrategy(authError);
 
             // デバッグログ: アクセストークン認証エラー
-            if (process.env.NODE_ENV === 'development') {
+            if (process.env.NODE_ENV === 'development' && import.meta.client) {
               try {
                 const { logAuthStep } = useAuthDebug();
                 logAuthStep(processId, 'ACCESS_TOKEN_AUTH_ERROR', {
@@ -321,17 +306,17 @@ export const useAuth = () => {
                 authState.value.isAuthenticated = true;
 
                 // デバッグログ: 永続化状態使用
-                if (process.env.NODE_ENV === 'development') {
+                if (process.env.NODE_ENV === 'development' && import.meta.client) {
                   try {
                     const { logAuthStep } = useAuthDebug();
                     logAuthStep(processId, 'FALLBACK_TO_PERSISTED', {
                       errorType: authError.type,
                     }, true);
+                    console.log('ネットワークエラーのため永続化状態を使用');
                   }
                   catch {
                     // デバッグログでエラーが発生しても処理を継続
                   }
-                  console.log('ネットワークエラーのため永続化状態を使用');
                 }
                 return;
               }
@@ -343,7 +328,7 @@ export const useAuth = () => {
         if (refreshTokenCookie.value) {
           try {
             // デバッグログ: リフレッシュトークンでの認証開始
-            if (process.env.NODE_ENV === 'development') {
+            if (process.env.NODE_ENV === 'development' && import.meta.client) {
               try {
                 const { logAuthStep } = useAuthDebug();
                 logAuthStep(processId, 'REFRESH_TOKEN_AUTH_START');
@@ -360,7 +345,7 @@ export const useAuth = () => {
               accessToken: string;
             }>('/api/auth/refresh', {
               method: 'POST',
-            }, 2, 1000);
+            }, 1, 1000); // リトライ回数を1回に制限
 
             user = refreshResponse.user;
 
@@ -371,7 +356,7 @@ export const useAuth = () => {
               saveAuthState(true, user.email);
 
               // デバッグログ: リフレッシュトークン認証成功
-              if (process.env.NODE_ENV === 'development') {
+              if (process.env.NODE_ENV === 'development' && import.meta.client) {
                 try {
                   const { logAuthStep } = useAuthDebug();
                   logAuthStep(processId, 'REFRESH_TOKEN_AUTH_SUCCESS', {
@@ -388,9 +373,9 @@ export const useAuth = () => {
               const { handleAutoLoginRedirect } = useRedirect();
               // 非同期でリダイレクトを実行（初期化処理をブロックしない）
               nextTick(() => {
-                handleAutoLoginRedirect().catch((error) => {
-                  if (process.env.NODE_ENV === 'development') {
-
+                handleAutoLoginRedirect().catch((_error) => {
+                  if (process.env.NODE_ENV === 'development' && import.meta.client) {
+                    console.warn('自動ログイン後のリダイレクトに失敗:', _error);
                   }
                 });
               });
@@ -405,7 +390,7 @@ export const useAuth = () => {
             const strategy = getErrorHandlingStrategy(authError);
 
             // デバッグログ: リフレッシュトークン認証エラー
-            if (process.env.NODE_ENV === 'development') {
+            if (process.env.NODE_ENV === 'development' && import.meta.client) {
               try {
                 const { logAuthStep } = useAuthDebug();
                 logAuthStep(processId, 'REFRESH_TOKEN_AUTH_ERROR', {
@@ -426,14 +411,23 @@ export const useAuth = () => {
             if (strategy.shouldClearTokens) {
               accessToken.value = null;
               refreshTokenCookie.value = null;
+              clearAuthState();
             }
 
-            // ネットワークエラーの場合は永続化状態を維持
-            if (authError.type === 'network' && hasPersistedAuth) {
+            // 認証エラーの場合は状態をクリア
+            if (authError.type === 'authentication') {
+              clearAuthState();
+              authState.value.user = null;
+              authState.value.isAuthenticated = false;
+              return;
+            }
+
+            // その他のエラーの場合は永続化状態を維持
+            if (hasPersistedAuth) {
               authState.value.isAuthenticated = true;
 
               // デバッグログ: ネットワークエラー時の永続化状態使用
-              if (process.env.NODE_ENV === 'development') {
+              if (process.env.NODE_ENV === 'development' && import.meta.client) {
                 try {
                   const { logAuthStep } = useAuthDebug();
                   logAuthStep(processId, 'NETWORK_ERROR_FALLBACK', {
@@ -455,7 +449,7 @@ export const useAuth = () => {
         authState.value.isAuthenticated = false;
 
         // デバッグログ: 認証失敗
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' && import.meta.client) {
           try {
             const { logAuthStep } = useAuthDebug();
             logAuthStep(processId, 'AUTH_FAILED', {}, false, 'All authentication attempts failed');
@@ -471,7 +465,7 @@ export const useAuth = () => {
         authState.value.isAuthenticated = false;
 
         // デバッグログ: 予期しないエラー
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' && import.meta.client) {
           try {
             const { logAuthStep, logAuthError } = useAuthDebug();
             logAuthError(error, '認証初期化中の予期しないエラー', {
@@ -494,7 +488,7 @@ export const useAuth = () => {
         authState.value.initializationPromise = null;
 
         // デバッグログ: プロセス完了
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' && import.meta.client) {
           try {
             const { endAuthProcess } = useAuthDebug();
             endAuthProcess(processId, authState.value.isAuthenticated, {
@@ -522,9 +516,11 @@ export const useAuth = () => {
    * Login user with email and password
    */
   const login = async (credentials: LoginCredentials) => {
-    // 認証プロセスの追跡を開始
+    console.log('useAuth.login 開始:', credentials.email);
+
+    // 認証プロセスの追跡を開始（クライアントサイドのみ）
     let processId = '';
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development' && import.meta.client) {
       try {
         const { startAuthProcess } = useAuthDebug();
         processId = startAuthProcess('USER_LOGIN');
@@ -539,7 +535,7 @@ export const useAuth = () => {
 
     try {
       // デバッグログ: ログイン開始
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         try {
           const { logAuthStep } = useAuthDebug();
           logAuthStep(processId, 'LOGIN_START', {
@@ -550,6 +546,10 @@ export const useAuth = () => {
         catch {
           // デバッグログでエラーが発生しても処理を継続
         }
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+
       }
 
       // エラーハンドリング機能付きでログインを実行
@@ -572,7 +572,7 @@ export const useAuth = () => {
       saveAuthState(true, response.user.email);
 
       // デバッグログ: ログイン成功
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         try {
           const { logAuthStep } = useAuthDebug();
           logAuthStep(processId, 'LOGIN_SUCCESS', {
@@ -599,7 +599,7 @@ export const useAuth = () => {
       const errorInfo = getAuthErrorInfo(error);
 
       // デバッグログ: ログインエラー
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         try {
           const { logAuthStep } = useAuthDebug();
           logAuthStep(processId, 'LOGIN_ERROR', {
@@ -630,7 +630,7 @@ export const useAuth = () => {
       authState.value.isLoading = false;
 
       // デバッグログ: プロセス完了
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         try {
           const { endAuthProcess } = useAuthDebug();
           endAuthProcess(processId, authState.value.isAuthenticated, {
@@ -654,7 +654,7 @@ export const useAuth = () => {
   const register = async (data: RegisterData) => {
     // 認証プロセスの追跡を開始
     let processId = '';
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === 'development' && import.meta.client) {
       try {
         const { startAuthProcess } = useAuthDebug();
         processId = startAuthProcess('USER_REGISTER');
@@ -669,7 +669,7 @@ export const useAuth = () => {
 
     try {
       // デバッグログ: 登録開始
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         try {
           const { logAuthStep } = useAuthDebug();
           logAuthStep(processId, 'REGISTER_START', {
@@ -703,7 +703,7 @@ export const useAuth = () => {
       saveAuthState(true, response.user.email);
 
       // デバッグログ: 登録成功
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         try {
           const { logAuthStep } = useAuthDebug();
           logAuthStep(processId, 'REGISTER_SUCCESS', {
@@ -730,7 +730,7 @@ export const useAuth = () => {
       const errorInfo = getAuthErrorInfo(error);
 
       // デバッグログ: 登録エラー
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         try {
           const { logAuthStep } = useAuthDebug();
           logAuthStep(processId, 'REGISTER_ERROR', {
@@ -761,7 +761,7 @@ export const useAuth = () => {
       authState.value.isLoading = false;
 
       // デバッグログ: プロセス完了
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === 'development' && import.meta.client) {
         try {
           const { endAuthProcess } = useAuthDebug();
           endAuthProcess(processId, authState.value.isAuthenticated, {
@@ -858,8 +858,21 @@ export const useAuth = () => {
    * Refresh authentication token
    */
   const refreshToken = async () => {
+    // 既にリフレッシュ中の場合は重複実行を防ぐ
+    if (authState.value.isLoading) {
+      throw new Error('リフレッシュ処理が既に実行中です');
+    }
+
+    authState.value.isLoading = true;
+
     try {
-      // エラーハンドリング機能付きでリフレッシュを実行
+      // リフレッシュトークンの存在確認
+      const refreshTokenCookie = useCookie('refresh-token');
+      if (!refreshTokenCookie.value) {
+        throw new Error('リフレッシュトークンが見つかりません');
+      }
+
+      // エラーハンドリング機能付きでリフレッシュを実行（リトライ回数を制限）
       const { retryableFetch } = await import('~/utils/auth-error-handling');
 
       const response = await retryableFetch<{
@@ -867,7 +880,7 @@ export const useAuth = () => {
         accessToken: string;
       }>('/api/auth/refresh', {
         method: 'POST',
-      }, 2, 1000);
+      }, 1, 1000); // リトライ回数を1回に制限
 
       authState.value.user = response.user;
       authState.value.isAuthenticated = true;
@@ -887,8 +900,8 @@ export const useAuth = () => {
       // エラーをログに記録
       logAuthError(authError, 'トークンリフレッシュ');
 
-      // 認証エラーの場合のみ状態をクリア
-      if (strategy.shouldClearTokens) {
+      // 認証エラーの場合は状態をクリア
+      if (strategy.shouldClearTokens || authError.type === 'authentication') {
         authState.value.user = null;
         authState.value.isAuthenticated = false;
         authState.value.isInitialized = true;
@@ -908,6 +921,9 @@ export const useAuth = () => {
       }
 
       throw new Error(`トークンリフレッシュ失敗: ${authError.message}`);
+    }
+    finally {
+      authState.value.isLoading = false;
     }
   };
 

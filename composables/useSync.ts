@@ -41,32 +41,39 @@ export const useSync = () => {
 
   // オンライン状態の監視
   const updateOnlineStatus = () => {
+    // サーバーサイドでは navigator が利用できないため、デフォルトでオンラインとする
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      syncStatus.value.isOnline = true;
+      return;
+    }
     syncStatus.value.isOnline = navigator.onLine;
   };
 
-  // ページ読み込み時とオンライン状態変更時の処理
-  onMounted(() => {
-    updateOnlineStatus();
-    updateSyncStatus();
+  // ページ読み込み時とオンライン状態変更時の処理（クライアントサイドのみ）
+  if (import.meta.client) {
+    onMounted(() => {
+      updateOnlineStatus();
+      updateSyncStatus();
 
-    // オンライン状態の変更を監視
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+      // オンライン状態の変更を監視
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
 
-    // 定期的な同期（5分間隔）
-    const syncInterval = setInterval(() => {
-      if (syncStatus.value.isOnline && !syncStatus.value.isSyncing) {
-        syncData();
-      }
-    }, 5 * 60 * 1000);
+      // 定期的な同期（5分間隔）
+      const syncInterval = setInterval(() => {
+        if (syncStatus.value.isOnline && !syncStatus.value.isSyncing) {
+          syncData();
+        }
+      }, 5 * 60 * 1000);
 
-    // クリーンアップ
-    onUnmounted(() => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      clearInterval(syncInterval);
+      // クリーンアップ
+      onUnmounted(() => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+        clearInterval(syncInterval);
+      });
     });
-  });
+  }
 
   /**
    * オンライン復帰時の処理

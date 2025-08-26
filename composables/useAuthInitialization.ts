@@ -1,3 +1,7 @@
+import { useAuthPluginState } from '~/plugins/auth.client';
+
+import type { useAuthPluginState } from '~/plugins/auth.client';
+
 /**
  * 認証初期化状態を管理するコンポーザブル
  * アプリ全体での認証初期化プロセスの状態を提供
@@ -12,13 +16,12 @@ export const useAuthInitialization = () => {
   const auth = useAuth();
 
   // プラグインの初期化状態を取得（クライアントサイドでのみ）
-  let pluginState: any = null;
+  let pluginState: ReturnType<typeof useAuthPluginState> | null = null;
 
   if (import.meta.client) {
     try {
-      // Nuxtアプリからプラグイン状態を取得
-      const nuxtApp = useNuxtApp();
-      pluginState = nuxtApp.$authPluginState;
+      // useAuthPluginStateコンポーザブルを使用
+      pluginState = useAuthPluginState();
     }
     catch {
       // プラグインがまだ利用できない場合はnullのまま
@@ -34,7 +37,7 @@ export const useAuthInitialization = () => {
     }
 
     // プラグインが初期化中、またはuseAuthが初期化中の場合
-    const pluginInitializing = pluginState?.isInitializing?.value ?? false;
+    const pluginInitializing = pluginState?.isInitializing.value ?? false;
     const authLoading = auth.isLoading.value && !auth.isInitialized.value;
 
     return pluginInitializing || authLoading || isInitializing.value;
@@ -47,7 +50,7 @@ export const useAuthInitialization = () => {
     }
 
     // プラグインのエラーまたはローカルエラーを返す
-    const pluginError = pluginState?.initializationError?.value;
+    const pluginError = pluginState?.initializationError.value;
     const authError = auth.error.value;
     const localError = initializationError.value;
 
@@ -66,7 +69,7 @@ export const useAuthInitialization = () => {
     }
 
     // プラグインが初期化中の場合
-    if (pluginState?.isInitializing?.value) {
+    if (pluginState?.isInitializing.value) {
       return 'アプリケーションを準備しています...';
     }
 
@@ -79,7 +82,7 @@ export const useAuthInitialization = () => {
   });
 
   /**
-   * 認証初期化の完了を待機
+   * 認証初期化の完了を待機（簡素化）
    */
   const waitForInitialization = async (): Promise<void> => {
     if (!import.meta.client) {
@@ -91,27 +94,26 @@ export const useAuthInitialization = () => {
       initializationError.value = null;
       initializationMessage.value = 'アプリケーションを初期化しています...';
 
-      // プラグインの初期化を待機
-      if (pluginState) {
-        await pluginState.waitForInitialization();
+      // 基本的な待機のみ
+      await nextTick();
+
+      // useAuthの初期化を試行（エラーが発生しても継続）
+      try {
+        if (!auth.isInitialized.value) {
+          initializationMessage.value = 'ログイン状態を確認しています...';
+          await auth.initializeAuth();
+        }
+      }
+      catch (authError) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('認証初期化でエラーが発生しましたが、処理を継続します:', authError);
+        }
+        // エラーが発生してもアプリケーションを使用可能にする
       }
 
-      // useAuthの初期化を待機
-      if (!auth.isInitialized.value) {
-        initializationMessage.value = 'ログイン状態を確認しています...';
-        await auth.initializeAuth();
-      }
-
-      // 初期化完了まで待機（最大10秒）
-      const timeout = 10000;
-      const startTime = Date.now();
-
-      while (!auth.isInitialized.value && (Date.now() - startTime) < timeout) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      if (!auth.isInitialized.value) {
-        throw new Error('認証初期化がタイムアウトしました');
+      // 初期化完了
+      if (process.env.NODE_ENV === 'development') {
+        console.log('認証初期化プロセス完了');
       }
     }
     catch (error) {

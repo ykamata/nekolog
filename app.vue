@@ -8,19 +8,32 @@ useSeoMeta({
   description: '飼い猫の食事記録と健康管理を行うアプリケーション',
 });
 
-// 認証初期化状態の管理
+// 認証初期化状態の管理（簡素化）
 const {
   isInitializing,
   initializationError,
   initializationMessage,
-  waitForInitialization,
   retryInitialization,
 } = useAuthInitialization();
 
-// クライアントサイドでのみ初期化を実行
+// クライアントサイドでの初期化（エラーハンドリング強化）
 onMounted(async () => {
   if (import.meta.client) {
-    await waitForInitialization();
+    try {
+      // 基本的な初期化のみ実行
+      const { initializeAuth } = useAuth();
+      await initializeAuth();
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('app.vue: 認証初期化完了');
+      }
+    }
+    catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('app.vue: 認証初期化でエラーが発生しましたが、アプリケーションを継続します:', error);
+      }
+      // エラーが発生してもアプリケーションを使用可能にする
+    }
   }
 });
 </script>
@@ -41,7 +54,9 @@ onMounted(async () => {
     />
 
     <!-- メインコンテンツ -->
-    <NuxtPage />
+    <NuxtLayout>
+      <NuxtPage />
+    </NuxtLayout>
   </div>
 </template>
 

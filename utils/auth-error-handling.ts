@@ -173,20 +173,22 @@ export function logAuthError(authError: AuthError, context?: string, additionalD
 
     console.groupEnd();
 
-    // デバッグ用の詳細ログも記録
-    try {
-      const { logAuthError: debugLogAuthError } = useAuthDebug();
-      debugLogAuthError(authError.originalError, context || 'auth-error-handling', {
-        authErrorType: authError.type,
-        authErrorCategory: authError.category,
-        severity: authError.severity,
-        statusCode: authError.statusCode,
-        troubleshootingSteps: authError.troubleshooting?.length || 0,
-        ...additionalData,
-      });
-    }
-    catch {
-      // デバッグログでエラーが発生しても処理を継続
+    // デバッグ用の詳細ログも記録（クライアントサイドのみ）
+    if (import.meta.client) {
+      try {
+        const { logAuthError: debugLogAuthError } = useAuthDebug();
+        debugLogAuthError(authError.originalError, context || 'auth-error-handling', {
+          authErrorType: authError.type,
+          authErrorCategory: authError.category,
+          severity: authError.severity,
+          statusCode: authError.statusCode,
+          troubleshootingSteps: authError.troubleshooting?.length || 0,
+          ...additionalData,
+        });
+      }
+      catch {
+        // デバッグログでエラーが発生しても処理を継続
+      }
     }
   }
 }
@@ -567,7 +569,7 @@ export async function retryableFetch<T>(
  * エラー統計情報を取得する
  */
 export function getErrorStatistics() {
-  if (process.env.NODE_ENV !== 'development') return null;
+  if (process.env.NODE_ENV !== 'development' || !import.meta.client) return null;
 
   try {
     const { getAuthSessionStats } = useAuthDebug();

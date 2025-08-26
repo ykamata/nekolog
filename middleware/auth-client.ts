@@ -1,19 +1,33 @@
 /**
  * Client-side route middleware to check if user is authenticated
  */
-export default defineNuxtRouteMiddleware(async (_to) => {
+export default defineNuxtRouteMiddleware(async (to) => {
+  // Skip auth check for login page to prevent infinite redirects
+  if (to.path === '/login') {
+    return;
+  }
+
   const { isAuthenticated, initializeAuth, refreshToken } = useAuth();
 
   // Initialize auth state if not already done
   if (!isAuthenticated.value) {
-    await initializeAuth();
+    try {
+      await initializeAuth();
+    }
+    catch (error) {
+      // If initialization fails, redirect to login
+      console.warn('認証初期化に失敗:', error);
+      return navigateTo('/login');
+    }
   }
 
   // If still not authenticated after initialization, try refresh token once more
   if (!isAuthenticated.value) {
     const refreshTokenCookie = useCookie('refresh-token');
+    const accessToken = useCookie('access-token');
 
-    if (refreshTokenCookie.value) {
+    // Only try refresh if we have a refresh token and no access token
+    if (refreshTokenCookie.value && !accessToken.value) {
       try {
         await refreshToken();
         // If refresh succeeded, user should now be authenticated
@@ -22,25 +36,28 @@ export default defineNuxtRouteMiddleware(async (_to) => {
         }
       }
       catch (error: unknown) {
-        // Only redirect to login if we're certain the tokens are invalid
-        // For network errors or temporary issues, let the user stay and try again
-        const errorObj = error as any;
-        if (errorObj?.message?.includes('Token refresh failed')
-          && (errorObj?.statusCode === 401 || errorObj?.statusCode === 403)) {
-          return navigateTo('/login');
-        }
+        // Clear tokens on refresh failure to prevent retry loops
+        refreshTokenCookie.value = null;
+        accessToken.value = null;
+
+        console.warn('トークンリフレッシュに失敗:', error);
+        return navigateTo('/login');
       }
     }
 
-    // If we have any tokens, don't redirect immediately - there might be a temporary issue
-    const accessToken = useCookie('access-token');
+    // If we have no tokens at all, redirect to login
+    if (!accessToken.value && !refreshTokenCookie.value) {
+      return navigateTo('/login');
+    }
+
+    // If we still have tokens but are not authenticated, there might be a temporary issue
+    // Let the user stay on the page but they'll see the unauthenticated state
     if (accessToken.value || refreshTokenCookie.value) {
-      // Keep the user on the current page but show them as unauthenticated
-      // They can try refreshing or the tokens might work on the next request
+      console.warn('トークンは存在しますが認証状態が無効です');
       return;
     }
 
-    // No tokens at all, redirect to login
+    // Fallback: redirect to login
     return navigateTo('/login');
   }
 });

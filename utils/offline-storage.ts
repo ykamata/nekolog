@@ -89,6 +89,11 @@ export class OfflineStorage {
    * ローカルストレージからデータを読み込み
    */
   private loadFromStorage(): OfflineData {
+    // サーバーサイドでは localStorage が利用できないため、デフォルトデータを返す
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return this.getDefaultData();
+    }
+
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
@@ -106,7 +111,13 @@ export class OfflineStorage {
       console.warn('Failed to load offline data:', error);
     }
 
-    // デフォルトデータ
+    return this.getDefaultData();
+  }
+
+  /**
+   * デフォルトデータを取得
+   */
+  private getDefaultData(): OfflineData {
     return {
       cats: [],
       foods: [],
@@ -132,6 +143,11 @@ export class OfflineStorage {
    * ローカルストレージにデータを保存
    */
   private saveToStorage(): void {
+    // サーバーサイドでは localStorage が利用できないため、何もしない
+    if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+      return;
+    }
+
     try {
       const toStore = {
         version: STORAGE_VERSION,
@@ -917,7 +933,9 @@ export class OfflineStorage {
    * ストレージをクリア
    */
   clear(): void {
-    localStorage.removeItem(STORAGE_KEY);
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      localStorage.removeItem(STORAGE_KEY);
+    }
     this.data = this.loadFromStorage();
   }
 
