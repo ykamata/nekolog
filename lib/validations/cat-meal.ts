@@ -85,14 +85,34 @@ export const CatInputSchema = z.object({
     .string()
     .min(1, '猫の名前は必須です')
     .max(50, '猫の名前は50文字以内で入力してください'),
-  birthdate: z.date().optional().nullable(),
-  weight: z
-    .number()
-    .positive('体重は正の数値で入力してください')
-    .max(20, '体重は20kg以下で入力してください')
+  birthdate: z
+    .union([
+      z.string().transform(str => str ? new Date(str) : null),
+      z.date(),
+      z.null(),
+    ])
     .optional()
     .nullable(),
-  photoUrl: z.string().url('有効なURLを入力してください').optional().nullable(),
+  weight: z
+    .union([
+      z.number(),
+      z.string().transform(str => str ? parseFloat(str) : null),
+    ])
+    .refine(val => val === null || val === undefined || (typeof val === 'number' && val > 0 && val <= 20), {
+      message: '体重は正の数値で20kg以下で入力してください',
+    })
+    .optional()
+    .nullable(),
+  photoUrl: z
+    .union([
+      z.string().url('有効なURLを入力してください'),
+      z.literal(''),
+      z.null(),
+      z.undefined(),
+    ])
+    .optional()
+    .nullable()
+    .transform(val => val === '' ? null : val),
 });
 
 export const FoodInputSchema = z.object({

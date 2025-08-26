@@ -1,9 +1,25 @@
 import { PrismaClient, FoodType } from '@prisma/client';
+import { hashPassword } from '../lib/auth';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('Start seeding...');
+
+  // Create test user
+  const hashedPassword = await hashPassword('password123');
+  const testUser = await prisma.user.upsert({
+    where: { email: 'test@example.com' },
+    update: {},
+    create: {
+      id: 'user1',
+      email: 'test@example.com',
+      name: 'テストユーザー',
+      password: hashedPassword,
+    },
+  });
+
+  console.log('Created test user:', testUser.email);
 
   // Create sample cats
   const cat1 = await prisma.cat.upsert({

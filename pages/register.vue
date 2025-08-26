@@ -13,6 +13,9 @@ definePageMeta({
 // Auth composable
 const { register, isLoading, error, clearError, isAuthenticated } = useAuth();
 
+// Redirect composable
+const { handleLoginRedirect } = useRedirect();
+
 // Form state
 const form = reactive({
   name: '',
@@ -28,7 +31,8 @@ watch(
   isAuthenticated,
   (authenticated) => {
     if (authenticated) {
-      navigateTo('/');
+      // リダイレクト機能を使用して適切なページに誘導
+      handleLoginRedirect();
     }
   },
   { immediate: true },
@@ -73,8 +77,8 @@ const handleSubmit = async () => {
       password: form.password,
     });
 
-    // Redirect to home page on success
-    await navigateTo('/');
+    // 登録成功時のリダイレクト処理
+    await handleLoginRedirect();
   }
   catch (err) {
     // Error is handled by the auth composable
@@ -203,12 +207,13 @@ const goToLogin = () => {
         </div>
 
         <!-- Global Error -->
-        <div
+        <AuthErrorDisplay
           v-if="error"
-          class="global-error"
-        >
-          {{ error }}
-        </div>
+          :error="error"
+          compact
+          @retry="handleSubmit"
+          @clear-error="clearError"
+        />
 
         <!-- Submit Button -->
         <button

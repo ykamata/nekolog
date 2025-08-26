@@ -184,16 +184,16 @@ export const useCatsStore = defineStore('cats', () => {
     try {
       if (syncStatus.value.isOnline) {
         // Online: Update on server
-        const data = await $fetch<Cat>(`/api/cats/${id}`, {
+        const response = await $fetch<{ cat: Cat; message: string }>(`/api/cats/${id}`, {
           method: 'PUT',
           body: catUpdate,
         });
 
         const updatedCat = {
-          ...data,
-          birthdate: data.birthdate ? new Date(data.birthdate) : undefined,
-          createdAt: new Date(data.createdAt),
-          updatedAt: new Date(data.updatedAt),
+          ...response.cat,
+          birthdate: response.cat.birthdate ? new Date(response.cat.birthdate) : undefined,
+          createdAt: new Date(response.cat.createdAt),
+          updatedAt: new Date(response.cat.updatedAt),
         };
 
         const index = cats.value.findIndex(cat => cat.id === id);

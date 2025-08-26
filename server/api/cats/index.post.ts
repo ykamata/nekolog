@@ -9,6 +9,10 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
+
+    // デバッグ用ログ - 受信したデータを確認
+    console.log('受信したデータ:', JSON.stringify(body, null, 2));
+
     const catData = CatInputSchema.parse(body);
 
     // Check if cat with same name already exists
@@ -47,10 +51,19 @@ export default defineEventHandler(async (event) => {
   catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
+      console.log('バリデーションエラー:', JSON.stringify(error.errors, null, 2));
       throw createError({
         statusCode: 400,
         statusMessage: '入力データが無効です',
-        data: error.errors,
+        data: {
+          message: '入力データが無効です',
+          errors: error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message,
+            code: err.code,
+            ...(('received' in err) && { received: err.received }),
+          })),
+        },
       });
     }
 

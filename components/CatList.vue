@@ -56,25 +56,29 @@ const handleAddCat = () => {
 };
 
 // Calculate age from birthdate
-const calculateAge = (birthdate?: Date): string => {
+const calculateAge = (birthdate?: Date | string): string => {
   if (!birthdate) return '不明';
 
   const today = new Date();
   const birth = new Date(birthdate);
+
+  // Check if date is valid
+  if (isNaN(birth.getTime())) return '不明';
+
   const ageInMs = today.getTime() - birth.getTime();
   const ageInYears = Math.floor(ageInMs / (1000 * 60 * 60 * 24 * 365.25));
 
   if (ageInYears < 1) {
     const ageInMonths = Math.floor(ageInMs / (1000 * 60 * 60 * 24 * 30.44));
-    return `${ageInMonths}ヶ月`;
+    return ageInMonths <= 0 ? '1ヶ月未満' : `${ageInMonths}ヶ月`;
   }
 
   return `${ageInYears}歳`;
 };
 
 // Format weight display
-const formatWeight = (weight?: number): string => {
-  if (!weight) return '未記録';
+const formatWeight = (weight?: number | null): string => {
+  if (weight === null || weight === undefined || weight === 0) return '未記録';
   return `${weight}kg`;
 };
 
@@ -163,7 +167,7 @@ const handleImageError = (event: Event) => {
 
         <div class="cat-card__content">
           <h3 class="cat-card__name">
-            {{ cat.name }}
+            {{ cat.name || '名前未設定' }}
           </h3>
 
           <div class="cat-card__info">

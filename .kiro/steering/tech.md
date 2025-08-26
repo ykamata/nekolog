@@ -175,3 +175,4 @@ const validatedData = await readValidatedBody(event, catMealSchema)
 - 最小限のコード実装を心がける
 - 段階的な機能実装 (スケルトン → 機能追加)
 - 既存パターンに従った実装
+- 動作確認のため、APPを起動する場合、`npm run dev &`で非同期で起動すること。

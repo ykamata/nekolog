@@ -7,10 +7,40 @@ useSeoMeta({
   title: '猫の健康管理アプリ',
   description: '飼い猫の食事記録と健康管理を行うアプリケーション',
 });
+
+// 認証初期化状態の管理
+const {
+  isInitializing,
+  initializationError,
+  initializationMessage,
+  waitForInitialization,
+  retryInitialization,
+} = useAuthInitialization();
+
+// クライアントサイドでのみ初期化を実行
+onMounted(async () => {
+  if (import.meta.client) {
+    await waitForInitialization();
+  }
+});
 </script>
 
 <template>
   <div>
+    <!-- 認証初期化中のローディングオーバーレイ -->
+    <AuthLoadingOverlay
+      :show="isInitializing"
+      :message="initializationMessage"
+    />
+
+    <!-- 認証初期化エラーの表示 -->
+    <AuthInitializationError
+      v-if="initializationError && !isInitializing"
+      :error="initializationError"
+      @retry="retryInitialization"
+    />
+
+    <!-- メインコンテンツ -->
     <NuxtPage />
   </div>
 </template>

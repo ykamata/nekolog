@@ -91,7 +91,15 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
 
   try {
-    emit('save', { ...formData });
+    // Ensure proper data formatting before emitting
+    const submitData: CatInput = {
+      name: formData.name.trim(),
+      birthdate: formData.birthdate,
+      weight: formData.weight,
+      photoUrl: formData.photoUrl?.trim() || undefined,
+    };
+
+    emit('save', submitData);
   }
   finally {
     isSubmitting.value = false;

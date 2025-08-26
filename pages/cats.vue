@@ -98,9 +98,11 @@ const handleEditSubmit = async (data: CatInput) => {
     await catsStore.updateCat(editingCat.value.id, data);
     showEditModal.value = false;
     editingCat.value = null;
+    // Refresh the cats list to ensure updated data is displayed
+    await fetchCats();
   }
-  catch {
-    // Error handling is done by the store
+  catch (err) {
+    console.error('Failed to update cat:', err);
   }
 };
 
