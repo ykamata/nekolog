@@ -153,38 +153,120 @@ export const useAuth = () => {
       }
 
       try {
-        // クッキーからトークンを取得
-        const accessToken = useCookie('access-token');
-        const refreshTokenCookie = useCookie('refresh-token');
+        // サーバーサイドAPIで認証状態を確認
+        // HTTP-only cookieはクライアントサイドから直接読み取れないため
 
-        // デバッグログ: トークン状態確認
+        // デバッグログ: 認証状態確認開始
         if (process.env.NODE_ENV === 'development' && import.meta.client) {
           try {
             const { logAuthStep } = useAuthDebug();
-            logAuthStep(processId, 'TOKEN_CHECK', {
-              hasAccessToken: !!accessToken.value,
-              hasRefreshToken: !!refreshTokenCookie.value,
-              accessTokenLength: accessToken.value?.length || 0,
-              refreshTokenLength: refreshTokenCookie.value?.length || 0,
-            });
+            logAuthStep(processId, 'AUTH_STATUS_CHECK_START');
           }
           catch {
             // デバッグログでエラーが発生しても処理を継続
           }
         }
 
-        // トークンが全くない場合は未認証状態に設定
-        if (!accessToken.value && !refreshTokenCookie.value) {
+        // サーバーサイドAPIで認証状態を確認
+        const { retryableFetch } = await import('~/utils/auth-error-handling');
+
+        const authStatus = await retryableFetch<{
+          isAuthenticated: boolean;
+          user: User | null;
+          refreshed?: boolean;
+        }>('/api/auth/status', {}, 2, 1000);
+
+        // デバッグログ: 認証状態確認結果
+        if (process.env.NODE_ENV === 'development' && import.meta.client) {
+          try {
+            const { logAuthStep } = useAuthDebug();
+            logAuthStep(processId, 'AUTH_STATUS_CHECK_RESULT', {
+              isAuthenticated: authStatus.isAuthenticated,
+              hasUser: !!authStatus.user,
+              userEmail: authStatus.user?.email,
+              refreshed: authStatus.refreshed || false,
+            });
+
+            // リフレッシュが実行された場合の追加ログ
+            if (authStatus.refreshed) {
+              console.log('🔄 トークンリフレッシュが実行されました');
+            }
+          }
+          catch {
+            // デバッグログでエラーが発生しても処理を継続
+          }
+        }
+
+        // 認証状態を設定
+        if (authStatus.isAuthenticated && authStatus.user) {
+          authState.value.user = authStatus.user;
+          authState.value.isAuthenticated = true;
+          // 認証状態を永続化
+          saveAuthState(true, authStatus.user.email);
+
+          // デバッグログ: 認証成功
+          if (process.env.NODE_ENV === 'development' && import.meta.client) {
+            try {
+              const { logAuthStep } = useAuthDebug();
+              logAuthStep(processId, 'AUTH_STATUS_SUCCESS', {
+                userId: authStatus.user.id,
+                userEmail: authStatus.user.email,
+                refreshed: authStatus.refreshed || false,
+              }, true);
+            }
+            catch {
+              // デバッグログでエラーが発生しても処理を継続
+            }
+          }
+
+          // 自動ログイン成功時のリダイレクト処理
+          const { handleAutoLoginRedirect } = useRedirect();
+          // 非同期でリダイレクトを実行（初期化処理をブロックしない）
+          nextTick(() => {
+            handleAutoLoginRedirect().catch((error) => {
+              if (process.env.NODE_ENV === 'development' && import.meta.client) {
+                console.warn('自動ログイン後のリダイレクトに失敗:', error);
+              }
+            });
+          });
+
+          return;
+        }
+        else {
+          // 未認証状態
           // 永続化された認証状態もクリア
           clearAuthState();
           authState.value.user = null;
           authState.value.isAuthenticated = false;
 
-          // デバッグログ: トークンなし
+          // デバッグログ: 未認証
           if (process.env.NODE_ENV === 'development' && import.meta.client) {
             try {
               const { logAuthStep } = useAuthDebug();
-              logAuthStep(processId, 'NO_TOKENS', {}, true, undefined);
+              logAuthStep(processId, 'NOT_AUTHENTICATED', {}, true, undefined);
+            }
+            catch {
+              // デバッグログでエラーが発生しても処理を継続
+            }
+          }
+          return;
+        }
+      }
+      catch (error) {
+        // サーバーサイドAPIでのエラーハンドリング
+        // ネットワークエラーや一時的な問題の場合は永続化状態を使用
+        const hasPersistedAuth = hasValidPersistedAuth();
+
+        if (hasPersistedAuth) {
+          authState.value.isAuthenticated = true;
+
+          // デバッグログ: エラー時の永続化状態使用
+          if (process.env.NODE_ENV === 'development' && import.meta.client) {
+            try {
+              const { logAuthStep } = useAuthDebug();
+              logAuthStep(processId, 'ERROR_FALLBACK_TO_PERSISTED', {
+                errorMessage: error instanceof Error ? error.message : String(error),
+              }, true);
             }
             catch {
               // デバッグログでエラーが発生しても処理を継続
@@ -193,274 +275,7 @@ export const useAuth = () => {
           return;
         }
 
-        // 永続化された認証状態があるかチェック
-        const hasPersistedAuth = hasValidPersistedAuth();
-
-        // デバッグログ: 永続化状態確認
-        if (process.env.NODE_ENV === 'development' && import.meta.client) {
-          try {
-            const { logAuthStep } = useAuthDebug();
-            logAuthStep(processId, 'PERSISTENCE_CHECK', {
-              hasPersistedAuth,
-            });
-          }
-          catch {
-            // デバッグログでエラーが発生しても処理を継続
-          }
-        }
-
-        if (!hasPersistedAuth && !accessToken.value) {
-        // 永続化された認証状態がなく、アクセストークンもない場合は
-        // リフレッシュトークンのみでの認証を試行
-        }
-
-        // まずアクセストークンでユーザー情報を取得を試行
-        let user: User | null = null;
-
-        if (accessToken.value) {
-          try {
-            // デバッグログ: アクセストークンでの認証開始
-            if (process.env.NODE_ENV === 'development' && import.meta.client) {
-              try {
-                const { logAuthStep } = useAuthDebug();
-                logAuthStep(processId, 'ACCESS_TOKEN_AUTH_START');
-              }
-              catch {
-                // デバッグログでエラーが発生しても処理を継続
-              }
-            }
-
-            // エラーハンドリング機能付きでユーザー情報を取得
-            const { retryableFetch } = await import('~/utils/auth-error-handling');
-
-            user = await retryableFetch<User>('/api/auth/me', {}, 2, 1000);
-
-            // 成功した場合は認証済み状態に設定
-            if (user) {
-              authState.value.user = user;
-              authState.value.isAuthenticated = true;
-              // 認証状態を永続化
-              saveAuthState(true, user.email);
-
-              // デバッグログ: アクセストークン認証成功
-              if (process.env.NODE_ENV === 'development' && import.meta.client) {
-                try {
-                  const { logAuthStep } = useAuthDebug();
-                  logAuthStep(processId, 'ACCESS_TOKEN_AUTH_SUCCESS', {
-                    userId: user.id,
-                    userEmail: user.email,
-                  }, true);
-                }
-                catch {
-                  // デバッグログでエラーが発生しても処理を継続
-                }
-              }
-
-              // 自動ログイン成功時のリダイレクト処理
-              const { handleAutoLoginRedirect } = useRedirect();
-              // 非同期でリダイレクトを実行（初期化処理をブロックしない）
-              nextTick(() => {
-                handleAutoLoginRedirect().catch((error) => {
-                  if (process.env.NODE_ENV === 'development' && import.meta.client) {
-                    console.warn('自動ログイン後のリダイレクトに失敗:', error);
-                  }
-                });
-              });
-
-              return;
-            }
-          }
-          catch (error) {
-            // エラーを分類して適切に処理
-            const { classifyAuthError, getErrorHandlingStrategy, logAuthError } = await import('~/utils/auth-error-handling');
-            const authError = classifyAuthError(error);
-            const strategy = getErrorHandlingStrategy(authError);
-
-            // デバッグログ: アクセストークン認証エラー
-            if (process.env.NODE_ENV === 'development' && import.meta.client) {
-              try {
-                const { logAuthStep } = useAuthDebug();
-                logAuthStep(processId, 'ACCESS_TOKEN_AUTH_ERROR', {
-                  errorType: authError.type,
-                  errorMessage: authError.message,
-                  shouldClearTokens: strategy.shouldClearTokens,
-                }, false, authError.message);
-              }
-              catch {
-                // デバッグログでエラーが発生しても処理を継続
-              }
-            }
-
-            // エラーをログに記録
-            logAuthError(authError, 'アクセストークンでのユーザー情報取得');
-
-            // 認証エラーの場合はトークンをクリア
-            if (strategy.shouldClearTokens) {
-              accessToken.value = null;
-            }
-
-            // ネットワークエラーやサーバーエラーの場合はリフレッシュを試行しない
-            if (authError.type === 'network' || authError.type === 'server') {
-              // 永続化された認証状態があれば一時的にそれを使用
-              if (hasPersistedAuth) {
-                authState.value.isAuthenticated = true;
-
-                // デバッグログ: 永続化状態使用
-                if (process.env.NODE_ENV === 'development' && import.meta.client) {
-                  try {
-                    const { logAuthStep } = useAuthDebug();
-                    logAuthStep(processId, 'FALLBACK_TO_PERSISTED', {
-                      errorType: authError.type,
-                    }, true);
-                    console.log('ネットワークエラーのため永続化状態を使用');
-                  }
-                  catch {
-                    // デバッグログでエラーが発生しても処理を継続
-                  }
-                }
-                return;
-              }
-            }
-          }
-        }
-
-        // アクセストークンが無効またはない場合、リフレッシュトークンで再試行
-        if (refreshTokenCookie.value) {
-          try {
-            // デバッグログ: リフレッシュトークンでの認証開始
-            if (process.env.NODE_ENV === 'development' && import.meta.client) {
-              try {
-                const { logAuthStep } = useAuthDebug();
-                logAuthStep(processId, 'REFRESH_TOKEN_AUTH_START');
-              }
-              catch {
-                // デバッグログでエラーが発生しても処理を継続
-              }
-            }
-
-            const { retryableFetch } = await import('~/utils/auth-error-handling');
-
-            const refreshResponse = await retryableFetch<{
-              user: User;
-              accessToken: string;
-            }>('/api/auth/refresh', {
-              method: 'POST',
-            }, 1, 1000); // リトライ回数を1回に制限
-
-            user = refreshResponse.user;
-
-            if (user) {
-              authState.value.user = user;
-              authState.value.isAuthenticated = true;
-              // 認証状態を永続化
-              saveAuthState(true, user.email);
-
-              // デバッグログ: リフレッシュトークン認証成功
-              if (process.env.NODE_ENV === 'development' && import.meta.client) {
-                try {
-                  const { logAuthStep } = useAuthDebug();
-                  logAuthStep(processId, 'REFRESH_TOKEN_AUTH_SUCCESS', {
-                    userId: user.id,
-                    userEmail: user.email,
-                  }, true);
-                }
-                catch {
-                  // デバッグログでエラーが発生しても処理を継続
-                }
-              }
-
-              // 自動ログイン成功時のリダイレクト処理
-              const { handleAutoLoginRedirect } = useRedirect();
-              // 非同期でリダイレクトを実行（初期化処理をブロックしない）
-              nextTick(() => {
-                handleAutoLoginRedirect().catch((_error) => {
-                  if (process.env.NODE_ENV === 'development' && import.meta.client) {
-                    console.warn('自動ログイン後のリダイレクトに失敗:', _error);
-                  }
-                });
-              });
-
-              return;
-            }
-          }
-          catch (refreshError: unknown) {
-            // リフレッシュエラーを分類して処理
-            const { classifyAuthError, getErrorHandlingStrategy, logAuthError } = await import('~/utils/auth-error-handling');
-            const authError = classifyAuthError(refreshError);
-            const strategy = getErrorHandlingStrategy(authError);
-
-            // デバッグログ: リフレッシュトークン認証エラー
-            if (process.env.NODE_ENV === 'development' && import.meta.client) {
-              try {
-                const { logAuthStep } = useAuthDebug();
-                logAuthStep(processId, 'REFRESH_TOKEN_AUTH_ERROR', {
-                  errorType: authError.type,
-                  errorMessage: authError.message,
-                  shouldClearTokens: strategy.shouldClearTokens,
-                }, false, authError.message);
-              }
-              catch {
-                // デバッグログでエラーが発生しても処理を継続
-              }
-            }
-
-            // エラーをログに記録
-            logAuthError(authError, 'リフレッシュトークンでの認証');
-
-            // 認証エラーの場合は全てのトークンをクリア
-            if (strategy.shouldClearTokens) {
-              accessToken.value = null;
-              refreshTokenCookie.value = null;
-              clearAuthState();
-            }
-
-            // 認証エラーの場合は状態をクリア
-            if (authError.type === 'authentication') {
-              clearAuthState();
-              authState.value.user = null;
-              authState.value.isAuthenticated = false;
-              return;
-            }
-
-            // その他のエラーの場合は永続化状態を維持
-            if (hasPersistedAuth) {
-              authState.value.isAuthenticated = true;
-
-              // デバッグログ: ネットワークエラー時の永続化状態使用
-              if (process.env.NODE_ENV === 'development' && import.meta.client) {
-                try {
-                  const { logAuthStep } = useAuthDebug();
-                  logAuthStep(processId, 'NETWORK_ERROR_FALLBACK', {
-                    errorType: authError.type,
-                  }, true);
-                }
-                catch {
-                  // デバッグログでエラーが発生しても処理を継続
-                }
-              }
-              return;
-            }
-          }
-        }
-
-        // すべての認証試行が失敗した場合
-        clearAuthState();
-        authState.value.user = null;
-        authState.value.isAuthenticated = false;
-
-        // デバッグログ: 認証失敗
-        if (process.env.NODE_ENV === 'development' && import.meta.client) {
-          try {
-            const { logAuthStep } = useAuthDebug();
-            logAuthStep(processId, 'AUTH_FAILED', {}, false, 'All authentication attempts failed');
-          }
-          catch {
-            // デバッグログでエラーが発生しても処理を継続
-          }
-        }
-      }
-      catch (error) {
-        // 予期しないエラーが発生した場合
+        // 永続化状態もない場合は未認証として扱う
         authState.value.user = null;
         authState.value.isAuthenticated = false;
 
@@ -516,8 +331,6 @@ export const useAuth = () => {
    * Login user with email and password
    */
   const login = async (credentials: LoginCredentials) => {
-    console.log('useAuth.login 開始:', credentials.email);
-
     // 認証プロセスの追跡を開始（クライアントサイドのみ）
     let processId = '';
     if (process.env.NODE_ENV === 'development' && import.meta.client) {
@@ -795,14 +608,10 @@ export const useAuth = () => {
       // Even if logout fails on server, continue with local cleanup
     }
     finally {
-      // Always clear local state and cookies
+      // Always clear local state
+      // HTTP-only cookieはサーバーサイドのlogout APIで削除される
       if (import.meta.client) {
-        const accessToken = useCookie('access-token');
-        const refreshTokenCookie = useCookie('refresh-token');
-        accessToken.value = null;
-        refreshTokenCookie.value = null;
-
-        // 永続化された認証状態もクリア
+        // 永続化された認証状態をクリア
         clearAuthState();
       }
 
@@ -831,12 +640,8 @@ export const useAuth = () => {
    */
   const clearTokens = () => {
     if (import.meta.client) {
-      const accessToken = useCookie('access-token');
-      const refreshTokenCookie = useCookie('refresh-token');
-      accessToken.value = null;
-      refreshTokenCookie.value = null;
-
-      // 永続化された認証状態もクリア
+      // HTTP-only cookieはクライアントサイドから直接削除できないため、
+      // サーバーサイドAPIを呼び出すか、永続化状態のみクリア
       clearAuthState();
     }
 
@@ -866,11 +671,8 @@ export const useAuth = () => {
     authState.value.isLoading = true;
 
     try {
-      // リフレッシュトークンの存在確認
-      const refreshTokenCookie = useCookie('refresh-token');
-      if (!refreshTokenCookie.value) {
-        throw new Error('リフレッシュトークンが見つかりません');
-      }
+      // リフレッシュトークンはHTTP-only cookieなので、
+      // サーバーサイドAPIで直接処理される
 
       // エラーハンドリング機能付きでリフレッシュを実行（リトライ回数を制限）
       const { retryableFetch } = await import('~/utils/auth-error-handling');
@@ -907,10 +709,8 @@ export const useAuth = () => {
         authState.value.isInitialized = true;
 
         if (import.meta.client) {
-          const accessToken = useCookie('access-token');
-          const refreshTokenCookie = useCookie('refresh-token');
-          accessToken.value = null;
-          refreshTokenCookie.value = null;
+          // HTTP-only cookieはサーバーサイドで管理されるため、
+          // クライアントサイドでは永続化状態のみクリア
           clearAuthState();
         }
       }

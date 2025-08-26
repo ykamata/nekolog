@@ -115,7 +115,7 @@ export function getSecureCookieOptions() {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const, // 開発環境での問題を回避するためstrictからlaxに変更
     maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
     path: '/',
   };
@@ -128,7 +128,7 @@ export function getRefreshCookieOptions() {
   return {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const, // 開発環境での問題を回避するためstrictからlaxに変更
     maxAge: 60 * 60 * 24 * 30, // 30 days in seconds
     path: '/',
   };
