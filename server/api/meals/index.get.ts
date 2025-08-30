@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 
 const querySchema = z.object({
-  catId: z.string().cuid().optional(),
-  foodId: z.string().cuid().optional(),
+  catId: z.string().min(1).optional(),
+  foodId: z.string().min(1).optional(),
   startDate: z
     .string()
     .transform(str => new Date(str))

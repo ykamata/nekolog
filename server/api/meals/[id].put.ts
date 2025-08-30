@@ -4,7 +4,7 @@ import { MealRecordUpdateSchema } from '~/lib/validations/cat-meal';
 import { calculateCaloriesFromGrams } from '~/utils/cat-meal';
 
 const paramsSchema = z.object({
-  id: z.string().cuid('Invalid meal record ID format'),
+  id: z.string().min(1, 'Invalid meal record ID format'),
 });
 
 export default defineEventHandler(async (event) => {

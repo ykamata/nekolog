@@ -12,7 +12,7 @@ export interface ErrorInfo {
   context?: Record<string, unknown>;
 }
 
-export interface DataValidationResult {
+export interface DateValidationResult {
   isValid: boolean;
   errors: string[];
   warnings: string[];
@@ -264,7 +264,7 @@ export function detectCalorieAnomalies(data: number[]): AnomalyDetectionResult {
 /**
  * 日付データの妥当性を検証
  */
-export function validateDateData(dates: string[]): DataValidationResult {
+export function validateDateData(dates: string[]): DateValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
   const cleanedDates: string[] = [];

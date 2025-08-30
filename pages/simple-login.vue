@@ -105,7 +105,7 @@ const handleSubmit = async () => {
     await handleLoginRedirect();
   }
   catch (error) {
-    message.value = `ログインエラー: ${error.message || 'Unknown error'}`;
+    message.value = `ログインエラー: ${error instanceof Error ? error.message : 'Unknown error'}`;
     messageClass.value = 'bg-red-100 text-red-800';
   }
   finally {

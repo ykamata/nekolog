@@ -32,21 +32,23 @@ const fetchStats = async () => {
   error.value = null;
 
   try {
-    // Fetch data using stores
-    await Promise.all([
-      catsStore.fetchCats(),
-      foodsStore.fetchFoods(),
-      mealsStore.fetchMeals({ limit: 10 }), // Get recent meals
-    ]);
+    console.log('📊 ホーム画面: データ取得開始');
+
+    // Use the new dashboard stats API for simpler data fetching
+    const dashboardStats = await $fetch('/api/dashboard/stats');
+    console.log('📊 ダッシュボード統計:', dashboardStats);
 
     stats.value = {
-      cats: catsStore.cats.length,
-      foods: foodsStore.foods.length,
-      recentMeals: mealsStore.todaysMeals.length,
+      cats: dashboardStats.cats,
+      foods: dashboardStats.foods,
+      recentMeals: dashboardStats.todaysMeals,
     };
+
+    console.log('📊 統計データ設定完了:', stats.value);
   }
-  catch {
-    error.value = 'データの取得に失敗しました';
+  catch (err) {
+    console.error('❌ ホーム画面: データ取得エラー:', err);
+    error.value = `データの取得に失敗しました: ${err instanceof Error ? err.message : String(err)}`;
   }
   finally {
     isLoading.value = false;
@@ -121,9 +123,40 @@ const handleActionClick = (action: any) => {
   console.log('Action clicked:', action.title, 'Link:', action.link);
 };
 
+// Server-side data fetching
+const { data: initialStats } = await useFetch('/api/dashboard/stats', {
+  default: () => ({ cats: 0, foods: 0, todaysMeals: 0 }),
+  server: true,
+});
+
+// Initialize stats with server data
+if (initialStats.value) {
+  stats.value = {
+    cats: initialStats.value.cats,
+    foods: initialStats.value.foods,
+    recentMeals: initialStats.value.todaysMeals,
+  };
+}
+
 // Lifecycle
-onMounted(() => {
-  fetchStats();
+onMounted(async () => {
+  console.log('🏠 ホーム画面: onMounted開始');
+  console.log('📊 初期統計データ:', stats.value);
+
+  // Only fetch if we don't have data or if it's stale
+  if (stats.value.cats === 0 && stats.value.foods === 0 && stats.value.recentMeals === 0) {
+    console.log('📊 データが空のため再取得');
+    try {
+      await fetchStats();
+      console.log('🏠 ホーム画面: データ取得完了');
+    }
+    catch (error) {
+      console.error('🏠 ホーム画面: onMountedでエラー:', error);
+    }
+  }
+  else {
+
+  }
 });
 </script>
 

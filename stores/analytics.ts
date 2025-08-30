@@ -11,6 +11,7 @@ interface AnalyticsFilter {
   startDate?: Date;
   endDate?: Date;
   foodType?: FoodType;
+  days?: number;
 }
 
 export const useAnalyticsStore = defineStore('analytics', () => {
@@ -151,20 +152,29 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   });
 
   const dataQualityInfo = computed(() => {
-    if (!analytics.value) return null;
+    if (!analytics.value || !analytics.value.dailyCalories.length) return null;
 
-    const startDate = dateRange.value.startDate;
-    const endDate = dateRange.value.endDate;
-    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    // 実際のデータから期間を計算
+    const dailyCalories = analytics.value.dailyCalories;
+    const dates = dailyCalories.map(item => item.date).sort();
 
-    const uniqueDates = [...new Set(analytics.value.dailyCalories.map(item => item.date))];
+    if (dates.length === 0) return null;
+
+    const firstDate = new Date(dates[0]!);
+    const lastDate = new Date(dates[dates.length - 1]!);
+    const totalDays = Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+    const uniqueDates = [...new Set(dates)];
     const daysWithData = uniqueDates.length;
     const missingDays = totalDays - daysWithData;
-    const dataCompleteness = (daysWithData / totalDays) * 100;
+    const dataCompleteness = totalDays > 0 ? (daysWithData / totalDays) * 100 : 100;
 
-    // 欠損期間の詳細分析
-    const missingDateRanges = getMissingDateRanges(startDate, endDate, uniqueDates);
+    // 欠損期間の詳細分析（実際のデータ期間内のみ）
+    const missingDateRanges = getMissingDateRanges(firstDate, lastDate, uniqueDates);
     const longestMissingPeriod = getLongestMissingPeriod(missingDateRanges);
+
+    // 欠損が重要かどうかの判定を緩和（連続する期間のデータがある場合は問題なし）
+    const hasSignificantGaps = missingDays > Math.max(3, totalDays * 0.3) || longestMissingPeriod > 3;
 
     return {
       totalDays,
@@ -173,7 +183,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       dataCompleteness: Math.round(dataCompleteness),
       missingDateRanges,
       longestMissingPeriod,
-      hasSignificantGaps: missingDays > 3 || longestMissingPeriod > 2,
+      hasSignificantGaps,
     };
   });
 
@@ -226,6 +236,8 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   // Actions
   const fetchAnalytics = async (filters?: AnalyticsFilter, forceRefresh = false) => {
+    console.log('AnalyticsStore: fetchAnalytics開始', { filters, forceRefresh });
+
     // Check cache first
     const cacheKey = JSON.stringify(filters || currentFilters.value);
     const cachedData = cache.value[cacheKey];
@@ -234,6 +246,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       const now = new Date();
       const cacheAge = now.getTime() - cachedData.timestamp.getTime();
       if (cacheAge < cachedData.ttl) {
+        console.log('AnalyticsStore: キャッシュからデータを返却');
         analytics.value = cachedData.data;
         return cachedData.data;
       }
@@ -249,14 +262,22 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       if (activeFilters.catId) params.append('catId', activeFilters.catId);
       if (activeFilters.startDate) params.append('startDate', activeFilters.startDate.toISOString());
       if (activeFilters.endDate) params.append('endDate', activeFilters.endDate.toISOString());
-      if (activeFilters.foodType) params.append('foodType', activeFilters.foodType);
+      if (activeFilters.foodType) params.append('foodTypeFilter', activeFilters.foodType);
 
-      const response = await $fetch<{ data: MealAnalytics }>(`/api/meals/analytics?${params.toString()}`);
-      analytics.value = response.data;
+      const url = `/api/meals/analytics?${params.toString()}`;
+      console.log('AnalyticsStore: APIリクエスト送信', { url, params: params.toString() });
+
+      const response = await $fetch<{ analytics: MealAnalytics }>(url);
+      console.log('AnalyticsStore: APIレスポンス受信', {
+        hasAnalytics: !!response.analytics,
+        dailyCaloriesCount: response.analytics?.dailyCalories?.length || 0,
+      });
+
+      analytics.value = response.analytics;
 
       // Cache the result
       cache.value[cacheKey] = {
-        data: response.data,
+        data: response.analytics,
         timestamp: new Date(),
         ttl: 5 * 60 * 1000, // 5 minutes
       };
@@ -264,9 +285,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       // データ更新を通知
       notifyDataUpdate();
 
-      return response.data;
+      return response.analytics;
     }
     catch (err) {
+      console.error('AnalyticsStore: fetchAnalytics失敗:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analytics';
       error.value = {
         code: 'FETCH_ERROR',

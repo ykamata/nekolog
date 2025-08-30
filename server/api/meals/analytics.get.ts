@@ -3,23 +3,54 @@ import { prisma } from '~/lib/prisma';
 import { generateMealAnalytics, calculateDailyCaloriesWithFoodType, fillMissingDatesForFoodType } from '~/utils/cat-meal';
 
 const querySchema = z.object({
-  catId: z.string().cuid().optional(),
+  catId: z.string().optional(),
   startDate: z
     .string()
-    .transform(str => new Date(str))
-    .pipe(z.date())
-    .optional(),
+    .optional()
+    .transform((str) => {
+      if (!str) return undefined;
+      try {
+        // URLデコードしてから日付をパース
+        const decodedStr = decodeURIComponent(str);
+        const date = new Date(decodedStr);
+        if (isNaN(date.getTime())) {
+          throw new Error('Invalid date format');
+        }
+        return date;
+      }
+      catch (error) {
+        throw new Error(`Invalid startDate format: ${str}`);
+      }
+    }),
   endDate: z
     .string()
-    .transform(str => new Date(str))
-    .pipe(z.date())
-    .optional(),
+    .optional()
+    .transform((str) => {
+      if (!str) return undefined;
+      try {
+        // URLデコードしてから日付をパース
+        const decodedStr = decodeURIComponent(str);
+        const date = new Date(decodedStr);
+        if (isNaN(date.getTime())) {
+          throw new Error('Invalid date format');
+        }
+        return date;
+      }
+      catch (error) {
+        throw new Error(`Invalid endDate format: ${str}`);
+      }
+    }),
   days: z
     .string()
-    .transform(Number)
-    .pipe(z.number().int().positive().max(365))
     .optional()
-    .default('30'),
+    .default('30')
+    .transform((str) => {
+      const num = Number(str);
+      if (isNaN(num) || num <= 0 || num > 365) {
+        throw new Error('Days must be a positive number between 1 and 365');
+      }
+      return num;
+    }),
   chartType: z
     .enum(['line', 'bar'])
     .optional()
@@ -39,6 +70,7 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate query parameters
     const query = getQuery(event);
+    console.log('Analytics API: リクエスト受信', { query });
     let parsedQuery;
 
     try {
@@ -65,6 +97,11 @@ export default defineEventHandler(async (event) => {
     }
 
     const { catId, startDate, endDate, days, chartType, foodTypeFilter } = parsedQuery;
+    console.log('Analytics API: パース済みクエリ', { catId, startDate, endDate, days, chartType, foodTypeFilter });
+
+    // 日付変数を事前に宣言
+    let finalStartDate: Date;
+    let finalEndDate: Date;
 
     // Build where clause
     const where: Record<string, any> = {};
@@ -83,24 +120,40 @@ export default defineEventHandler(async (event) => {
     // Set date range - either from parameters or last N days
     if (startDate || endDate) {
       where.mealTime = {};
+
+      // startDateの処理
       if (startDate) {
         where.mealTime.gte = startDate;
+        finalStartDate = startDate;
       }
+      else {
+        finalStartDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+        finalStartDate.setHours(0, 0, 0, 0);
+        where.mealTime.gte = finalStartDate;
+      }
+
+      // endDateの処理
       if (endDate) {
         where.mealTime.lte = endDate;
+        finalEndDate = endDate;
+      }
+      else {
+        finalEndDate = new Date();
+        finalEndDate.setHours(23, 59, 59, 999);
+        where.mealTime.lte = finalEndDate;
       }
     }
     else {
       // Default to last N days
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days + 1);
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
+      finalEndDate = new Date();
+      finalStartDate = new Date();
+      finalStartDate.setDate(finalStartDate.getDate() - days + 1);
+      finalStartDate.setHours(0, 0, 0, 0);
+      finalEndDate.setHours(23, 59, 59, 999);
 
       where.mealTime = {
-        gte: startDate,
-        lte: endDate,
+        gte: finalStartDate,
+        lte: finalEndDate,
       };
     }
 
@@ -342,8 +395,8 @@ export default defineEventHandler(async (event) => {
           totalCalories: 0,
           averageCaloriesPerMeal: 0,
           dateRange: {
-            startDate: where.mealTime?.gte || startDate,
-            endDate: where.mealTime?.lte || endDate,
+            startDate: finalStartDate,
+            endDate: finalEndDate,
           },
         },
         performanceInfo: {
@@ -414,8 +467,8 @@ export default defineEventHandler(async (event) => {
       // Fill missing dates with zero values to show data gaps
       const filledData = fillMissingDatesForFoodType(
         dailyCaloriesByFoodType,
-        where.mealTime?.gte || startDate,
-        where.mealTime?.lte || endDate,
+        finalStartDate,
+        finalEndDate,
       );
 
       chartData = {
@@ -504,8 +557,8 @@ export default defineEventHandler(async (event) => {
         totalCalories: Math.round(totalCalories * 100) / 100,
         averageCaloriesPerMeal,
         dateRange: {
-          startDate: where.mealTime?.gte || startDate,
-          endDate: where.mealTime?.lte || endDate,
+          startDate: finalStartDate,
+          endDate: finalEndDate,
         },
       },
       performanceInfo,

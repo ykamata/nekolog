@@ -34,6 +34,7 @@ const mealListRef = ref();
 
 // Fetch initial data
 const fetchInitialData = async () => {
+  console.log('fetchInitialData called');
   isLoading.value = true;
   error.value = null;
 

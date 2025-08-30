@@ -241,6 +241,11 @@ const formatQuantity = (quantity: number) => {
   return quantity % 1 === 0 ? quantity.toString() : quantity.toFixed(1);
 };
 
+// Expose methods to parent component
+defineExpose({
+  fetchMealRecords,
+});
+
 // Lifecycle
 onMounted(() => {
   fetchMealRecords(true);

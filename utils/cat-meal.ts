@@ -64,7 +64,7 @@ export function transformPrismaFood(prismaFood: any): Food {
 /**
  * Convert Prisma MealRecord model to MealRecord interface
  */
-export function transformPrismaMealRecord(prismaMealRecord: any): MealRecord {
+export function transformPrismaMealRecord(prismaMealRecord: unknown): MealRecord {
   return {
     id: prismaMealRecord.id,
     catId: prismaMealRecord.catId,
@@ -360,25 +360,46 @@ export function calculateDailyCalories(
 ): DailyCalorieData[] {
   const groupedByDate = groupMealRecordsByDate(mealRecords);
 
-  return Object.entries(groupedByDate)
-    .map(([date, records]) => {
-      const totalCalories = records.reduce(
-        (sum, record) => sum + record.calories,
-        0,
-      );
-      const foodTypes = records
-        .map(record => record.food?.type)
-        .filter(Boolean);
-      const primaryType
-        = foodTypes.length > 0 ? (foodTypes[0] as FoodType) : ('DRY' as FoodType);
+  const result: DailyCalorieData[] = [];
 
-      return {
+  Object.entries(groupedByDate).forEach(([date, records]) => {
+    // ドライフードとウェットフードを分けて計算
+    const dryRecords = records.filter(record => record.food?.type === 'DRY');
+    const wetRecords = records.filter(record => record.food?.type === 'WET');
+
+    const dryCalories = dryRecords.reduce((sum, record) => sum + record.calories, 0);
+    const wetCalories = wetRecords.reduce((sum, record) => sum + record.calories, 0);
+
+    // ドライフードのデータがある場合は追加
+    if (dryCalories > 0) {
+      result.push({
+        date,
+        calories: Math.round(dryCalories * 100) / 100,
+        type: 'DRY' as FoodType,
+      });
+    }
+
+    // ウェットフードのデータがある場合は追加
+    if (wetCalories > 0) {
+      result.push({
+        date,
+        calories: Math.round(wetCalories * 100) / 100,
+        type: 'WET' as FoodType,
+      });
+    }
+
+    // どちらもない場合は合計値で追加（フォールバック）
+    if (dryCalories === 0 && wetCalories === 0 && records.length > 0) {
+      const totalCalories = records.reduce((sum, record) => sum + record.calories, 0);
+      result.push({
         date,
         calories: Math.round(totalCalories * 100) / 100,
-        type: primaryType,
-      };
-    })
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        type: 'DRY' as FoodType, // デフォルト
+      });
+    }
+  });
+
+  return result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 }
 
 /**

@@ -30,7 +30,8 @@
             ]"
             :title="'線グラフ表示に切り替え'"
             aria-label="線グラフ表示"
-            @click="chartType = 'line'"
+            :disabled="isTransitioning"
+            @click="switchChartType('line')"
           >
             <svg
               class="w-4 h-4"
@@ -60,7 +61,8 @@
             ]"
             :title="'積み上げ棒グラフ表示に切り替え'"
             aria-label="積み上げ棒グラフ表示"
-            @click="chartType = 'bar'"
+            :disabled="isTransitioning"
+            @click="switchChartType('bar')"
           >
             <svg
               class="w-4 h-4"
@@ -249,7 +251,7 @@
 
     <!-- Error State -->
     <div
-      v-else-if="error"
+      v-else-if="error || chartError"
       class="error-container bg-red-50 border border-red-200 rounded-lg p-6 text-center"
     >
       <div class="error-icon text-red-500 text-4xl mb-4">
@@ -259,7 +261,7 @@
         データの読み込みに失敗しました
       </h3>
       <p class="error-message text-red-700 mb-4">
-        {{ error }}
+        {{ error || chartError }}
       </p>
 
       <!-- エラーの詳細情報（開発環境のみ） -->
@@ -452,6 +454,8 @@
       <div class="chart-canvas-container relative">
         <!-- Chart Canvas with Accessibility Support -->
         <canvas
+          :id="`meal-chart-${props.catId || 'default'}-${canvasKey}`"
+          :key="`chart-canvas-${canvasKey}`"
           ref="chartCanvas"
           class="max-w-full h-auto"
           :style="{ height: chartHeight + 'px' }"
@@ -646,46 +650,36 @@
 </template>
 
 <script setup lang="ts">
-import {
-  Chart,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  type ChartConfiguration,
-  type ChartData,
-} from 'chart.js';
+import type { ChartData } from 'chart.js';
 import type { MealAnalytics } from '~/types/cat-meal';
 import { FoodType } from '~/types/cat-meal';
 
-// Register Chart.js components
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-);
+// デバウンス関数
+function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
+  let timeout: NodeJS.Timeout;
+  return ((...args: unknown[]) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  }) as T;
+}
 
 interface Props {
   catId?: string;
   height?: number;
+  periodDays?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   height: 400,
+  periodDays: 30,
 });
+
+// Chart.js管理用のcomposable
+const { chart, isInitialized, error: chartError, initChart, updateChart: updateChartData, destroyChart, resize } = useChart();
 
 // Reactive data
 const chartCanvas = ref<HTMLCanvasElement>();
-const chart = ref<Chart>();
+const canvasKey = ref(0); // Canvas再作成用のキー
 
 // エラーハンドリング強化用の状態
 const retryCount = ref(0);
@@ -716,7 +710,81 @@ const chartType = computed({
   set: (value: 'line' | 'bar') => analyticsStore.setChartDisplayMode(value),
 });
 const selectedFoodType = ref<FoodType | ''>('');
-const selectedDays = ref<number>(30);
+const selectedDays = ref<number>(props.periodDays);
+
+// チャートタイプ切り替え用の状態管理
+const isTransitioning = ref(false);
+const transitionDuration = 300; // ミリ秒
+
+/**
+ * データフィルタリングとリアルタイム更新機能
+ * Requirements: 1.2, 1.3, 4.2 - 猫選択、日付範囲フィルタリング、ローディング状態
+ */
+
+// フィルタリング状態管理
+const filterState = ref({
+  isUpdating: false,
+  lastFilterChange: Date.now(),
+  pendingUpdates: 0,
+});
+
+// デバウンス機能付きのデータ更新
+const debouncedRefreshData = debounce(async () => {
+  if (filterState.value.isUpdating) {
+    filterState.value.pendingUpdates++;
+    return;
+  }
+
+  try {
+    filterState.value.isUpdating = true;
+    filterState.value.lastFilterChange = Date.now();
+
+    await refreshData();
+
+    // 保留中の更新があれば実行
+    if (filterState.value.pendingUpdates > 0) {
+      filterState.value.pendingUpdates = 0;
+      setTimeout(() => debouncedRefreshData(), 100);
+    }
+  }
+  finally {
+    filterState.value.isUpdating = false;
+  }
+}, 300);
+
+// propsの変更を監視
+watch(() => props.periodDays, (newPeriod) => {
+  console.log('MealChart: periodDays変更', { old: selectedDays.value, new: newPeriod });
+  selectedDays.value = newPeriod;
+  debouncedRefreshData();
+});
+
+watch(() => props.catId, (newCatId) => {
+  console.log('MealChart: catId変更', { catId: newCatId });
+  if (newCatId) {
+    debouncedRefreshData();
+  }
+});
+
+// フードタイプフィルタの変更を監視
+watch(selectedFoodType, (newType, oldType) => {
+  console.log('MealChart: フードタイプ変更', { old: oldType, new: newType });
+  // 線グラフの場合のみリアルタイム更新（積み上げ棒グラフは常に両方表示）
+  if (chartType.value === 'line') {
+    nextTick(() => {
+      updateChartWithCurrentData();
+    });
+  }
+});
+
+// チャートタイプ変更を監視
+watch(chartType, async (newType, oldType) => {
+  console.log('MealChart: チャートタイプ変更', { old: oldType, new: newType });
+  if (oldType && newType !== oldType) {
+    await nextTick();
+    updateChartWithCurrentData();
+  }
+});
 
 // Computed properties
 const chartHeight = computed(() => {
@@ -774,6 +842,45 @@ const averageCaloriesPerDay = computed(() => {
   return data.length > 0 ? totalCalories.value / data.length : 0;
 });
 
+/**
+ * チャートタイプ切り替え機能
+ * Requirements: 1.1 - 線グラフと積み上げ棒グラフの切り替え
+ */
+const switchChartType = async (newType: 'line' | 'bar') => {
+  if (isTransitioning.value || chartType.value === newType) return;
+
+  try {
+    isTransitioning.value = true;
+
+    // フェードアウト効果
+    if (chartCanvas.value) {
+      chartCanvas.value.style.transition = `opacity ${transitionDuration}ms ease-in-out`;
+      chartCanvas.value.style.opacity = '0.3';
+    }
+
+    // 短い遅延後にチャートタイプを変更
+    await new Promise(resolve => setTimeout(resolve, transitionDuration / 2));
+
+    chartType.value = newType;
+
+    // チャートの再初期化を待つ
+    await nextTick();
+
+    // フェードイン効果
+    if (chartCanvas.value) {
+      chartCanvas.value.style.opacity = '1';
+    }
+  }
+  finally {
+    setTimeout(() => {
+      isTransitioning.value = false;
+      if (chartCanvas.value) {
+        chartCanvas.value.style.transition = '';
+      }
+    }, transitionDuration);
+  }
+};
+
 // Chart data preparation
 const chartData = computed((): ChartData => {
   if (chartType.value === 'line') {
@@ -783,13 +890,21 @@ const chartData = computed((): ChartData => {
       labels: data.map(item => item.date),
       datasets: [
         {
-          label: 'カロリー (kcal)',
+          label: selectedFoodType.value
+            ? (selectedFoodType.value === 'DRY' ? 'ドライフード' : 'ウェットフード')
+            : 'カロリー',
           data: data.map(item => item.calories),
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          borderColor: selectedFoodType.value === 'WET'
+            ? 'rgb(34, 197, 94)'
+            : 'rgb(59, 130, 246)',
+          backgroundColor: selectedFoodType.value === 'WET'
+            ? 'rgba(34, 197, 94, 0.1)'
+            : 'rgba(59, 130, 246, 0.1)',
           borderWidth: 2,
           fill: true,
           tension: 0.4,
+          pointRadius: 4,
+          pointHoverRadius: 6,
         },
       ],
     };
@@ -854,151 +969,53 @@ const chartData = computed((): ChartData => {
   }
 });
 
-// Chart configuration
-const chartConfig = computed((): ChartConfiguration => {
-  const isMobile = import.meta.client && window.innerWidth < 768;
-  const isTablet = import.meta.client && window.innerWidth >= 768 && window.innerWidth < 1024;
-  const isTouchDevice = import.meta.client && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+/**
+ * リアルタイムチャート更新機能
+ * Requirements: 4.2 - ローディング状態とリアルタイム更新
+ */
+const updateChartWithCurrentData = async () => {
+  if (!chart || !isInitialized.value || !chartCanvas.value) {
+    return;
+  }
 
-  return {
-    type: chartType.value,
-    data: chartData.value,
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      // タッチデバイス対応の設定
-      interaction: {
-        mode: chartType.value === 'bar' ? 'index' : 'nearest',
-        axis: 'x',
-        intersect: false,
-      },
-      // タッチ操作の最適化
-      onHover: isTouchDevice
-        ? undefined
-        : (event, activeElements) => {
-            if (chartCanvas.value) {
-              chartCanvas.value.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
-            }
-          },
-      plugins: {
-        title: {
-          display: true,
-          text: chartType.value === 'bar' ? '食事カロリー推移（積み上げ）' : '食事カロリー推移',
-          font: {
-            size: isMobile ? 14 : isTablet ? 15 : 16,
-          },
-          padding: {
-            top: isMobile ? 10 : 20,
-            bottom: isMobile ? 10 : 20,
-          },
-        },
-        legend: {
-          display: chartType.value === 'bar',
-          position: isMobile ? 'bottom' : 'top',
-          labels: {
-            font: {
-              size: isMobile ? 11 : isTablet ? 12 : 14,
-            },
-            padding: isMobile ? 15 : 20,
-            usePointStyle: true,
-            pointStyle: 'rect',
-          },
-        },
-        tooltip: {
-          mode: chartType.value === 'bar' ? 'index' : 'nearest',
-          intersect: false,
-          // タッチデバイス用の設定
-          enabled: true,
-          external: undefined,
-          position: 'nearest',
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-          borderColor: 'rgba(255, 255, 255, 0.1)',
-          borderWidth: 1,
-          cornerRadius: 6,
-          displayColors: true,
-          titleFont: {
-            size: isMobile ? 12 : 14,
-          },
-          bodyFont: {
-            size: isMobile ? 11 : 13,
-          },
-          padding: isMobile ? 8 : 12,
-          callbacks: {
-            label: (context) => {
-              return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} kcal`;
-            },
-            // For stacked bar chart, show total in footer
-            footer: chartType.value === 'bar'
-              ? (tooltipItems) => {
-                  const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
-                  return `合計: ${total.toFixed(1)} kcal`;
-                }
-              : undefined,
-          },
+  try {
+    const startTime = performance.now();
+
+    // 現在のデータでチャート設定を生成
+    const config = createResponsiveChartConfig(
+      chartType.value,
+      chartData.value,
+      {
+        animation: {
+          duration: isTransitioning.value ? 0 : 300,
         },
       },
-      scales: {
-        x: {
-          display: true,
-          title: {
-            display: !isMobile, // モバイルでは軸タイトルを非表示
-            text: '日付',
-            font: {
-              size: isMobile ? 12 : isTablet ? 13 : 14,
-            },
-          },
-          ticks: {
-            font: {
-              size: isMobile ? 9 : isTablet ? 10 : 12,
-            },
-            maxTicksLimit: isMobile ? 4 : isTablet ? 6 : 10,
-            maxRotation: isMobile ? 45 : 0,
-            minRotation: 0,
-          },
-          grid: {
-            display: !isMobile, // モバイルでは縦線を非表示
-          },
-          // Enable stacking for bar chart
-          ...(chartType.value === 'bar' && { stacked: true }),
-        },
-        y: {
-          display: true,
-          title: {
-            display: !isMobile, // モバイルでは軸タイトルを非表示
-            text: 'カロリー (kcal)',
-            font: {
-              size: isMobile ? 12 : isTablet ? 13 : 14,
-            },
-          },
-          ticks: {
-            font: {
-              size: isMobile ? 9 : isTablet ? 10 : 12,
-            },
-            maxTicksLimit: isMobile ? 5 : 8,
-          },
-          grid: {
-            color: 'rgba(0, 0, 0, 0.1)',
-            lineWidth: 1,
-          },
-          beginAtZero: true,
-          // Enable stacking for bar chart
-          ...(chartType.value === 'bar' && { stacked: true }),
-        },
-      },
-      // アニメーション設定（パフォーマンス最適化）
-      animation: {
-        duration: isMobile ? 300 : 750,
-        easing: 'easeInOutQuart',
-      },
-      // タッチデバイス用のイベント設定
-      events: isTouchDevice
-        ? ['touchstart', 'touchmove', 'touchend', 'mouseout']
-        : ['mousemove', 'mouseout', 'click', 'touchstart', 'touchmove', 'touchend'],
-    },
-  };
-});
+    );
+
+    // チャートを更新
+    await updateChartData(chartData.value, config.options);
+
+    // パフォーマンス測定
+    const updateTime = performance.now() - startTime;
+    performanceMetrics.value.lastUpdateTime = updateTime;
+    performanceMetrics.value.updateCount++;
+    performanceMetrics.value.averageUpdateTime
+      = (performanceMetrics.value.averageUpdateTime * (performanceMetrics.value.updateCount - 1) + updateTime)
+        / performanceMetrics.value.updateCount;
+    performanceMetrics.value.dataPointCount = chartData.value.labels?.length || 0;
+
+    console.log('チャート更新完了', {
+      type: chartType.value,
+      updateTime: updateTime.toFixed(1) + 'ms',
+      dataPoints: performanceMetrics.value.dataPointCount,
+    });
+  }
+  catch (err) {
+    console.error('チャート更新エラー:', err);
+  }
+};
+
+// Chart設定はcreateResponsiveChartConfig関数で生成
 
 // パフォーマンス最適化用の状態管理
 const lastChartData = ref<ChartData | null>(null);
@@ -1011,6 +1028,57 @@ const performanceMetrics = ref({
   dataPointCount: 0,
   samplingApplied: false,
 });
+
+// データ変更の監視とチャート更新
+watch(chartData, async (newData, oldData) => {
+  // データが実際に変更された場合のみ更新
+  if (JSON.stringify(newData) !== JSON.stringify(oldData)) {
+    await nextTick();
+    updateChartWithCurrentData();
+  }
+}, { deep: true });
+
+/**
+ * フードタイプフィルタ機能
+ * Requirements: 1.2 - 猫選択フィルタリング
+ */
+const setFoodTypeFilter = (type: FoodType | '') => {
+  if (selectedFoodType.value === type) return;
+
+  selectedFoodType.value = type;
+
+  // 線グラフの場合は即座に更新、積み上げ棒グラフの場合は無効
+  if (chartType.value === 'line') {
+    nextTick(() => {
+      updateChartWithCurrentData();
+    });
+  }
+};
+
+/**
+ * データ再取得機能
+ * Requirements: 1.3 - 日付範囲フィルタリング
+ */
+const refreshData = async () => {
+  try {
+    console.log('データ再取得開始', {
+      catId: props.catId,
+      days: selectedDays.value,
+      foodType: selectedFoodType.value,
+    });
+
+    // Analytics Storeからデータを取得
+    await analyticsStore.fetchAnalytics({
+      catId: props.catId,
+      days: selectedDays.value,
+    });
+
+    console.log('データ再取得完了');
+  }
+  catch (err) {
+    console.error('データ再取得エラー:', err);
+  }
+};
 
 // 開発環境判定
 const isDevelopment = computed(() => {
@@ -1101,12 +1169,23 @@ const missingDataInfo = computed(() => {
 // Methods
 async function fetchAnalytics() {
   try {
+    console.log('MealChart: fetchAnalytics開始', {
+      catId: props.catId,
+      selectedDays: selectedDays.value,
+      selectedFoodType: selectedFoodType.value,
+    });
+
     // Analytics Storeを使用してデータを取得（エラーハンドリング強化済み）
     await analyticsStore.fetchAnalytics({
       catId: props.catId,
       startDate: new Date(Date.now() - selectedDays.value * 24 * 60 * 60 * 1000),
       endDate: new Date(),
       foodType: selectedFoodType.value || undefined,
+    });
+
+    console.log('MealChart: fetchAnalytics成功', {
+      analyticsData: analyticsStore.analytics,
+      hasData: analyticsStore.hasData,
     });
 
     // データ品質情報を更新
@@ -1117,7 +1196,13 @@ async function fetchAnalytics() {
   }
   catch (err) {
     // エラーログを記録
-    console.error('Failed to fetch analytics:', err);
+    console.error('MealChart: fetchAnalytics失敗:', err);
+    console.error('エラー詳細:', {
+      message: err instanceof Error ? err.message : 'Unknown error',
+      stack: err instanceof Error ? err.stack : undefined,
+      catId: props.catId,
+      selectedDays: selectedDays.value,
+    });
   }
 }
 
@@ -1164,39 +1249,53 @@ async function retryFetch() {
   }
 }
 
-// フード種別フィルターの設定とリアルタイム更新
-function setFoodTypeFilter(foodType: FoodType | '') {
-  selectedFoodType.value = foodType;
-  analyticsStore.setSelectedFoodType(foodType || null);
+// 重複した関数定義を削除（上部で既に定義済み）
 
-  // フィルター設定をlocalStorageに永続化
-  if (typeof window !== 'undefined' && window.localStorage) {
-    if (foodType) {
-      localStorage.setItem('analytics-food-type-filter', foodType);
-    }
-    else {
-      localStorage.removeItem('analytics-food-type-filter');
-    }
-  }
+// Chart破棄処理はuseChart composableに委譲
 
-  // チャートをリアルタイムで更新
-  nextTick(() => {
-    if (analytics.value) {
-      updateChart();
-    }
-  });
+function recreateCanvas() {
+  // Canvas要素を完全に再作成してChart.jsの内部状態をクリア
+  destroyChart();
+  canvasKey.value++;
+  console.log('MealChart: Canvas recreated with key:', canvasKey.value);
 }
 
-function createChart() {
-  if (!chartCanvas.value) return;
-
-  // Destroy existing chart
-  if (chart.value) {
-    chart.value.destroy();
+async function createChart() {
+  if (!chartCanvas.value) {
+    console.log('MealChart: Canvas not available');
+    return;
   }
 
-  // Create new chart
-  chart.value = new Chart(chartCanvas.value, chartConfig.value);
+  if (isInitialized.value) {
+    console.log('MealChart: Chart already initialized');
+    return;
+  }
+
+  try {
+    // useChart composableを使用してチャートを初期化
+    const config = createResponsiveChartConfig(chartType.value, chartData.value);
+    await initChart(chartCanvas.value, config);
+    console.log('MealChart: Chart created successfully');
+  }
+  catch (error) {
+    console.error('MealChart: Chart creation failed:', error);
+
+    // Canvas再作成を試行
+    recreateCanvas();
+
+    // 次のtickで再試行
+    await nextTick();
+    if (chartCanvas.value && !isInitialized.value) {
+      try {
+        const config = createResponsiveChartConfig(chartType.value, chartData.value);
+        await initChart(chartCanvas.value, config);
+        console.log('MealChart: Chart created successfully after canvas recreation');
+      }
+      catch (retryError) {
+        console.error('MealChart: Chart creation failed even after canvas recreation:', retryError);
+      }
+    }
+  }
 }
 
 // 差分レンダリング機能（要件6.1, 6.2対応）
@@ -1257,10 +1356,19 @@ function processUpdateQueue() {
   });
 }
 
-function updateChart() {
-  if (!chart.value || typeof chart.value.update !== 'function') return;
+async function updateChart() {
+  if (!chart.value) {
+    console.log('MealChart: Chart not available for update');
+    return;
+  }
 
   const newChartData = chartData.value;
+
+  // データが空の場合はスキップ
+  if (!newChartData.labels || newChartData.labels.length === 0) {
+    console.log('MealChart: No data to update chart');
+    return;
+  }
 
   // 差分レンダリング：データが変更されていない場合はスキップ
   if (!hasDataChanged(newChartData, lastChartData.value)) {
@@ -1271,43 +1379,38 @@ function updateChart() {
   const updateStartTime = performance.now();
 
   // 更新をキューに追加（バッチ処理）
-  updateQueue.value.push(() => {
-    if (!chart.value) return;
+  updateQueue.value.push(async () => {
+    try {
+      // useChart composableを使用してチャートを更新
+      await updateChartData(newChartData);
 
-    chart.value.data = newChartData;
-    if (chartConfig.value.options) {
-      chart.value.options = chartConfig.value.options;
+      // 最後のデータを保存
+      lastChartData.value = JSON.parse(JSON.stringify(newChartData));
+
+      // パフォーマンス測定終了
+      const updateEndTime = performance.now();
+      const updateTime = updateEndTime - updateStartTime;
+
+      // パフォーマンスメトリクスを更新
+      performanceMetrics.value.lastUpdateTime = updateTime;
+      performanceMetrics.value.updateCount++;
+      performanceMetrics.value.dataPointCount = newChartData.labels?.length || 0;
+
+      // 平均更新時間を計算
+      const totalTime = performanceMetrics.value.averageUpdateTime * (performanceMetrics.value.updateCount - 1) + updateTime;
+      performanceMetrics.value.averageUpdateTime = totalTime / performanceMetrics.value.updateCount;
+
+      // サンプリング適用状況を記録
+      const chartDataWithSampling = newChartData as { samplingInfo?: { applied: boolean } };
+      performanceMetrics.value.samplingApplied = chartDataWithSampling.samplingInfo?.applied || false;
+
+      // パフォーマンス警告（開発環境のみ）
+      if (isDevelopment.value && updateTime > 100) {
+        console.warn(`MealChart: 更新時間が長すぎます: ${updateTime.toFixed(1)}ms`);
+      }
     }
-
-    // データ量に応じてアニメーション設定を調整
-    const dataPointCount = newChartData.labels?.length || 0;
-    const animationMode = dataPointCount > 50 ? 'none' : 'active';
-
-    chart.value.update(animationMode);
-
-    // 最後のデータを保存
-    lastChartData.value = JSON.parse(JSON.stringify(newChartData));
-
-    // パフォーマンス測定終了
-    const updateEndTime = performance.now();
-    const updateTime = updateEndTime - updateStartTime;
-
-    // パフォーマンスメトリクスを更新
-    performanceMetrics.value.lastUpdateTime = updateTime;
-    performanceMetrics.value.updateCount++;
-    performanceMetrics.value.dataPointCount = dataPointCount;
-
-    // 平均更新時間を計算
-    const totalTime = performanceMetrics.value.averageUpdateTime * (performanceMetrics.value.updateCount - 1) + updateTime;
-    performanceMetrics.value.averageUpdateTime = totalTime / performanceMetrics.value.updateCount;
-
-    // サンプリング適用状況を記録
-    const chartDataWithSampling = newChartData as { samplingInfo?: { applied: boolean } };
-    performanceMetrics.value.samplingApplied = chartDataWithSampling.samplingInfo?.applied || false;
-
-    // パフォーマンス警告（開発環境のみ）
-    if (isDevelopment.value && updateTime > 100) {
-
+    catch (error) {
+      console.error('MealChart: Chart update failed:', error);
     }
   });
 
@@ -1315,9 +1418,7 @@ function updateChart() {
   processUpdateQueue();
 }
 
-async function refreshData() {
-  await fetchAnalytics();
-}
+// 重複したrefreshData関数を削除（上部で既に定義済み）
 
 // アクセシビリティ関連のメソッド
 function handleChartFocus() {
@@ -1470,17 +1571,19 @@ function announceDataPointDetails() {
 }
 
 // Watchers
-watch(chartType, (newType) => {
+watch(chartType, async (newType) => {
   // Reset food type filter when switching to bar chart
   if (newType === 'bar') {
     selectedFoodType.value = '';
   }
 
-  nextTick(() => {
-    if (analytics.value) {
-      updateChart();
-    }
-  });
+  await nextTick();
+  if (analytics.value) {
+    // チャートタイプ変更時はCanvas再作成
+    recreateCanvas();
+    await nextTick();
+    await createChart();
+  }
 });
 
 watch(selectedFoodType, (newFoodType, oldFoodType) => {
@@ -1494,11 +1597,25 @@ watch(selectedFoodType, (newFoodType, oldFoodType) => {
   }
 });
 
-watch(analytics, () => {
-  nextTick(() => {
-    createChart();
-  });
-});
+watch(analytics, async (newAnalytics, oldAnalytics) => {
+  // 初回マウント時は手動でチャートを作成するのでスキップ
+  if (!oldAnalytics && newAnalytics) {
+    return;
+  }
+
+  if (newAnalytics && newAnalytics.dailyCalories.length > 0) {
+    await nextTick();
+    if (chart.value && isInitialized.value) {
+      await updateChart();
+    }
+    else {
+      // Canvas再作成してからチャート作成
+      recreateCanvas();
+      await nextTick();
+      await createChart();
+    }
+  }
+}, { immediate: false });
 
 // リアルタイム更新の監視
 watch(lastUpdateTime, (newTime) => {
@@ -1509,8 +1626,16 @@ watch(lastUpdateTime, (newTime) => {
   }
 });
 
-// Lifecycle
+/**
+ * コンポーネントライフサイクル管理
+ * Requirements: 2.1, 4.2 - Chart.js初期化とローディング状態
+ */
 onMounted(async () => {
+  console.log('MealChart: onMounted開始', { catId: props.catId, periodDays: props.periodDays });
+
+  // Chart.jsの初期化を待つ
+  await nextTick();
+
   // localStorageから表示設定を復元
   analyticsStore.restoreDisplaySettings();
 
@@ -1522,17 +1647,37 @@ onMounted(async () => {
     }
   }
 
-  await fetchAnalytics();
+  // catIdが設定されている場合のみデータを取得
+  if (props.catId) {
+    try {
+      await refreshData();
 
-  // パフォーマンス最適化：定期的なメモリクリーンアップ（要件6.1対応）
+      // データ取得後にチャートを初期化
+      await nextTick();
+      if (analytics.value && analytics.value.dailyCalories.length > 0 && chartCanvas.value) {
+        const config = createResponsiveChartConfig(chartType.value, chartData.value);
+        await initChart(chartCanvas.value, config);
+      }
+    }
+    catch (error) {
+      console.error('MealChart: 初期データ取得エラー:', error);
+    }
+  }
+  else {
+    console.log('MealChart: catIdが未設定のため、データ取得をスキップ');
+  }
+
+  // パフォーマンス最適化：定期的なメモリクリーンアップ
   const memoryOptimizationInterval = setInterval(() => {
-    analyticsStore.optimizeMemoryUsage();
+    if (analyticsStore.optimizeMemoryUsage) {
+      analyticsStore.optimizeMemoryUsage();
+    }
   }, 5 * 60 * 1000); // 5分ごと
 
   // コンポーネント破棄時にインターバルをクリア
-  onUnmounted(() => {
+  const cleanupInterval = () => {
     clearInterval(memoryOptimizationInterval);
-  });
+  };
 
   // Handle window resize and orientation change for responsive behavior
   if (import.meta.client) {
@@ -1543,13 +1688,8 @@ onMounted(async () => {
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
         if (chart.value) {
-          // チャート設定を再計算してレスポンシブ対応
-          const newConfig = chartConfig.value;
-          if (newConfig.options) {
-            chart.value.options = newConfig.options;
-          }
-          chart.value.resize();
-          chart.value.update('none'); // アニメーションなしで更新
+          // useChart composableのresize機能を使用
+          resize();
         }
       }, 150);
     };
@@ -1558,8 +1698,7 @@ onMounted(async () => {
       // オリエンテーション変更時の処理
       setTimeout(() => {
         if (chart.value) {
-          chart.value.resize();
-          chart.value.update('none');
+          resize();
         }
       }, 100);
     };
@@ -1569,7 +1708,7 @@ onMounted(async () => {
 
     // リアルタイム更新イベントリスナー
     const handleDataUpdate = (event: CustomEvent) => {
-      console.log('Analytics data updated:', event.detail);
+
       // チャートの更新は watch で自動的に行われる
     };
 
@@ -1588,7 +1727,7 @@ onMounted(async () => {
           entries.forEach((entry) => {
             if (entry.isIntersecting && chart.value) {
               // チャートが表示されている時のみ更新
-              chart.value.update('none');
+              resize();
             }
           });
         },
@@ -1597,7 +1736,7 @@ onMounted(async () => {
       observer.observe(chartCanvas.value);
     }
 
-    onUnmounted(() => {
+    const cleanupEventListeners = () => {
       clearTimeout(resizeTimeout);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('analytics-data-updated', handleDataUpdate as EventListener);
@@ -1607,18 +1746,17 @@ onMounted(async () => {
       if (observer) {
         observer.disconnect();
       }
-      if (chart.value) {
-        chart.value.destroy();
-      }
+    };
+
+    onUnmounted(() => {
+      cleanupInterval();
+      cleanupEventListeners();
+      destroyChart(); // useChart composableのdestroyChart関数を使用
     });
   }
 });
 
-onUnmounted(() => {
-  if (chart.value) {
-    chart.value.destroy();
-  }
-});
+// onUnmountedは上記で統合済み
 </script>
 
 <style scoped>

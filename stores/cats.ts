@@ -46,28 +46,11 @@ export const useCatsStore = defineStore('cats', () => {
 
   // Actions
   const fetchCats = async (filter?: CatFilter, forceRefresh = false) => {
-    const { syncStatus } = useSync();
-    const offlineStorage = OfflineStorage.getInstance();
-
-    // If offline, load from local storage
-    if (!syncStatus.value.isOnline) {
-      loading.value = true;
-      try {
-        const localCats = offlineStorage.getCats();
-        cats.value = localCats;
-        return cats.value;
-      }
-      catch (err) {
-        error.value = 'Failed to load offline data';
-        throw err;
-      }
-      finally {
-        loading.value = false;
-      }
-    }
+    console.log('🐱 猫ストア: fetchCats開始', { filter, forceRefresh });
 
     // Use cache if valid and not forcing refresh
     if (!forceRefresh && isCacheValid.value && cats.value.length > 0) {
+      console.log('🐱 猫ストア: キャッシュを使用');
       return cats.value;
     }
 
@@ -83,7 +66,9 @@ export const useCatsStore = defineStore('cats', () => {
       const queryString = query.toString();
       const url = `/api/cats${queryString ? `?${queryString}` : ''}`;
 
+      console.log('🐱 猫ストア: API呼び出し', url);
       const data = await $fetch<Cat[]>(url);
+      console.log('🐱 猫ストア: API レスポンス', data);
 
       cats.value = data.map(cat => ({
         ...cat,
@@ -93,22 +78,10 @@ export const useCatsStore = defineStore('cats', () => {
       }));
 
       cache.value.lastFetch = new Date();
+      console.log('🐱 猫ストア: データ設定完了', cats.value.length);
       return cats.value;
     }
     catch (err) {
-      // Fallback to offline data if available
-      try {
-        const localCats = offlineStorage.getCats();
-        if (localCats.length > 0) {
-          cats.value = localCats;
-          error.value = 'Using offline data';
-          return cats.value;
-        }
-      }
-      catch {
-        // Ignore offline error, use original error
-      }
-
       error.value = err instanceof Error ? err.message : 'Failed to fetch cats';
       throw err;
     }

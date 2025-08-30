@@ -1,7 +1,5 @@
 import { useAuthPluginState } from '~/plugins/auth.client';
 
-import type { useAuthPluginState } from '~/plugins/auth.client';
-
 /**
  * 認証初期化状態を管理するコンポーザブル
  * アプリ全体での認証初期化プロセスの状態を提供

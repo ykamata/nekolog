@@ -506,7 +506,7 @@ defineExpose({
 
 <style scoped>
 .meal-record-form {
-  max-width: 600px;
+  width: 100%;
   margin: 0 auto;
   padding: 1.5rem;
   background: white;

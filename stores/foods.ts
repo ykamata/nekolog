@@ -84,28 +84,11 @@ export const useFoodsStore = defineStore('foods', () => {
 
   // Actions
   const fetchFoods = async (filter?: FoodFilter, forceRefresh = false) => {
-    const { syncStatus } = useSync();
-    const offlineStorage = OfflineStorage.getInstance();
-
-    // If offline, load from local storage
-    if (!syncStatus.value.isOnline) {
-      loading.value = true;
-      try {
-        const localFoods = offlineStorage.getFoods();
-        foods.value = localFoods;
-        return filteredFoods.value;
-      }
-      catch (err) {
-        error.value = 'Failed to load offline data';
-        throw err;
-      }
-      finally {
-        loading.value = false;
-      }
-    }
+    console.log('🥫 フードストア: fetchFoods開始', { filter, forceRefresh });
 
     // Use cache if valid and not forcing refresh
     if (!forceRefresh && isCacheValid.value && foods.value.length > 0) {
+      console.log('🥫 フードストア: キャッシュを使用');
       return filteredFoods.value;
     }
 
@@ -123,7 +106,9 @@ export const useFoodsStore = defineStore('foods', () => {
       const queryString = query.toString();
       const url = `/api/foods${queryString ? `?${queryString}` : ''}`;
 
+      console.log('🥫 フードストア: API呼び出し', url);
       const data = await $fetch<Food[]>(url);
+      console.log('🥫 フードストア: API レスポンス', data);
 
       foods.value = data.map(food => ({
         ...food,
@@ -132,22 +117,11 @@ export const useFoodsStore = defineStore('foods', () => {
       }));
 
       cache.value.lastFetch = new Date();
+      console.log('🥫 フードストア: データ設定完了', foods.value.length);
       return filteredFoods.value;
     }
     catch (err) {
-      // Fallback to offline data if available
-      try {
-        const localFoods = offlineStorage.getFoods();
-        if (localFoods.length > 0) {
-          foods.value = localFoods;
-          error.value = 'Using offline data';
-          return filteredFoods.value;
-        }
-      }
-      catch {
-        // Ignore offline error, use original error
-      }
-
+      console.error('🥫 フードストア: エラー', err);
       error.value = err instanceof Error ? err.message : 'Failed to fetch foods';
       throw err;
     }

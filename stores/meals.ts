@@ -120,30 +120,7 @@ export const useMealsStore = defineStore('meals', () => {
 
   // Actions
   const fetchMeals = async (filter?: MealRecordFilter, forceRefresh = false) => {
-    const { syncStatus } = useSync();
-    const offlineStorage = OfflineStorage.getInstance();
-
-    // If offline, load from local storage
-    if (!syncStatus.value.isOnline) {
-      loading.value = true;
-      try {
-        const localMeals = offlineStorage.getMeals(
-          filter?.catId,
-          filter?.startDate,
-          filter?.endDate,
-        );
-        meals.value = localMeals;
-        pagination.value.totalCount = localMeals.length;
-        return meals.value;
-      }
-      catch (err) {
-        error.value = 'Failed to load offline data';
-        throw err;
-      }
-      finally {
-        loading.value = false;
-      }
-    }
+    console.log('📝 食事記録ストア: fetchMeals開始', { filter, forceRefresh });
 
     // Check API cache first
     const filtersChanged
@@ -152,6 +129,7 @@ export const useMealsStore = defineStore('meals', () => {
     const cachedData = apiCache.get(cacheKey);
 
     if (!forceRefresh && cachedData && !filtersChanged) {
+      console.log('📝 食事記録ストア: キャッシュを使用');
       meals.value = cachedData.meals;
       pagination.value = cachedData.pagination;
       return meals.value;
@@ -193,6 +171,7 @@ export const useMealsStore = defineStore('meals', () => {
 
       const url = `/api/meals?${query.toString()}`;
 
+      console.log('📝 食事記録ストア: API呼び出し', url);
       const response = await $fetch<{
         data: MealRecord[];
         pagination: {
@@ -203,6 +182,7 @@ export const useMealsStore = defineStore('meals', () => {
           hasPrevious: boolean;
         };
       }>(url);
+      console.log('📝 食事記録ストア: API レスポンス', response);
 
       meals.value = response.data.map(meal => ({
         ...meal,
@@ -229,27 +209,10 @@ export const useMealsStore = defineStore('meals', () => {
       cache.value.lastFetch = new Date();
       lastUpdate.value = new Date();
 
+      console.log('📝 食事記録ストア: データ設定完了', meals.value.length);
       return meals.value;
     }
     catch (err) {
-      // Fallback to offline data if available
-      try {
-        const localMeals = offlineStorage.getMeals(
-          filter?.catId,
-          filter?.startDate,
-          filter?.endDate,
-        );
-        if (localMeals.length > 0) {
-          meals.value = localMeals;
-          pagination.value.totalCount = localMeals.length;
-          error.value = 'Using offline data';
-          return meals.value;
-        }
-      }
-      catch {
-        // Ignore offline error, use original error
-      }
-
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch meals';
       error.value = errorMessage;
       throw new Error(errorMessage);

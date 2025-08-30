@@ -143,8 +143,8 @@ export const FoodInputSchema = z.object({
 });
 
 export const MealRecordInputSchema = z.object({
-  catId: z.string().cuid('有効な猫IDを選択してください'),
-  foodId: z.string().cuid('有効なフードIDを選択してください'),
+  catId: z.string().min(1, '有効な猫IDを選択してください'),
+  foodId: z.string().min(1, '有効なフードIDを選択してください'),
   quantity: z
     .number()
     .positive('量は正の数値で入力してください')
@@ -169,8 +169,8 @@ export const MealRecordUpdateSchema = MealRecordInputSchema.partial();
 
 // Filter validation schemas
 export const MealRecordFilterSchema = z.object({
-  catId: z.string().cuid().optional(),
-  foodId: z.string().cuid().optional(),
+  catId: z.string().min(1).optional(),
+  foodId: z.string().min(1).optional(),
   startDate: z.date().optional(),
   endDate: z.date().optional(),
   foodType: FoodTypeSchema.optional(),

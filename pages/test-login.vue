@@ -43,8 +43,8 @@
 </template>
 
 <script setup lang="ts">
-const result = ref(null);
-const error = ref(null);
+const result = ref<any>(null);
+const error = ref<any>(null);
 
 const testDirectLogin = async () => {
   console.log('直接ログインテスト開始');

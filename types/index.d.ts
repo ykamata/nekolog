@@ -1,5 +1,8 @@
 // 共通型定義
 
+// Chart.js型定義
+import type { Chart } from 'chart.js';
+
 export interface Cat {
   id: string;
   name: string;
@@ -38,4 +41,10 @@ export interface ApiError {
   message: string;
   code?: string;
   details?: Record<string, any>;
+}
+
+declare global {
+  interface Window {
+    Chart?: typeof Chart;
+  }
 }

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 
 const paramsSchema = z.object({
-  id: z.string().cuid('Invalid meal record ID format'),
+  id: z.string().min(1, 'Invalid meal record ID format'),
 });
 
 export default defineEventHandler(async (event) => {
