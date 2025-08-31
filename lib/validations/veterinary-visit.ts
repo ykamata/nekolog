@@ -41,7 +41,7 @@ export const VeterinaryDoctorSchema = z.object({
     .max(50, '先生名は50文字以内で入力してください')
     .trim(),
   hospitalId: z.string().min(1, 'IDは必須です').optional().nullable(),
-  specialization: z
+  specialty: z
     .string()
     .max(100, '専門分野は100文字以内で入力してください')
     .trim()
@@ -152,7 +152,7 @@ export const VeterinaryDoctorInputSchema = z.object({
     .max(50, '先生名は50文字以内で入力してください')
     .trim(),
   hospitalId: z.string().optional(),
-  specialization: z
+  specialty: z
     .string()
     .max(100, '専門分野は100文字以内で入力してください')
     .trim()
@@ -327,7 +327,7 @@ export const VeterinaryHospitalFilterSchema = z.object({
 export const VeterinaryDoctorFilterSchema = z.object({
   name: z.string().optional(),
   hospitalId: z.string().optional(),
-  specialization: z.string().optional(),
+  specialty: z.string().optional(),
   limit: z.number().int().min(1).max(100).optional().default(20),
   offset: z.number().int().min(0).optional().default(0),
 });

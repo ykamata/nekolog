@@ -89,7 +89,7 @@ export default defineEventHandler(async (event) => {
       data: {
         ...(body.name !== undefined && { name: body.name }),
         ...(body.hospitalId !== undefined && { hospitalId: body.hospitalId || null }),
-        ...(body.specialization !== undefined && { specialization: body.specialization || null }),
+        ...(body.specialty !== undefined && { specialty: body.specialty || null }),
         ...(body.memo !== undefined && { memo: body.memo || null }),
       },
       include: {

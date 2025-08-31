@@ -6,7 +6,7 @@ import { VeterinaryDoctorFilterSchema } from '~/lib/validations/veterinary-visit
 const querySchema = z.object({
   name: z.string().optional(),
   hospitalId: z.string().optional(),
-  specialization: z.string().optional(),
+  specialty: z.string().optional(),
   limit: z
     .string()
     .transform(Number)
@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
     const parsedQuery = querySchema.parse(query);
 
     // Validate with the main filter schema
-    const { name, hospitalId, specialization, limit, offset }
+    const { name, hospitalId, specialty, limit, offset }
       = VeterinaryDoctorFilterSchema.parse(parsedQuery);
 
     // Build where clause
@@ -48,9 +48,9 @@ export default defineEventHandler(async (event) => {
       where.hospitalId = hospitalId;
     }
 
-    if (specialization) {
-      where.specialization = {
-        contains: specialization,
+    if (specialty) {
+      where.specialty = {
+        contains: specialty,
         mode: 'insensitive',
       };
     }

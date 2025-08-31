@@ -45,7 +45,7 @@ export default defineEventHandler(async (event) => {
       data: {
         name: doctorData.name,
         hospitalId: doctorData.hospitalId || null,
-        specialization: doctorData.specialization || null,
+        specialty: doctorData.specialty || null,
       },
       include: {
         hospital: {

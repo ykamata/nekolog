@@ -103,7 +103,7 @@ export default defineEventHandler(async (event) => {
           select: {
             id: true,
             name: true,
-            specialization: true,
+            specialty: true,
           },
         },
       },
