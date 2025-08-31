@@ -52,11 +52,6 @@
       <p>エラー: {{ error || 'なし' }}</p>
       <p>Cat ID: {{ props.catId }}</p>
       <p>Period Days: {{ props.periodDays }}</p>
-      <p>Client-side: {{ typeof window !== 'undefined' }}</p>
-      <div v-if="analytics?.dailyCalories?.length">
-        <p>最初のデータ: {{ JSON.stringify(analytics.dailyCalories[0]) }}</p>
-        <p>最後のデータ: {{ JSON.stringify(analytics.dailyCalories[analytics.dailyCalories.length - 1]) }}</p>
-      </div>
     </div>
   </div>
 </template>
