@@ -65,23 +65,27 @@ import {
   PointElement,
   LineElement,
   LineController,
+  BarElement,
+  BarController,
   Title,
   Tooltip,
   Legend,
   Filler,
 } from 'chart.js';
 
-// Chart.js components registration
+// Chart.js components registration - 棒グラフ用コンポーネントを追加
 Chart.register(
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
   LineController,
+  BarElement,
+  BarController,
   Title,
   Tooltip,
   Legend,
-  Filler, // fill: trueを使用するために必要
+  Filler,
 );
 
 interface Props {
@@ -92,7 +96,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   height: 400,
-  periodDays: 90, // 90日間に変更してより多くのデータを取得
+  periodDays: 90,
 });
 
 // Reactive state
@@ -115,6 +119,9 @@ const isDev = computed(() => {
 
 // Analytics Store
 const analyticsStore = useAnalyticsStore();
+
+// チャート表示モードを監視
+const chartDisplayMode = computed(() => analyticsStore.chartDisplayMode);
 
 // Fetch analytics data
 const fetchData = async () => {
@@ -169,7 +176,7 @@ const fetchData = async () => {
   }
 };
 
-// Create chart
+// Create chart with dynamic type support
 const createChart = async () => {
   // Canvas要素が利用可能になるまで待つ
   let retryCount = 0;
@@ -204,24 +211,8 @@ const createChart = async () => {
   }
 
   try {
-    console.log('MealChartSimple: チャート作成開始');
+    console.log('MealChartSimple: チャート作成開始', { mode: chartDisplayMode.value });
 
-    // Prepare chart data
-    const dailyCalories = analytics.value.dailyCalories;
-    const labels = dailyCalories.map((item: any) => {
-      // 日付フォーマットを改善
-      const date = new Date(item.date);
-      return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
-    });
-    const data = dailyCalories.map((item: any) => Number(item.calories) || 0);
-
-    console.log('MealChartSimple: チャートデータ', {
-      labels: labels.slice(0, 5), // 最初の5つを表示
-      data: data.slice(0, 5),
-      totalCount: labels.length,
-    });
-
-    // Create chart
     const ctx = chartCanvas.value.getContext('2d');
     if (!ctx) {
       console.error('MealChartSimple: Canvas context取得失敗');
@@ -229,96 +220,22 @@ const createChart = async () => {
       return;
     }
 
-    console.log('MealChartSimple: Canvas context取得成功', {
-      canvasWidth: chartCanvas.value.width,
-      canvasHeight: chartCanvas.value.height,
+    // チャートタイプに応じてデータとオプションを準備
+    const chartConfig = getChartConfig();
+
+    console.log('MealChartSimple: チャート設定', {
+      type: chartConfig.type,
+      datasetsCount: chartConfig.data.datasets.length,
+      labelsCount: chartConfig.data.labels.length,
     });
 
-    chart.value = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: 'カロリー (kcal)',
-          data,
-          borderColor: 'rgb(59, 130, 246)',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          pointBackgroundColor: 'rgb(59, 130, 246)',
-          pointBorderColor: 'rgb(59, 130, 246)',
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        devicePixelRatio: (typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1,
-        animation: {
-          duration: 1000,
-        },
-        plugins: {
-          title: {
-            display: true,
-            text: '食事カロリー推移',
-            font: {
-              size: 16,
-            },
-          },
-          legend: {
-            display: true,
-            position: 'top',
-          },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            titleColor: 'white',
-            bodyColor: 'white',
-          },
-        },
-        scales: {
-          x: {
-            display: true,
-            title: {
-              display: true,
-              text: '日付',
-            },
-            grid: {
-              display: true,
-              color: 'rgba(0, 0, 0, 0.1)',
-            },
-          },
-          y: {
-            display: true,
-            title: {
-              display: true,
-              text: 'カロリー (kcal)',
-            },
-            beginAtZero: true,
-            grid: {
-              display: true,
-              color: 'rgba(0, 0, 0, 0.1)',
-            },
-          },
-        },
-        interaction: {
-          mode: 'nearest',
-          axis: 'x',
-          intersect: false,
-        },
-        elements: {
-          point: {
-            hoverRadius: 8,
-          },
-        },
-      },
-    });
+    chart.value = new Chart(ctx, chartConfig);
 
     isChartInitialized.value = true;
-    console.log('MealChartSimple: チャート作成成功', { chartInstance: !!chart.value });
+    console.log('MealChartSimple: チャート作成成功', {
+      chartInstance: !!chart.value,
+      type: chartConfig.type,
+    });
 
     // チャート作成後にリサイズを強制実行
     await nextTick();
@@ -333,6 +250,171 @@ const createChart = async () => {
     isChartInitialized.value = false;
   }
 };
+
+// チャートタイプに応じた設定を生成
+const getChartConfig = () => {
+  const mode = chartDisplayMode.value;
+
+  if (mode === 'line') {
+    return getLineChartConfig();
+  }
+  else if (mode === 'bar') {
+    return getStackedBarChartConfig();
+  }
+  else {
+    // デフォルトは線グラフ
+    return getLineChartConfig();
+  }
+};
+
+// 線グラフの設定
+const getLineChartConfig = () => {
+  const dailyCalories = analytics.value.dailyCalories;
+  const labels = dailyCalories.map((item: any) => {
+    const date = new Date(item.date);
+    return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+  });
+  const data = dailyCalories.map((item: unknown) => Number(item.calories) || 0);
+
+  return {
+    type: 'line' as const,
+    data: {
+      labels,
+      datasets: [{
+        label: 'カロリー (kcal)',
+        data,
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor: 'rgb(59, 130, 246)',
+        pointBorderColor: 'rgb(59, 130, 246)',
+      }],
+    },
+    options: getCommonChartOptions('線グラフ'),
+  };
+};
+
+// 積み上げ棒グラフの設定
+const getStackedBarChartConfig = () => {
+  // analyticsStoreから積み上げ棒グラフ用のデータを取得
+  const barChartData = analyticsStore.chartDataForBarChart;
+
+  console.log('MealChartSimple: 積み上げ棒グラフデータ', {
+    labels: barChartData.labels?.slice(0, 5),
+    datasets: barChartData.datasets?.map(d => ({ label: d.label, dataLength: d.data?.length })),
+  });
+
+  const labels = barChartData.labels.map((dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+  });
+
+  return {
+    type: 'bar' as const,
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'ドライフード',
+          data: barChartData.datasets[0]?.data || [],
+          backgroundColor: 'rgba(255, 159, 64, 0.8)',
+          borderColor: 'rgba(255, 159, 64, 1)',
+          borderWidth: 1,
+        },
+        {
+          label: 'ウェットフード',
+          data: barChartData.datasets[1]?.data || [],
+          backgroundColor: 'rgba(54, 162, 235, 0.8)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      ...getCommonChartOptions('積み上げ棒グラフ'),
+      scales: {
+        ...getCommonChartOptions('積み上げ棒グラフ').scales,
+        x: {
+          ...getCommonChartOptions('積み上げ棒グラフ').scales?.x,
+          stacked: true,
+        },
+        y: {
+          ...getCommonChartOptions('積み上げ棒グラフ').scales?.y,
+          stacked: true,
+        },
+      },
+    },
+  };
+};
+
+// 共通のチャートオプション
+const getCommonChartOptions = (title: string) => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  devicePixelRatio: (typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1,
+  animation: {
+    duration: 1000,
+  },
+  plugins: {
+    title: {
+      display: true,
+      text: `食事カロリー推移 (${title})`,
+      font: {
+        size: 16,
+      },
+    },
+    legend: {
+      display: true,
+      position: 'top' as const,
+    },
+    tooltip: {
+      mode: 'index' as const,
+      intersect: false,
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      titleColor: 'white',
+      bodyColor: 'white',
+    },
+  },
+  scales: {
+    x: {
+      display: true,
+      title: {
+        display: true,
+        text: '日付',
+      },
+      grid: {
+        display: true,
+        color: 'rgba(0, 0, 0, 0.1)',
+      },
+    },
+    y: {
+      display: true,
+      title: {
+        display: true,
+        text: 'カロリー (kcal)',
+      },
+      beginAtZero: true,
+      grid: {
+        display: true,
+        color: 'rgba(0, 0, 0, 0.1)',
+      },
+    },
+  },
+  interaction: {
+    mode: 'nearest' as const,
+    axis: 'x' as const,
+    intersect: false,
+  },
+  elements: {
+    point: {
+      hoverRadius: 8,
+    },
+  },
+});
 
 // Destroy chart
 const destroyChart = () => {
@@ -349,6 +431,14 @@ watch(() => props.catId, (newCatId) => {
   if (newCatId) {
     destroyChart();
     fetchData();
+  }
+});
+
+// Watch for chart display mode changes
+watch(chartDisplayMode, async (newMode) => {
+  console.log('MealChartSimple: チャート表示モード変更', { newMode });
+  if (analytics.value?.dailyCalories?.length > 0) {
+    await createChart();
   }
 });
 

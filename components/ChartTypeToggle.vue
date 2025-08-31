@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-export type ChartType = 'line' | 'bar' | 'stacked-bar';
+export type ChartType = 'line' | 'stacked-bar';
 
 interface Props {
   modelValue?: ChartType;
@@ -78,12 +78,6 @@ const chartTypes = [
     label: '線グラフ',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,6 13.5,15.5 8.5,10.5 2,17"></polyline><polyline points="16,6 22,6 22,12"></polyline></svg>',
     description: '時系列データの変化を線で表示します',
-  },
-  {
-    value: 'bar' as ChartType,
-    label: '棒グラフ',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4"></line><line x1="6" y1="20" x2="6" y2="16"></line></svg>',
-    description: '各日のデータを棒グラフで表示します',
   },
   {
     value: 'stacked-bar' as ChartType,

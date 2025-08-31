@@ -10,7 +10,7 @@ interface DateRange {
 interface ChartFilters {
   catId?: string;
   dateRange: DateRange;
-  chartType: 'line' | 'bar' | 'stacked-bar';
+  chartType: 'line' | 'stacked-bar';
 }
 
 // Page meta
@@ -140,7 +140,15 @@ const handleFiltersChange = async (filters: ChartFilters) => {
     analyticsStore.setSelectedCat(filters.catId);
   }
   analyticsStore.setDateRange(filters.dateRange.start, filters.dateRange.end);
-  analyticsStore.setChartDisplayMode(filters.chartType === 'stacked-bar' ? 'bar' : filters.chartType);
+
+  // チャートタイプの変換と設定
+  const displayMode = filters.chartType === 'stacked-bar' ? 'bar' : 'line';
+  analyticsStore.setChartDisplayMode(displayMode);
+
+  console.log('Analytics page: チャート表示モード設定', {
+    chartType: filters.chartType,
+    displayMode,
+  });
 
   // データを再取得
   if (filters.catId) {
@@ -182,12 +190,6 @@ onMounted(async () => {
     // 初期期間を設定
     analyticsStore.setDateRange(chartFilters.value.dateRange.start, chartFilters.value.dateRange.end);
     analyticsStore.setChartDisplayMode(chartFilters.value.chartType === 'stacked-bar' ? 'bar' : chartFilters.value.chartType);
-
-    console.log('Analytics page: 初期設定完了', {
-      catId: chartFilters.value.catId,
-      dateRange: chartFilters.value.dateRange,
-      chartType: chartFilters.value.chartType,
-    });
 
     // リアルタイム更新を開始（1分間隔）
     analyticsStore.startAutoRefresh(60000);
