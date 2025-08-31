@@ -52,6 +52,12 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
+
+    // Convert appointmentDate string to Date object if needed
+    if (body.appointmentDate && typeof body.appointmentDate === 'string') {
+      body.appointmentDate = new Date(body.appointmentDate);
+    }
+
     const updateData = VeterinaryAppointmentUpdateSchema.parse(body);
 
     // Check if appointment exists

@@ -10,7 +10,7 @@ export const AppointmentStatusSchema = z.nativeEnum(AppointmentStatus);
 
 // Base validation schemas for master data
 export const VeterinaryHospitalSchema = z.object({
-  id: z.string().cuid(),
+  id: z.string().min(1, 'IDは必須です'),
   name: z
     .string()
     .min(1, '病院名は必須です')
@@ -34,13 +34,13 @@ export const VeterinaryHospitalSchema = z.object({
 });
 
 export const VeterinaryDoctorSchema = z.object({
-  id: z.string().cuid(),
+  id: z.string().min(1, 'IDは必須です'),
   name: z
     .string()
     .min(1, '先生名は必須です')
     .max(50, '先生名は50文字以内で入力してください')
     .trim(),
-  hospitalId: z.string().cuid().optional().nullable(),
+  hospitalId: z.string().min(1, 'IDは必須です').optional().nullable(),
   specialization: z
     .string()
     .max(100, '専門分野は100文字以内で入力してください')
@@ -52,7 +52,7 @@ export const VeterinaryDoctorSchema = z.object({
 });
 
 export const VeterinaryTreatmentSchema = z.object({
-  id: z.string().cuid(),
+  id: z.string().min(1, 'IDは必須です'),
   name: z
     .string()
     .min(1, '処方内容名は必須です')
@@ -76,13 +76,13 @@ export const VeterinaryTreatmentSchema = z.object({
 
 // Base validation schemas for main entities
 export const VeterinaryVisitSchema = z.object({
-  id: z.string().cuid(),
-  catId: z.string().cuid('有効な猫IDを選択してください'),
+  id: z.string().min(1, 'IDは必須です'),
+  catId: z.string().min(1, '有効な猫IDを選択してください'),
   visitDate: z.date({
     errorMap: () => ({ message: '有効な診察日時を入力してください' }),
   }),
-  hospitalId: z.string().cuid('有効な病院IDを選択してください'),
-  doctorId: z.string().cuid().optional().nullable(),
+  hospitalId: z.string().min(1, '有効な病院IDを選択してください'),
+  doctorId: z.string().min(1, 'IDは必須です').optional().nullable(),
   cost: z
     .number()
     .min(0, '費用は0以上で入力してください')
@@ -99,13 +99,13 @@ export const VeterinaryVisitSchema = z.object({
 });
 
 export const VeterinaryAppointmentSchema = z.object({
-  id: z.string().cuid(),
-  catId: z.string().cuid('有効な猫IDを選択してください'),
+  id: z.string().min(1, 'IDは必須です'),
+  catId: z.string().min(1, '有効な猫IDを選択してください'),
   appointmentDate: z.date({
     errorMap: () => ({ message: '有効な予約日時を入力してください' }),
   }),
-  hospitalId: z.string().cuid('有効な病院IDを選択してください'),
-  doctorId: z.string().cuid().optional().nullable(),
+  hospitalId: z.string().min(1, '有効な病院IDを選択してください'),
+  doctorId: z.string().min(1, 'IDは必須です').optional().nullable(),
   plannedTreatments: z
     .string()
     .max(500, '予定処方内容は500文字以内で入力してください')

@@ -6,6 +6,7 @@ interface Props {
   medications: Medication[];
   loading?: boolean;
   showActions?: boolean;
+  viewMode: 'list' | 'grid';
 }
 
 interface Emits {
@@ -310,12 +311,12 @@ const formatDate = (date: Date): string => {
 
     <div
       v-else
-      class="medication-list__grid"
+      :class="viewMode === 'grid' ? 'medication-list__grid' : 'medication-list__list'"
     >
       <div
         v-for="medication in filteredAndSortedMedications"
         :key="medication.id"
-        class="medication-card"
+        :class="viewMode === 'grid' ? 'medication-card' : 'medication-card medication-card--list'"
         @click="handleSelectMedication(medication)"
       >
         <div class="medication-card__header">
@@ -396,7 +397,7 @@ const formatDate = (date: Date): string => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  padding-bottom: 1rem;
+  padding: 0 1rem 1rem 1rem;
   border-bottom: 2px solid #e0e0e0;
 }
 
@@ -509,6 +510,12 @@ const formatDate = (date: Date): string => {
   gap: 1.5rem;
 }
 
+.medication-list__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
 .medication-card {
   background: white;
   border: 1px solid #e0e0e0;
@@ -523,6 +530,55 @@ const formatDate = (date: Date): string => {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border-color: #4caf50;
+}
+
+.medication-card--list {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 1rem 1.25rem;
+}
+
+.medication-card--list .medication-card__header {
+  flex: 1;
+  padding: 0;
+  border-bottom: none;
+  margin-right: 1rem;
+}
+
+.medication-card--list .medication-card__content {
+  flex: 2;
+  padding: 0;
+  margin-right: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.medication-card--list .medication-card__info-item {
+  margin-bottom: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.medication-card--list .medication-card__description {
+  margin-bottom: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.medication-card--list .medication-card__meta {
+  margin-bottom: 0;
+}
+
+.medication-card--list .medication-card__actions {
+  flex-shrink: 0;
+  padding: 0;
+  margin-bottom: 0;
+  flex-direction: row;
 }
 
 .medication-card__header {
@@ -655,6 +711,38 @@ const formatDate = (date: Date): string => {
   flex: 1;
 }
 
+.view-mode-toggle {
+  display: flex;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-left: auto;
+}
+
+.view-toggle-btn {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background-color: white;
+  color: #666;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  border-right: 1px solid #ddd;
+}
+
+.view-toggle-btn:last-child {
+  border-right: none;
+}
+
+.view-toggle-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.view-toggle-btn.active {
+  background-color: #4caf50;
+  color: white;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .medication-list__header {
@@ -689,6 +777,34 @@ const formatDate = (date: Date): string => {
 
   .medication-card__actions {
     flex-direction: column;
+  }
+
+  .medication-card--list {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.25rem;
+  }
+
+  .medication-card--list .medication-card__header {
+    margin-right: 0;
+    margin-bottom: 1rem;
+  }
+
+  .medication-card--list .medication-card__content {
+    margin-right: 0;
+    margin-bottom: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .medication-card--list .medication-card__actions {
+    flex-direction: column;
+  }
+
+  .view-mode-toggle {
+    margin-left: 0;
+    align-self: flex-start;
   }
 }
 

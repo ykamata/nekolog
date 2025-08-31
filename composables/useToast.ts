@@ -74,6 +74,15 @@ export function useToast() {
   };
 }
 
+// Enhanced toast method with better error handling
+export function showToast(message: string, type: Toast['type'] = 'info', options?: Partial<ToastOptions>): string {
+  const { addToast } = useToast();
+  return addToast(type, {
+    message,
+    ...options,
+  });
+}
+
 function getDefaultTitle(type: Toast['type']): string {
   switch (type) {
     case 'success':

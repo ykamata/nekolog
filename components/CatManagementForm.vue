@@ -20,9 +20,9 @@ const emit = defineEmits<Emits>();
 // Form state
 const formData = reactive<CatInput>({
   name: '',
-  birthdate: undefined,
-  weight: undefined,
-  photoUrl: undefined,
+  birthdate: null,
+  weight: null,
+  photoUrl: null,
 });
 
 const errors = ref<Record<string, string>>({});
@@ -48,9 +48,9 @@ watch(
     else {
       // Reset form for new cat
       formData.name = '';
-      formData.birthdate = undefined;
-      formData.weight = undefined;
-      formData.photoUrl = undefined;
+      formData.birthdate = null;
+      formData.weight = null;
+      formData.photoUrl = null;
     }
     errors.value = {};
   },
@@ -96,9 +96,10 @@ const handleSubmit = async () => {
       name: formData.name.trim(),
       birthdate: formData.birthdate,
       weight: formData.weight,
-      photoUrl: formData.photoUrl?.trim() || undefined,
+      photoUrl: formData.photoUrl?.trim() || null,
     };
 
+    console.log('🐱 CatManagementForm - Submit data:', JSON.stringify(submitData, null, 2));
     emit('save', submitData);
   }
   finally {
@@ -119,21 +120,21 @@ const handleReset = () => {
   }
   else {
     formData.name = '';
-    formData.birthdate = undefined;
-    formData.weight = undefined;
-    formData.photoUrl = undefined;
+    formData.birthdate = null;
+    formData.weight = null;
+    formData.photoUrl = null;
   }
   errors.value = {};
 };
 
 // Format date for input
-const formatDateForInput = (date?: Date): string => {
+const formatDateForInput = (date?: Date | null): string => {
   if (!date) return '';
   return date?.toISOString().split('T')[0] || '';
 };
 
-const parseDateFromInput = (dateString: string): Date | undefined => {
-  if (!dateString) return undefined;
+const parseDateFromInput = (dateString: string): Date | null => {
+  if (!dateString) return null;
   return new Date(dateString);
 };
 

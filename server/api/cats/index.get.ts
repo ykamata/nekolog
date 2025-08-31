@@ -60,12 +60,23 @@ export default defineEventHandler(async (event) => {
       prisma.cat.count({ where }),
     ]);
 
-    // Add caching headers for cats data (changes less frequently)
-    setHeader(event, 'Cache-Control', 'public, max-age=300, s-maxage=600');
+    // 開発時はキャッシュを短くし、no-cacheヘッダーがある場合は無効化
+    const cacheControl = getHeader(event, 'cache-control');
+    if (cacheControl?.includes('no-cache')) {
+      setHeader(event, 'Cache-Control', 'no-cache, no-store, must-revalidate');
+      setHeader(event, 'Pragma', 'no-cache');
+      setHeader(event, 'Expires', '0');
+    } else {
+      // 通常時は短いキャッシュ（30秒）
+      setHeader(event, 'Cache-Control', 'public, max-age=30, s-maxage=30');
+    }
 
+    console.log('🔍 API: 猫データ取得', { count: cats.length, total });
     return cats;
   }
   catch (error) {
+    console.error('❌ API: 猫データ取得エラー', error);
+    
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({

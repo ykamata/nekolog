@@ -68,8 +68,8 @@ const fetchMedications = async () => {
   error.value = null;
 
   try {
-    const response = await $fetch<Medication[]>('/api/medications');
-    medications.value = response;
+    const response = await $fetch<{ medications: Medication[] }>('/api/medications');
+    medications.value = response.medications;
   }
   catch {
     error.value = 'データの取得に失敗しました';
@@ -128,7 +128,7 @@ const cancelDelete = () => {
 // Handle form submission for add
 const handleAddSubmit = async (data: MedicationInput) => {
   try {
-    const newMedication = await $fetch<Medication>('/api/medications', {
+    const { medication: newMedication } = await $fetch<{ medication: Medication; message: string }>('/api/medications', {
       method: 'POST',
       body: data,
     });
@@ -146,7 +146,7 @@ const handleEditSubmit = async (data: MedicationInput) => {
   if (!editingMedication.value) return;
 
   try {
-    const updatedMedication = await $fetch<Medication>(
+    const { medication: updatedMedication } = await $fetch<{ medication: Medication }>(
       `/api/medications/${editingMedication.value.id}`,
       {
         method: 'PUT' as any,
@@ -404,10 +404,7 @@ onMounted(() => {
           :medications="filteredMedications"
           :loading="isLoading"
           :show-actions="true"
-          :class="{
-            'medication-list--grid': viewMode === 'grid',
-            'medication-list--list': viewMode === 'list',
-          }"
+          :view-mode="viewMode"
           @add="handleAdd"
           @edit="handleEdit"
           @delete="handleDelete"

@@ -56,11 +56,29 @@
         </NuxtLink>
 
         <NuxtLink
+          to="/veterinary-hospitals"
+          class="nav-item"
+          :class="{ 'nav-item--active': $route.path === '/veterinary-hospitals' }"
+        >
+          <span class="nav-icon">🏥</span>
+          <span class="nav-text">病院管理</span>
+        </NuxtLink>
+
+        <NuxtLink
+          to="/veterinary-doctors"
+          class="nav-item"
+          :class="{ 'nav-item--active': $route.path === '/veterinary-doctors' }"
+        >
+          <span class="nav-icon">👨‍⚕️</span>
+          <span class="nav-text">先生管理</span>
+        </NuxtLink>
+
+        <NuxtLink
           to="/veterinary-visits"
           class="nav-item"
           :class="{ 'nav-item--active': $route.path === '/veterinary-visits' }"
         >
-          <span class="nav-icon">🏥</span>
+          <span class="nav-icon">📋</span>
           <span class="nav-text">通院履歴</span>
         </NuxtLink>
 
@@ -204,7 +222,11 @@ const handleLogout = async () => {
     await logout();
   }
   catch (error) {
-    console.error('Logout failed:', error);
+    // エラーログを出力（開発時のみ）
+    if (import.meta.dev) {
+      // eslint-disable-next-line no-console
+      console.error('Logout failed:', error);
+    }
   }
 };
 </script>

@@ -75,8 +75,21 @@ const VeterinaryMasterSelectorMock = {
       />
     </div>
   `,
-  props: ['modelValue', 'items', 'loading', 'disabled', 'error', 'placeholder', 'id', 'required'],
-  emits: ['update:modelValue', 'create'],
+  props: [
+    'modelValue',
+    'type',
+    'items',
+    'loading',
+    'disabled',
+    'error',
+    'placeholder',
+    'id',
+    'required',
+    'selectedHospitalId',
+    'allowFreeInput',
+    'showCreateDialog',
+  ],
+  emits: ['update:modelValue', 'create', 'select'],
 };
 
 vi.mock('~/composables/useVeterinaryMasters', () => ({

@@ -129,7 +129,7 @@ export const useSync = () => {
       ] = await Promise.all([
         $fetch<Cat[]>('/api/cats'),
         $fetch<Food[]>('/api/foods'),
-        $fetch<MealRecord[]>('/api/meals'),
+        $fetch<{ mealRecords: MealRecord[] }>('/api/meals'),
         $fetch<{ medications: Medication[] }>('/api/medications'),
         $fetch<{ records: MedicationRecord[] }>('/api/medication-records'),
         $fetch<{ schedules: MedicationSchedule[] }>('/api/medication-schedules'),
@@ -140,7 +140,7 @@ export const useSync = () => {
       offlineStorage.updateFromServer(
         catsResponse,
         foodsResponse,
-        mealsResponse,
+        mealsResponse.mealRecords,
         medicationsResponse.medications,
         medicationRecordsResponse.records,
         medicationSchedulesResponse.schedules,

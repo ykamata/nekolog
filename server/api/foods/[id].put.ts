@@ -3,7 +3,7 @@ import { prisma } from '~/lib/prisma';
 import { FoodUpdateSchema } from '~/lib/validations/cat-meal';
 
 const paramsSchema = z.object({
-  id: z.string().cuid('有効なフードIDを指定してください'),
+  id: z.string().min(1, '有効なフードIDを指定してください'),
 });
 
 export default defineEventHandler(async (event) => {

@@ -71,6 +71,10 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  veterinaryHospitals VeterinaryHospital[]
+  veterinaryDoctors   VeterinaryDoctor[]
+
   @@map("users")
 }
 
@@ -212,9 +216,13 @@ model VeterinaryHospital {
   name      String   @unique
   address   String?
   phone     String?
+  memo      String?
+  userId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relations
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
   visits       VeterinaryVisit[]
   appointments VeterinaryAppointment[]
   doctors      VeterinaryDoctor[]
@@ -223,14 +231,18 @@ model VeterinaryHospital {
 }
 
 model VeterinaryDoctor {
-  id             String  @id @default(cuid())
-  name           String
-  hospitalId     String?
-  specialization String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id           String  @id @default(cuid())
+  name         String  @unique
+  hospitalId   String?
+  specialty    String?
+  memo         String?
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  hospital     VeterinaryHospital?     @relation(fields: [hospitalId], references: [id])
+  // Relations
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hospital     VeterinaryHospital?     @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
   visits       VeterinaryVisit[]
   appointments VeterinaryAppointment[]
 

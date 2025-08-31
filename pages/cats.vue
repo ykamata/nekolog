@@ -33,9 +33,14 @@ const catToDelete = ref<Cat | null>(null);
 const viewMode = ref<'grid' | 'list'>('grid');
 
 // Fetch cats data
-const fetchCats = async () => {
+const fetchCats = async (forceRefresh = false) => {
   try {
-    await catsStore.fetchCats();
+    if (forceRefresh) {
+      await catsStore.refreshCats();
+    }
+    else {
+      await catsStore.fetchCats();
+    }
   }
   catch (err) {
     console.error('Failed to fetch cats:', err);
@@ -123,7 +128,8 @@ const _toggleViewMode = () => {
 
 // Lifecycle
 onMounted(() => {
-  fetchCats();
+  // 初回読み込み時は強制リフレッシュ
+  fetchCats(true);
 });
 </script>
 
@@ -164,6 +170,16 @@ onMounted(() => {
               <span class="view-icon">📋</span>
             </button>
           </div>
+
+          <!-- Refresh Button -->
+          <button
+            type="button"
+            class="refresh-button"
+            title="データを更新"
+            @click="() => fetchCats(true)"
+          >
+            <span class="refresh-icon">🔄</span>
+          </button>
 
           <!-- Add Button -->
           <button
@@ -207,7 +223,7 @@ onMounted(() => {
         <button
           type="button"
           class="retry-button"
-          @click="fetchCats"
+          @click="() => fetchCats(true)"
         >
           再試行
         </button>
@@ -480,6 +496,29 @@ onMounted(() => {
   background: #45a049;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.refresh-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.refresh-button:hover {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  transform: rotate(180deg);
+}
+
+.refresh-icon {
+  font-size: 1.1rem;
 }
 
 .add-icon {
@@ -835,6 +874,15 @@ onMounted(() => {
 
   .add-text {
     display: none;
+  }
+
+  .refresh-button {
+    width: 36px;
+    height: 36px;
+  }
+
+  .refresh-icon {
+    font-size: 1rem;
   }
 
   .stats-summary {

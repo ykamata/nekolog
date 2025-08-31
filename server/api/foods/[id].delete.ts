@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 
 const paramsSchema = z.object({
-  id: z.string().cuid('有効なフードIDを指定してください'),
+  id: z.string().min(1, '有効なフードIDを指定してください'),
 });
 
 const querySchema = z.object({

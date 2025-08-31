@@ -11,7 +11,7 @@ export const useCatsStore = defineStore('cats', () => {
   const error = ref<string | null>(null);
   const cache = ref({
     lastFetch: null as Date | null,
-    ttl: 5 * 60 * 1000, // 5 minutes
+    ttl: 30 * 1000, // 30秒に短縮（開発時は短めに設定）
   });
 
   // Getters
@@ -67,7 +67,15 @@ export const useCatsStore = defineStore('cats', () => {
       const url = `/api/cats${queryString ? `?${queryString}` : ''}`;
 
       console.log('🐱 猫ストア: API呼び出し', url);
-      const data = await $fetch<Cat[]>(url);
+
+      // キャッシュを無効化するためのヘッダーを追加
+      const data = await $fetch<Cat[]>(url, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+        },
+      });
+
       console.log('🐱 猫ストア: API レスポンス', data);
 
       cats.value = data.map(cat => ({
@@ -82,6 +90,7 @@ export const useCatsStore = defineStore('cats', () => {
       return cats.value;
     }
     catch (err) {
+      console.error('🐱 猫ストア: エラー発生', err);
       error.value = err instanceof Error ? err.message : 'Failed to fetch cats';
       throw err;
     }
@@ -111,6 +120,8 @@ export const useCatsStore = defineStore('cats', () => {
         };
 
         cats.value.push(newCat);
+        // キャッシュを無効化して次回確実に最新データを取得
+        invalidateCache();
         return newCat;
       }
       else {
@@ -157,6 +168,7 @@ export const useCatsStore = defineStore('cats', () => {
     try {
       if (syncStatus.value.isOnline) {
         // Online: Update on server
+        console.log('🐱 catsStore.updateCat - Sending data:', JSON.stringify(catUpdate, null, 2));
         const response = await $fetch<{ cat: Cat; message: string }>(`/api/cats/${id}`, {
           method: 'PUT',
           body: catUpdate,
@@ -174,6 +186,8 @@ export const useCatsStore = defineStore('cats', () => {
           cats.value[index] = updatedCat;
         }
 
+        // キャッシュを無効化して次回確実に最新データを取得
+        invalidateCache();
         return updatedCat;
       }
       else {
@@ -228,6 +242,8 @@ export const useCatsStore = defineStore('cats', () => {
       }
 
       cats.value = cats.value.filter(cat => cat.id !== id);
+      // キャッシュを無効化して次回確実に最新データを取得
+      invalidateCache();
     }
     catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete cat';
@@ -244,6 +260,13 @@ export const useCatsStore = defineStore('cats', () => {
 
   const invalidateCache = () => {
     cache.value.lastFetch = null;
+    console.log('🐱 猫ストア: キャッシュを無効化');
+  };
+
+  // 強制リフレッシュ用のメソッドを追加
+  const refreshCats = async (filter?: CatFilter) => {
+    console.log('🐱 猫ストア: 強制リフレッシュ実行');
+    return await fetchCats(filter, true);
   };
 
   // Local state management methods
@@ -287,8 +310,9 @@ export const useCatsStore = defineStore('cats', () => {
     deleteCat,
     clearError,
     invalidateCache,
+    refreshCats, // 新しく追加
     addCatToState,
     removeCatFromState,
     loadOfflineData,
   };
-});
+}); ;

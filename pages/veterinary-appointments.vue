@@ -6,6 +6,7 @@ import type {
   GetVeterinaryAppointmentsParams,
   AppointmentStatus,
 } from '~/types/veterinary-visit';
+import { useToast } from '~/composables/useToast';
 
 // Page meta
 useSeoMeta({
@@ -253,16 +254,21 @@ const cancelDelete = () => {
 // Handle form submission for add
 const handleAddSubmit = async (data: CreateVeterinaryAppointmentInput) => {
   try {
-    const newAppointment = await $fetch<VeterinaryAppointmentWithRelations>('/api/veterinary-appointments', {
+    const response = await $fetch<{ appointment: VeterinaryAppointmentWithRelations; message: string }>('/api/veterinary-appointments', {
       method: 'POST',
       body: data,
     });
 
     // Add to local state
-    appointments.value.unshift(newAppointment);
+    appointments.value.unshift(response.appointment);
 
     // Refresh stats
     await fetchAppointmentStats();
+
+    // If there are active filters, refresh the appointments list to ensure consistency
+    if (selectedCatId.value || selectedStatus.value) {
+      await fetchAppointments();
+    }
 
     showAddModal.value = false;
   }
@@ -277,7 +283,7 @@ const handleEditSubmit = async (data: CreateVeterinaryAppointmentInput) => {
   if (!editingAppointment.value) return;
 
   try {
-    const updatedAppointment = await $fetch<VeterinaryAppointmentWithRelations>(`/api/veterinary-appointments/${editingAppointment.value.id}`, {
+    const response = await $fetch<{ appointment: VeterinaryAppointmentWithRelations; message: string }>(`/api/veterinary-appointments/${editingAppointment.value.id}`, {
       method: 'PUT' as any,
       body: data,
     });
@@ -285,11 +291,16 @@ const handleEditSubmit = async (data: CreateVeterinaryAppointmentInput) => {
     // Update local state
     const index = appointments.value.findIndex(a => a.id === editingAppointment.value!.id);
     if (index !== -1) {
-      appointments.value[index] = updatedAppointment;
+      appointments.value[index] = response.appointment;
     }
 
     // Refresh stats
     await fetchAppointmentStats();
+
+    // If there are active filters, refresh the appointments list to ensure consistency
+    if (selectedCatId.value || selectedStatus.value) {
+      await fetchAppointments();
+    }
 
     showEditModal.value = false;
     editingAppointment.value = null;
@@ -333,7 +344,35 @@ const handleConvertSubmit = async () => {
   }
   catch (err) {
     error.value = '予約の変換に失敗しました';
-    console.error('Failed to convert appointment:', err);
+  }
+};
+
+// Handle status update
+const handleStatusUpdate = async (appointmentId: string, status: AppointmentStatus) => {
+  try {
+    const response = await $fetch<{ appointment: VeterinaryAppointmentWithRelations; message: string }>(`/api/veterinary-appointments/${appointmentId}`, {
+      method: 'PUT' as any,
+      body: { status },
+    });
+
+    // Update local state
+    const index = appointments.value.findIndex(a => a.id === appointmentId);
+    if (index !== -1) {
+      appointments.value[index] = response.appointment;
+    }
+
+    // Refresh stats
+    await fetchAppointmentStats();
+
+    // Show success message
+    const { addToast } = useToast();
+    addToast('success', {
+      title: 'ステータス更新',
+      message: `予約のステータスを「${getStatusLabel(status)}」に変更しました`,
+    });
+  }
+  catch (err) {
+    error.value = 'ステータスの更新に失敗しました';
   }
 };
 
@@ -386,6 +425,16 @@ const formatDate = (date: Date | string) => {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(date));
+};
+
+// Get status label
+const getStatusLabel = (status: AppointmentStatus) => {
+  const statusLabels = {
+    SCHEDULED: '予約済み',
+    COMPLETED: '完了',
+    CANCELLED: 'キャンセル',
+  };
+  return statusLabels[status] || status;
 };
 
 // Lifecycle
@@ -607,6 +656,7 @@ onMounted(() => {
           @edit="handleEdit"
           @delete="handleDelete"
           @convert-to-visit="handleConvertToVisit"
+          @update-status="handleStatusUpdate"
         />
       </div>
 

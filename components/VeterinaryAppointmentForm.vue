@@ -43,13 +43,32 @@ const isSubmitting = ref(false);
 const submitError = ref<string>('');
 const retryCount = ref(0);
 
-// Master data
+// Master data - 初期値として空配列を設定
 const hospitals = ref<VeterinaryHospital[]>([]);
 const doctors = ref<VeterinaryDoctor[]>([]);
 
 // Loading states
 const loadingHospitals = ref(false);
 const loadingDoctors = ref(false);
+
+// 選択された病院のID（先生フィルタリング用）
+const selectedHospitalId = ref<string>('');
+
+// 全マスタアイテム（病院と先生を統合）
+const allMasterItems = computed(() => {
+  const hospitalItems = hospitals.value.map(hospital => ({
+    id: hospital.id,
+    name: hospital.name,
+  }));
+
+  const doctorItems = doctors.value.map(doctor => ({
+    id: doctor.id,
+    name: doctor.name,
+    hospitalId: doctor.hospitalId || undefined,
+  }));
+
+  return [...hospitalItems, ...doctorItems];
+});
 
 // 統一エラーハンドラーの初期化
 const errorHandler = createUnifiedErrorHandler('VeterinaryAppointmentForm', {
@@ -105,6 +124,7 @@ const initializeForm = () => {
   errors.value = {};
   submitError.value = '';
   retryCount.value = 0;
+  selectedHospitalId.value = '';
 
   if (props.appointment) {
     // Edit mode - populate with existing data
@@ -114,6 +134,9 @@ const initializeForm = () => {
     formData.doctorName = props.appointment.doctor?.name || '';
     formData.plannedTreatments = props.appointment.plannedTreatments || '';
     formData.notes = props.appointment.notes || '';
+
+    // 病院IDを設定
+    selectedHospitalId.value = props.appointment.hospital.id;
   }
   else if (props.initialData) {
     // New appointment with initial data
@@ -148,10 +171,14 @@ const fetchMasterData = async () => {
       retryable: true,
       fallbackMessage: 'マスタデータの取得に失敗しました',
       onSuccess: (data) => {
-        hospitals.value = data.hospitals;
-        doctors.value = data.doctors;
+        // データが配列であることを確認
+        hospitals.value = Array.isArray(data.hospitals) ? data.hospitals : [];
+        doctors.value = Array.isArray(data.doctors) ? data.doctors : [];
       },
       onError: (error, userMessage) => {
+        // エラー時は空配列で初期化
+        hospitals.value = [];
+        doctors.value = [];
         toast.error({ message: userMessage });
       },
       onRetry: (attempt) => {
@@ -171,7 +198,11 @@ const handleHospitalCreate = async (name: string) => {
     async () => {
       return await $fetch<VeterinaryHospital>('/api/veterinary-hospitals', {
         method: 'POST',
-        body: { name },
+        body: {
+          name,
+          address: '',
+          phone: '',
+        },
       });
     },
     {
@@ -204,7 +235,11 @@ const handleDoctorCreate = async (name: string) => {
     async () => {
       return await $fetch<VeterinaryDoctor>('/api/veterinary-doctors', {
         method: 'POST',
-        body: { name },
+        body: {
+          name,
+          hospitalId: null,
+          specialization: '',
+        },
       });
     },
     {
@@ -228,6 +263,34 @@ const handleDoctorCreate = async (name: string) => {
   );
 
   loadingDoctors.value = false;
+};
+
+// 病院選択ハンドラー
+const handleHospitalSelect = (item: { id: string; name: string }) => {
+  selectedHospitalId.value = item.id;
+  formData.hospitalName = item.name;
+
+  // 病院が変更された場合、先生の選択をクリア
+  if (formData.doctorName) {
+    const currentDoctor = doctors.value.find(doctor => doctor.name === formData.doctorName);
+    if (currentDoctor && currentDoctor.hospitalId !== item.id) {
+      formData.doctorName = '';
+    }
+  }
+};
+
+// 先生選択ハンドラー
+const handleDoctorSelect = (item: { id: string; name: string; hospitalId?: string }) => {
+  formData.doctorName = item.name;
+
+  // 先生に所属病院がある場合、病院も自動選択
+  if (item.hospitalId) {
+    const hospital = hospitals.value.find(h => h.id === item.hospitalId);
+    if (hospital) {
+      selectedHospitalId.value = hospital.id;
+      formData.hospitalName = hospital.name;
+    }
+  }
 };
 
 const validateField = async (field: keyof CreateVeterinaryAppointmentInput) => {
@@ -579,7 +642,8 @@ onMounted(() => {
           <VeterinaryMasterSelector
             id="hospital-input"
             v-model="formData.hospitalName"
-            :items="hospitals"
+            type="hospital"
+            :items="allMasterItems"
             :loading="loadingHospitals"
             :disabled="isSubmitting"
             :error="errors.hospitalName"
@@ -589,6 +653,7 @@ onMounted(() => {
             :aria-describedby="errors.hospitalName ? 'hospital-error' : undefined"
             required
             @create="handleHospitalCreate"
+            @select="handleHospitalSelect"
           />
           <div
             v-if="errors.hospitalName"
@@ -611,7 +676,9 @@ onMounted(() => {
           <VeterinaryMasterSelector
             id="doctor-input"
             :model-value="formData.doctorName || ''"
-            :items="doctors"
+            type="doctor"
+            :items="allMasterItems"
+            :selected-hospital-id="selectedHospitalId"
             :loading="loadingDoctors"
             :disabled="isSubmitting"
             :error="errors.doctorName"
@@ -620,6 +687,7 @@ onMounted(() => {
             :aria-describedby="errors.doctorName ? 'doctor-error' : undefined"
             @update:model-value="(value: string) => formData.doctorName = value"
             @create="handleDoctorCreate"
+            @select="handleDoctorSelect"
           />
           <div
             v-if="errors.doctorName"

@@ -10,7 +10,7 @@ export const FoodTypeSchema = z.nativeEnum(FoodType);
 
 // Base validation schemas
 export const CatSchema = z.object({
-  id: z.string().cuid(),
+  id: z.string().min(1, 'IDは必須です'),
   name: z
     .string()
     .min(1, '猫の名前は必須です')
@@ -28,7 +28,7 @@ export const CatSchema = z.object({
 });
 
 export const FoodSchema = z.object({
-  id: z.string().cuid(),
+  id: z.string().min(1, 'IDは必須です'),
   name: z
     .string()
     .min(1, 'フード名は必須です')
@@ -58,9 +58,9 @@ export const FoodSchema = z.object({
 });
 
 export const MealRecordSchema = z.object({
-  id: z.string().cuid(),
-  catId: z.string().cuid('有効な猫IDを選択してください'),
-  foodId: z.string().cuid('有効なフードIDを選択してください'),
+  id: z.string().min(1, 'IDは必須です'),
+  catId: z.string().min(1, '有効な猫IDを選択してください'),
+  foodId: z.string().min(1, '有効なフードIDを選択してください'),
   quantity: z
     .number()
     .positive('量は正の数値で入力してください')
@@ -87,16 +87,27 @@ export const CatInputSchema = z.object({
     .max(50, '猫の名前は50文字以内で入力してください'),
   birthdate: z
     .union([
-      z.string().transform(str => str ? new Date(str) : null),
+      z.string().transform((str) => {
+        if (!str || str === '') return null;
+        const date = new Date(str);
+        return isNaN(date.getTime()) ? null : date;
+      }),
       z.date(),
       z.null(),
+      z.undefined(),
     ])
     .optional()
     .nullable(),
   weight: z
     .union([
       z.number(),
-      z.string().transform(str => str ? parseFloat(str) : null),
+      z.string().transform((str) => {
+        if (!str || str === '') return null;
+        const num = parseFloat(str);
+        return isNaN(num) ? null : num;
+      }),
+      z.null(),
+      z.undefined(),
     ])
     .refine(val => val === null || val === undefined || (typeof val === 'number' && val > 0 && val <= 20), {
       message: '体重は正の数値で20kg以下で入力してください',
@@ -112,7 +123,10 @@ export const CatInputSchema = z.object({
     ])
     .optional()
     .nullable()
-    .transform(val => val === '' ? null : val),
+    .transform((val) => {
+      if (!val || val === '') return null;
+      return val;
+    }),
 });
 
 export const FoodInputSchema = z.object({

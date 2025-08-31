@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
-import { VeterinaryHospitalFilterSchema } from '~/lib/validations/veterinary-visit';
+import { veterinarySearchSchema } from '~/lib/validations/veterinary-master';
 
 // クエリパラメータのスキーマ（文字列から適切な型に変換）
+import { requireAuth } from '~/lib/auth-middleware';
+
 const querySchema = z.object({
   name: z.string().optional(),
   limit: z
@@ -21,6 +23,9 @@ const querySchema = z.object({
 
 export default defineEventHandler(async (event) => {
   try {
+    // 認証チェック
+    const user = await requireAuth(event);
+
     // Only allow GET method
     assertMethod(event, 'GET');
 
@@ -29,15 +34,20 @@ export default defineEventHandler(async (event) => {
     const parsedQuery = querySchema.parse(query);
 
     // Validate with the main filter schema
-    const { name, limit, offset } = VeterinaryHospitalFilterSchema.parse(parsedQuery);
+    const { query: name, limit, offset } = veterinarySearchSchema.parse({
+      query: parsedQuery.name,
+      limit: parsedQuery.limit,
+      offset: parsedQuery.offset,
+    });
 
-    // Build where clause
-    const where: Record<string, any> = {};
+    // Build where clause with user filter
+    const where: Record<string, any> = {
+      userId: user.userId, // ユーザーが作成した病院のみ取得
+    };
 
     if (name) {
       where.name = {
         contains: name,
-        mode: 'insensitive',
       };
     }
 
@@ -83,6 +93,11 @@ export default defineEventHandler(async (event) => {
         statusMessage: 'クエリパラメータが無効です',
         data: error.errors,
       });
+    }
+
+    // Re-throw HTTP errors
+    if (error && typeof error === 'object' && 'statusCode' in error) {
+      throw error;
     }
 
     // Handle unexpected errors

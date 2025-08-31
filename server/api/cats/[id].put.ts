@@ -3,7 +3,7 @@ import { prisma } from '~/lib/prisma';
 import { CatUpdateSchema } from '~/lib/validations/cat-meal';
 
 const paramsSchema = z.object({
-  id: z.string().cuid('Invalid cat ID format'),
+  id: z.string().min(1, 'Invalid cat ID format'),
 });
 
 export default defineEventHandler(async (event) => {
@@ -17,7 +17,10 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
+    console.log('🐱 PUT /api/cats/[id] - Request body:', JSON.stringify(body, null, 2));
+
     const updateData = CatUpdateSchema.parse(body);
+    console.log('🐱 PUT /api/cats/[id] - Validated data:', JSON.stringify(updateData, null, 2));
 
     // Check if cat exists
     const existingCat = await prisma.cat.findUnique({

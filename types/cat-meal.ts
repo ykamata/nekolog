@@ -12,9 +12,9 @@ export enum FoodType {
 export interface Cat {
   id: string;
   name: string;
-  birthdate?: Date;
-  weight?: number;
-  photoUrl?: string;
+  birthdate?: Date | null;
+  weight?: number | null;
+  photoUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -51,9 +51,9 @@ export interface MealRecord {
 // Input/Form interfaces
 export interface CatInput {
   name: string;
-  birthdate?: Date;
-  weight?: number;
-  photoUrl?: string;
+  birthdate?: Date | null;
+  weight?: number | null;
+  photoUrl?: string | null;
 }
 
 export interface FoodInput {

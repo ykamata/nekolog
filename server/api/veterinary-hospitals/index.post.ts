@@ -1,20 +1,26 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
-import { VeterinaryHospitalInputSchema } from '~/lib/validations/veterinary-visit';
+import { veterinaryHospitalSchema } from '~/lib/validations/veterinary-master';
+
+import { requireAuth } from '~/lib/auth-middleware';
 
 export default defineEventHandler(async (event) => {
   try {
+    // 認証チェック
+    const user = await requireAuth(event);
+
     // Only allow POST method
     assertMethod(event, 'POST');
 
     // Parse and validate request body
     const body = await readBody(event);
-    const hospitalData = VeterinaryHospitalInputSchema.parse(body);
+    const hospitalData = veterinaryHospitalSchema.parse(body);
 
-    // Check if hospital with same name already exists
+    // Check if hospital with same name already exists for this user
     const existingHospital = await prisma.veterinaryHospital.findFirst({
       where: {
         name: hospitalData.name,
+        userId: user.userId, // 同じユーザー内での重複チェック
       },
     });
 
@@ -31,6 +37,8 @@ export default defineEventHandler(async (event) => {
         name: hospitalData.name,
         address: hospitalData.address || null,
         phone: hospitalData.phone || null,
+        memo: hospitalData.memo || null,
+        userId: user.userId, // ユーザーIDを設定
       },
       include: {
         _count: {

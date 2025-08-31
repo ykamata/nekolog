@@ -51,7 +51,7 @@ export const DateRangeQuerySchema = z.object({
 export const ChartAnalyticsQuerySchema = z.object({
   catId: z
     .string()
-    .cuid('有効な猫IDを指定してください')
+    .min(1, '有効な猫IDを指定してください')
     .optional(),
 
   startDate: z
