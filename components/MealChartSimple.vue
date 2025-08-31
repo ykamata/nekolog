@@ -15,7 +15,16 @@
       v-if="error"
       class="error"
     >
-      エラー: {{ error }}
+      <div class="error-message">
+        エラー: {{ error }}
+      </div>
+      <button
+        type="button"
+        class="retry-button"
+        @click="handleRetry"
+      >
+        再試行
+      </button>
     </div>
 
     <!-- Chart -->
@@ -29,8 +38,9 @@
       />
     </div>
 
-    <!-- Debug Info -->
+    <!-- Debug Info (Development only) -->
     <div
+      v-if="isDevelopment"
       class="debug-info"
     >
       <h4>デバッグ情報</h4>
@@ -52,6 +62,8 @@
       <p>エラー: {{ error || 'なし' }}</p>
       <p>Cat ID: {{ props.catId }}</p>
       <p>Period Days: {{ props.periodDays }}</p>
+      <p>作成中: {{ isCreatingChart }}</p>
+      <p>作成ID: {{ chartCreationId }}</p>
     </div>
   </div>
 </template>
@@ -107,15 +119,9 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const analytics = ref<MealAnalytics | null>(null);
 
-// Development mode check
-const isDev = computed(() => {
-  try {
-    return process.env.NODE_ENV === 'development';
-  }
-  catch {
-    return false;
-  }
-});
+// チャート作成の競合を防ぐためのフラグ
+const isCreatingChart = ref(false);
+const chartCreationId = ref(0);
 
 // Analytics Store
 const analyticsStore = useAnalyticsStore();
@@ -123,8 +129,18 @@ const analyticsStore = useAnalyticsStore();
 // チャート表示モードを監視
 const chartDisplayMode = computed(() => analyticsStore.chartDisplayMode);
 
-// Fetch analytics data
-const fetchData = async () => {
+// Development mode check
+const isDevelopment = computed(() => {
+  try {
+    return process.env.NODE_ENV === 'development' || import.meta.dev;
+  }
+  catch {
+    return false;
+  }
+});
+
+// Fetch analytics data with retry
+const fetchData = async (retryCount = 0) => {
   if (!props.catId) {
     error.value = 'Cat ID is required';
     return;
@@ -134,7 +150,11 @@ const fetchData = async () => {
   error.value = null;
 
   try {
-    console.log('MealChartSimple: データ取得開始', { catId: props.catId, periodDays: props.periodDays });
+    console.log('MealChartSimple: データ取得開始', {
+      catId: props.catId,
+      periodDays: props.periodDays,
+      retryCount,
+    });
 
     const startDate = new Date(Date.now() - props.periodDays * 24 * 60 * 60 * 1000);
     const endDate = new Date();
@@ -160,12 +180,12 @@ const fetchData = async () => {
     // データ取得後にチャートを作成
     await nextTick();
     console.log('MealChartSimple: createChart呼び出し判定', {
-      hasData: analytics.value?.dailyCalories?.length > 0,
+      hasData: (analytics.value?.dailyCalories?.length || 0) > 0,
       dataLength: analytics.value?.dailyCalories?.length,
       chartDisplayMode: chartDisplayMode.value,
     });
 
-    if (analytics.value?.dailyCalories?.length > 0) {
+    if ((analytics.value?.dailyCalories?.length || 0) > 0) {
       console.log('MealChartSimple: createChart呼び出し開始');
       await createChart();
       console.log('MealChartSimple: createChart呼び出し完了');
@@ -177,6 +197,14 @@ const fetchData = async () => {
   }
   catch (err) {
     console.error('MealChartSimple: データ取得エラー:', err);
+
+    // リトライ処理（最大2回）
+    if (retryCount < 2) {
+      console.log(`MealChartSimple: リトライします (${retryCount + 1}/2)`);
+      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+      return fetchData(retryCount + 1);
+    }
+
     error.value = err instanceof Error ? err.message : 'データの取得に失敗しました';
   }
   finally {
@@ -186,48 +214,72 @@ const fetchData = async () => {
 
 // Create chart with dynamic type support
 const createChart = async () => {
-  // Canvas要素が利用可能になるまで待つ
-  let retryCount = 0;
-  const maxRetries = 20;
-
-  while (!chartCanvas.value && retryCount < maxRetries) {
-    console.log(`MealChartSimple: Canvas要素待機中... (${retryCount + 1}/${maxRetries})`);
-    await nextTick();
-    await new Promise(resolve => setTimeout(resolve, 50));
-    retryCount++;
-  }
-
-  if (!chartCanvas.value) {
-    console.log('MealChartSimple: Canvas要素が見つかりません');
-    error.value = 'Canvas要素が見つかりません';
+  // 既に作成中の場合は処理をスキップ
+  if (isCreatingChart.value) {
+    console.log('MealChartSimple: チャート作成中のため処理をスキップ');
     return;
   }
 
-  console.log('MealChartSimple: Canvas要素が利用可能になりました');
-
-  if (!analytics.value?.dailyCalories?.length) {
-    console.log('MealChartSimple: データがありません', {
-      analytics: analytics.value,
-      dailyCaloriesLength: analytics.value?.dailyCalories?.length,
-      hasAnalytics: !!analytics.value,
-    });
-    error.value = 'データがありません';
-    return;
-  }
-
-  console.log('MealChartSimple: データ存在確認OK', {
-    dailyCaloriesLength: analytics.value.dailyCalories.length,
-    chartDisplayMode: chartDisplayMode.value,
-  });
-
-  // 既存のチャートがあれば破棄
-  if (chart.value) {
-    chart.value.destroy();
-    chart.value = undefined;
-    isChartInitialized.value = false;
-  }
+  // 作成IDを更新して、古い処理をキャンセル
+  const currentCreationId = ++chartCreationId.value;
+  isCreatingChart.value = true;
 
   try {
+    // Canvas要素が利用可能になるまで待つ
+    let retryCount = 0;
+    const maxRetries = 20;
+
+    while (!chartCanvas.value && retryCount < maxRetries) {
+      // 作成IDが変更された場合は処理を中断
+      if (chartCreationId.value !== currentCreationId) {
+        console.log('MealChartSimple: チャート作成がキャンセルされました');
+        return;
+      }
+
+      console.log(`MealChartSimple: Canvas要素待機中... (${retryCount + 1}/${maxRetries})`);
+      await nextTick();
+      await new Promise(resolve => setTimeout(resolve, 50));
+      retryCount++;
+    }
+
+    if (!chartCanvas.value) {
+      console.log('MealChartSimple: Canvas要素が見つかりません');
+      error.value = 'Canvas要素が見つかりません';
+      return;
+    }
+
+    // 作成IDが変更された場合は処理を中断
+    if (chartCreationId.value !== currentCreationId) {
+      console.log('MealChartSimple: チャート作成がキャンセルされました（Canvas取得後）');
+      return;
+    }
+
+    console.log('MealChartSimple: Canvas要素が利用可能になりました');
+
+    if (!analytics.value?.dailyCalories?.length) {
+      console.log('MealChartSimple: データがありません', {
+        analytics: analytics.value,
+        dailyCaloriesLength: analytics.value?.dailyCalories?.length,
+        hasAnalytics: !!analytics.value,
+      });
+      error.value = 'データがありません';
+      return;
+    }
+
+    console.log('MealChartSimple: データ存在確認OK', {
+      dailyCaloriesLength: analytics.value.dailyCalories.length,
+      chartDisplayMode: chartDisplayMode.value,
+    });
+
+    // 既存のチャートを安全に破棄
+    await destroyChartSafely();
+
+    // 作成IDが変更された場合は処理を中断
+    if (chartCreationId.value !== currentCreationId) {
+      console.log('MealChartSimple: チャート作成がキャンセルされました（破棄後）');
+      return;
+    }
+
     console.log('MealChartSimple: チャート作成開始', { mode: chartDisplayMode.value });
 
     const ctx = chartCanvas.value.getContext('2d');
@@ -246,6 +298,12 @@ const createChart = async () => {
       labelsCount: chartConfig.data.labels.length,
     });
 
+    // 作成IDが変更された場合は処理を中断
+    if (chartCreationId.value !== currentCreationId) {
+      console.log('MealChartSimple: チャート作成がキャンセルされました（設定後）');
+      return;
+    }
+
     chart.value = new Chart(ctx, chartConfig);
 
     isChartInitialized.value = true;
@@ -256,7 +314,7 @@ const createChart = async () => {
 
     // チャート作成後にリサイズを強制実行
     await nextTick();
-    if (chart.value) {
+    if (chart.value && chartCreationId.value === currentCreationId) {
       chart.value.resize();
       console.log('MealChartSimple: チャートリサイズ実行');
     }
@@ -265,6 +323,12 @@ const createChart = async () => {
     console.error('MealChartSimple: チャート作成エラー:', err);
     error.value = 'チャートの作成に失敗しました: ' + (err instanceof Error ? err.message : String(err));
     isChartInitialized.value = false;
+  }
+  finally {
+    // 作成中フラグをリセット（現在の作成IDの場合のみ）
+    if (chartCreationId.value === currentCreationId) {
+      isCreatingChart.value = false;
+    }
   }
 };
 
@@ -443,19 +507,52 @@ const getCommonChartOptions = (title: string) => ({
   },
 });
 
-// Destroy chart
-const destroyChart = () => {
+// Destroy chart safely
+const destroyChartSafely = async () => {
   if (chart.value) {
-    chart.value.destroy();
-    chart.value = undefined;
-    isChartInitialized.value = false;
-    console.log('MealChartSimple: チャートを破棄しました');
+    try {
+      // Chart.jsのイベントリスナーを削除
+      chart.value.destroy();
+      console.log('MealChartSimple: チャートを破棄しました');
+    }
+    catch (err) {
+      console.error('MealChartSimple: チャート破棄エラー:', err);
+    }
+    finally {
+      chart.value = undefined;
+      isChartInitialized.value = false;
+    }
   }
+
+  // Canvas要素をクリア
+  if (chartCanvas.value) {
+    const ctx = chartCanvas.value.getContext('2d');
+    if (ctx) {
+      ctx.clearRect(0, 0, chartCanvas.value.width, chartCanvas.value.height);
+    }
+  }
+
+  // 少し待機してDOM操作を完了させる
+  await nextTick();
+};
+
+// Destroy chart (backward compatibility)
+const destroyChart = () => {
+  destroyChartSafely();
+};
+
+// Retry handler
+const handleRetry = async () => {
+  error.value = null;
+  chartCreationId.value++;
+  await destroyChartSafely();
+  await fetchData();
 };
 
 // Watch for catId changes
 watch(() => props.catId, (newCatId) => {
   if (newCatId) {
+    chartCreationId.value++;
     destroyChart();
     fetchData();
   }
@@ -469,23 +566,36 @@ watch(() => props.periodDays, (newPeriodDays, oldPeriodDays) => {
     catId: props.catId,
   });
   if (newPeriodDays !== oldPeriodDays && props.catId) {
+    chartCreationId.value++;
     destroyChart();
     fetchData();
   }
 });
 
-// Watch for chart display mode changes
-watch(chartDisplayMode, async (newMode) => {
-  console.log('MealChartSimple: チャート表示モード変更', { newMode });
-  if (analytics.value?.dailyCalories?.length > 0) {
-    await createChart();
+// Watch for chart display mode changes with debounce
+const chartModeChangeTimeout = ref<NodeJS.Timeout>();
+
+watch(chartDisplayMode, async (newMode, oldMode) => {
+  console.log('MealChartSimple: チャート表示モード変更', { newMode, oldMode });
+
+  // 既存のタイムアウトをクリア
+  if (chartModeChangeTimeout.value) {
+    clearTimeout(chartModeChangeTimeout.value);
   }
+
+  // 作成IDを更新して既存の処理をキャンセル
+  chartCreationId.value++;
+
+  // デバウンス処理（300ms）
+  chartModeChangeTimeout.value = setTimeout(async () => {
+    if (analytics.value?.dailyCalories?.length && analytics.value.dailyCalories.length > 0) {
+      await createChart();
+    }
+  }, 300);
 });
 
 // Lifecycle
 onMounted(async () => {
-  console.log('MealChartSimple: マウント開始', { catId: props.catId });
-
   if (!props.catId) {
     error.value = 'Cat ID is required';
     return;
@@ -496,6 +606,15 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  // タイムアウトをクリア
+  if (chartModeChangeTimeout.value) {
+    clearTimeout(chartModeChangeTimeout.value);
+  }
+
+  // 作成IDを更新して進行中の処理をキャンセル
+  chartCreationId.value++;
+
+  // チャートを破棄
   destroyChart();
 });
 </script>
@@ -533,6 +652,30 @@ onUnmounted(() => {
   background: #fef2f2;
   border: 1px solid #fecaca;
   border-radius: 4px;
+}
+
+.error-message {
+  margin-bottom: 1rem;
+}
+
+.retry-button {
+  padding: 0.5rem 1rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background: #b91c1c;
+}
+
+.retry-button:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
 }
 
 .debug-info {
