@@ -71,6 +71,7 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
+import type { MealAnalytics } from '~/types/cat-meal';
 
 // Chart.js components registration - 棒グラフ用コンポーネントを追加
 Chart.register(
@@ -104,7 +105,7 @@ const chart = ref<Chart>();
 const isChartInitialized = ref(false);
 const loading = ref(false);
 const error = ref<string | null>(null);
-const analytics = ref<unknown>(null);
+const analytics = ref<MealAnalytics | null>(null);
 
 // Development mode check
 const isDev = computed(() => {
@@ -285,12 +286,16 @@ const getChartConfig = () => {
 
 // 線グラフの設定
 const getLineChartConfig = () => {
+  if (!analytics.value?.dailyCalories) {
+    throw new Error('Analytics data is not available');
+  }
+
   const dailyCalories = analytics.value.dailyCalories;
-  const labels = dailyCalories.map((item: unknown) => {
+  const labels = dailyCalories.map((item) => {
     const date = new Date(item.date);
     return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
   });
-  const data = dailyCalories.map((item: unknown) => Number(item.calories) || 0);
+  const data = dailyCalories.map(item => Number(item.calories) || 0);
 
   return {
     type: 'line' as const,
@@ -456,6 +461,19 @@ watch(() => props.catId, (newCatId) => {
   }
 });
 
+// Watch for periodDays changes
+watch(() => props.periodDays, (newPeriodDays, oldPeriodDays) => {
+  console.log('MealChartSimple: 期間変更検出', {
+    newPeriodDays,
+    oldPeriodDays,
+    catId: props.catId,
+  });
+  if (newPeriodDays !== oldPeriodDays && props.catId) {
+    destroyChart();
+    fetchData();
+  }
+});
+
 // Watch for chart display mode changes
 watch(chartDisplayMode, async (newMode) => {
   console.log('MealChartSimple: チャート表示モード変更', { newMode });
@@ -478,7 +496,6 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-  console.log('MealChartSimple: アンマウント');
   destroyChart();
 });
 </script>

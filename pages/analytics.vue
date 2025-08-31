@@ -38,7 +38,7 @@ const error = ref<string | null>(null);
 const chartFilters = ref<ChartFilters>({
   catId: '',
   dateRange: {
-    start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90日前に変更
+    start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90日前
     end: new Date(),
   },
   chartType: 'line',
@@ -416,7 +416,7 @@ onUnmounted(() => {
               v-if="chartFilters.catId"
               :cat-id="chartFilters.catId"
               :height="400"
-              :period-days="90"
+              :period-days="selectedPeriodDays"
             />
             <div
               v-else
