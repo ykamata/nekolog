@@ -35,6 +35,10 @@
     >
       <h4>デバッグ情報</h4>
       <p>データ件数: {{ analytics?.dailyCalories?.length || 0 }}</p>
+      <p>チャート表示モード: {{ analyticsStore.chartDisplayMode }}</p>
+      <p>ChartData存在: {{ !!analyticsStore.chartData }}</p>
+      <p>ChartDataタイプ: {{ analyticsStore.chartData?.chartType || 'N/A' }}</p>
+      <p>DailyCaloriesByFoodType件数: {{ analyticsStore.chartData?.dailyCaloriesByFoodType?.length || 0 }}</p>
       <p>チャート初期化済み: {{ isChartInitialized }}</p>
       <p>Canvas要素: {{ !!chartCanvas }}</p>
       <p>Canvas DOM存在: {{ chartCanvas ? 'あり' : 'なし' }}</p>
@@ -105,7 +109,7 @@ const chart = ref<Chart>();
 const isChartInitialized = ref(false);
 const loading = ref(false);
 const error = ref<string | null>(null);
-const analytics = ref<any>(null);
+const analytics = ref<unknown>(null);
 
 // Development mode check
 const isDev = computed(() => {
@@ -159,8 +163,16 @@ const fetchData = async () => {
 
     // データ取得後にチャートを作成
     await nextTick();
+    console.log('MealChartSimple: createChart呼び出し判定', {
+      hasData: analytics.value?.dailyCalories?.length > 0,
+      dataLength: analytics.value?.dailyCalories?.length,
+      chartDisplayMode: chartDisplayMode.value,
+    });
+
     if (analytics.value?.dailyCalories?.length > 0) {
+      console.log('MealChartSimple: createChart呼び出し開始');
       await createChart();
+      console.log('MealChartSimple: createChart呼び出し完了');
     }
     else {
       console.log('MealChartSimple: データが空のためチャートを作成しません');
@@ -198,10 +210,19 @@ const createChart = async () => {
   console.log('MealChartSimple: Canvas要素が利用可能になりました');
 
   if (!analytics.value?.dailyCalories?.length) {
-    console.log('MealChartSimple: データがありません', { analytics: analytics.value });
+    console.log('MealChartSimple: データがありません', {
+      analytics: analytics.value,
+      dailyCaloriesLength: analytics.value?.dailyCalories?.length,
+      hasAnalytics: !!analytics.value,
+    });
     error.value = 'データがありません';
     return;
   }
+
+  console.log('MealChartSimple: データ存在確認OK', {
+    dailyCaloriesLength: analytics.value.dailyCalories.length,
+    chartDisplayMode: chartDisplayMode.value,
+  });
 
   // 既存のチャートがあれば破棄
   if (chart.value) {
@@ -270,7 +291,7 @@ const getChartConfig = () => {
 // 線グラフの設定
 const getLineChartConfig = () => {
   const dailyCalories = analytics.value.dailyCalories;
-  const labels = dailyCalories.map((item: any) => {
+  const labels = dailyCalories.map((item: unknown) => {
     const date = new Date(item.date);
     return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
   });
@@ -304,8 +325,14 @@ const getStackedBarChartConfig = () => {
   const barChartData = analyticsStore.chartDataForBarChart;
 
   console.log('MealChartSimple: 積み上げ棒グラフデータ', {
+    barChartData,
     labels: barChartData.labels?.slice(0, 5),
-    datasets: barChartData.datasets?.map(d => ({ label: d.label, dataLength: d.data?.length })),
+    datasets: barChartData.datasets?.map(d => ({
+      label: d.label,
+      dataLength: d.data?.length,
+      sampleData: d.data?.slice(0, 3),
+    })),
+    chartDataFromStore: analyticsStore.chartData,
   });
 
   const labels = barChartData.labels.map((dateStr: string) => {

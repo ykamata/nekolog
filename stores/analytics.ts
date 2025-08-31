@@ -17,6 +17,7 @@ interface AnalyticsFilter {
 export const useAnalyticsStore = defineStore('analytics', () => {
   // State
   const analytics = ref<MealAnalytics | null>(null);
+  const chartData = ref<any>(null);
   const loading = ref(false);
   const error = ref<ErrorInfo | null>(null);
   const dateRange = ref({
@@ -100,6 +101,40 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   });
 
   const chartDataForBarChart = computed(() => {
+    // APIから返されるchartDataを優先的に使用
+    if (chartData.value?.dailyCaloriesByFoodType) {
+      const dailyData = chartData.value.dailyCaloriesByFoodType;
+
+      return {
+        labels: dailyData.map((item: any) => item.date),
+        datasets: [
+          {
+            label: 'ドライフード',
+            data: dailyData.map((item: any) => item.dryCalories || 0),
+          },
+          {
+            label: 'ウェットフード',
+            data: dailyData.map((item: unknown) => item.wetCalories || 0),
+          },
+        ],
+        appliedFilters: {
+          dateRange: {
+            startDate: dateRange.value.startDate.toISOString(),
+            endDate: dateRange.value.endDate.toISOString(),
+          },
+          catId: selectedCatId.value,
+          foodType: selectedFoodType.value,
+        },
+      };
+    }
+
+    // フォールバック: 従来の方法（analyticsデータから生成）
+    console.log('AnalyticsStore: chartDataForBarChart フォールバック処理開始', {
+      hasAnalytics: !!analytics.value,
+      dailyCaloriesCount: analytics.value?.dailyCalories?.length || 0,
+      sampleData: analytics.value?.dailyCalories?.slice(0, 3),
+    });
+
     if (!analytics.value) return { labels: [], datasets: [] };
 
     // Get unique dates within the date range
@@ -114,17 +149,31 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
 
     const dryData = dates.map((date) => {
-      const dayData = analytics.value!.dailyCalories.filter(item => item.date === date && item.type === 'DRY');
+      // 日付フォーマットを統一（YYYY-MM-DD → YYYY/MM/DD）
+      const formattedDate = date.replace(/-/g, '/');
+      const dayData = analytics.value!.dailyCalories.filter(item => item.date === formattedDate && item.type === 'DRY');
       return dayData.reduce((sum, item) => sum + item.calories, 0);
     });
 
     const wetData = dates.map((date) => {
-      const dayData = analytics.value!.dailyCalories.filter(item => item.date === date && item.type === 'WET');
+      // 日付フォーマットを統一（YYYY-MM-DD → YYYY/MM/DD）
+      const formattedDate = date.replace(/-/g, '/');
+      const dayData = analytics.value!.dailyCalories.filter(item => item.date === formattedDate && item.type === 'WET');
       return dayData.reduce((sum, item) => sum + item.calories, 0);
     });
 
     const missingDataDates = dates.filter((date) => {
-      return !analytics.value!.dailyCalories.some(item => item.date === date);
+      const formattedDate = date.replace(/-/g, '/');
+      return !analytics.value!.dailyCalories.some(item => item.date === formattedDate);
+    });
+
+    console.log('AnalyticsStore: chartDataForBarChart フォールバック処理結果', {
+      datesCount: dates.length,
+      dryDataSum: dryData.reduce((sum, val) => sum + val, 0),
+      wetDataSum: wetData.reduce((sum, val) => sum + val, 0),
+      sampleDryData: dryData.slice(0, 5),
+      sampleWetData: wetData.slice(0, 5),
+      sampleDates: dates.slice(0, 5),
     });
 
     return {
@@ -247,8 +296,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       const cacheAge = now.getTime() - cachedData.timestamp.getTime();
       if (cacheAge < cachedData.ttl) {
         console.log('AnalyticsStore: キャッシュからデータを返却');
-        analytics.value = cachedData.data;
-        return cachedData.data;
+        analytics.value = cachedData.data.analytics;
+        chartData.value = cachedData.data.chartData;
+        return cachedData.data.analytics;
       }
     }
 
@@ -264,20 +314,33 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       if (activeFilters.endDate) params.append('endDate', activeFilters.endDate.toISOString());
       if (activeFilters.foodType) params.append('foodTypeFilter', activeFilters.foodType);
 
-      const url = `/api/meals/analytics?${params.toString()}`;
-      console.log('AnalyticsStore: APIリクエスト送信', { url, params: params.toString() });
+      // チャートタイプをパラメータに追加
+      const currentMode = chartDisplayMode.value;
+      if (currentMode === 'bar') {
+        params.append('chartType', 'bar');
+      }
 
-      const response = await $fetch<{ analytics: MealAnalytics }>(url);
+      const url = `/api/meals/analytics?${params.toString()}`;
+      console.log('AnalyticsStore: APIリクエスト送信', {
+        url,
+        params: params.toString(),
+        chartDisplayMode: currentMode,
+      });
+
+      const response = await $fetch<{ analytics: MealAnalytics; chartData?: unknown }>(url);
       console.log('AnalyticsStore: APIレスポンス受信', {
         hasAnalytics: !!response.analytics,
+        hasChartData: !!response.chartData,
         dailyCaloriesCount: response.analytics?.dailyCalories?.length || 0,
+        chartDataType: response.chartData?.chartType,
       });
 
       analytics.value = response.analytics;
+      chartData.value = response.chartData;
 
       // Cache the result
       cache.value[cacheKey] = {
-        data: response.analytics,
+        data: { analytics: response.analytics, chartData: response.chartData },
         timestamp: new Date(),
         ttl: 5 * 60 * 1000, // 5 minutes
       };
@@ -598,6 +661,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   return {
     // State
     analytics,
+    chartData,
     loading,
     error,
     dateRange,
