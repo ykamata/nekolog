@@ -285,8 +285,12 @@ const initializeForm = () => {
 // バリデーション
 const validateField = (field: keyof VeterinaryHospitalInput) => {
   try {
-    const fieldSchema = veterinaryHospitalSchema.pick({ [field]: true });
-    fieldSchema.parse({ [field]: formData.value[field] });
+    // 特定のフィールドのみバリデーション
+    const value = formData.value[field];
+    if (field === 'name' && (!value || value.trim().length === 0)) {
+      errors.value[field] = '病院名は必須です';
+      return;
+    }
     delete errors.value[field];
   }
   catch (error: any) {

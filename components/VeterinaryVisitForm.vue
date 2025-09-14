@@ -693,10 +693,10 @@ const handleDoctorBlur = () => {
               >
                 {{ doctor.name }}
                 <span
-                  v-if="doctor.specialization"
+                  v-if="doctor.specialty"
                   class="doctor-specialization"
                 >
-                  ({{ doctor.specialization }})
+                  ({{ doctor.specialty }})
                 </span>
               </button>
             </div>

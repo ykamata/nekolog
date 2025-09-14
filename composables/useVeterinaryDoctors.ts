@@ -2,6 +2,8 @@ import type {
   VeterinaryDoctor,
   VeterinaryDoctorInput,
   UseVeterinaryDoctorsReturn,
+  PaginationInfo,
+  VeterinaryDoctorListResponse,
 } from '~/types/veterinary-master';
 
 /**
@@ -183,7 +185,7 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
 
     try {
       await $fetch(`/api/veterinary-doctors/${id}`, {
-        method: 'DELETE',
+        method: 'DELETE' as any,
       });
 
       // ローカルの配列から削除
@@ -283,7 +285,7 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
 
   return {
     // リアクティブデータ
-    doctors: readonly(doctors),
+    doctors: readonly(doctors) as Readonly<Ref<VeterinaryDoctor[]>>,
     loading: readonly(loading),
     error: readonly(error),
     pagination: readonly(pagination),

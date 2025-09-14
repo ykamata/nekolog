@@ -2,11 +2,11 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { requireAuth } from '~/lib/auth-middleware';
 import { veterinaryHospitalSchema } from '~/lib/validations/veterinary-master';
+import { createApiErrorHandler, validateBody } from '~/server/utils/error-handler';
 
 export default defineEventHandler(async (event) => {
   const errorHandler = createApiErrorHandler({
-    operation: 'create_hospital',
-    resource: 'veterinary-hospitals',
+    endpoint: 'veterinary-hospitals',
     method: 'POST',
   });
 
@@ -15,7 +15,8 @@ export default defineEventHandler(async (event) => {
     const user = await requireAuth(event);
 
     // リクエストボディを取得して検証
-    const body = await validateBody(event, veterinaryHospitalSchema);
+    const requestBody = await readBody(event);
+    const body = validateBody(veterinaryHospitalSchema, requestBody);
 
     // 同名の病院が既に存在するかチェック（同じユーザー内で）
     const existingHospital = await prisma.veterinaryHospital.findFirst({

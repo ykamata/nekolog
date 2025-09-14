@@ -23,13 +23,11 @@ export default defineEventHandler(async (event) => {
           {
             name: {
               contains: query,
-              mode: 'insensitive',
             },
           },
           {
             address: {
               contains: query,
-              mode: 'insensitive',
             },
           },
         ],

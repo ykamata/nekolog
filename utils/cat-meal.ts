@@ -64,7 +64,7 @@ export function transformPrismaFood(prismaFood: any): Food {
 /**
  * Convert Prisma MealRecord model to MealRecord interface
  */
-export function transformPrismaMealRecord(prismaMealRecord: unknown): MealRecord {
+export function transformPrismaMealRecord(prismaMealRecord: any): MealRecord {
   return {
     id: prismaMealRecord.id,
     catId: prismaMealRecord.catId,

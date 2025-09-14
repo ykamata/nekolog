@@ -2,11 +2,20 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { requireAuth } from '~/lib/auth-middleware';
 import { veterinaryDoctorSchema } from '~/lib/validations/veterinary-master';
+import { validateParams, validateBody, createApiErrorHandler } from '~/server/utils/error-handler';
+
+// バリデーションスキーマを定義
+const veterinaryIdSchema = z.object({ id: z.string() });
+const veterinaryDoctorUpdateSchema = z.object({
+  name: z.string().optional(),
+  hospitalId: z.string().optional(),
+  specialty: z.string().optional(),
+  memo: z.string().optional(),
+});
 
 export default defineEventHandler(async (event) => {
   const errorHandler = createApiErrorHandler({
-    operation: 'update_doctor',
-    resource: 'veterinary-doctors',
+    endpoint: 'veterinary-doctors',
     method: 'PUT',
   });
 
@@ -15,8 +24,10 @@ export default defineEventHandler(async (event) => {
     const user = await requireAuth(event);
 
     // パラメータとボディを検証
-    const { id } = await validateParams(event, veterinaryIdSchema);
-    const body = await validateBody(event, veterinaryDoctorUpdateSchema);
+    const params = getRouterParams(event);
+    const { id } = validateParams(veterinaryIdSchema, params);
+    const requestBody = await readBody(event);
+    const body = validateBody(veterinaryDoctorUpdateSchema, requestBody);
 
     // 先生が存在し、ユーザーが所有者であることを確認
     const existingDoctor = await prisma.veterinaryDoctor.findFirst({

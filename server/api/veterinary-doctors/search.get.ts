@@ -25,13 +25,11 @@ export default defineEventHandler(async (event) => {
           {
             name: {
               contains: name,
-              mode: 'insensitive',
             },
           },
           {
             specialty: {
               contains: name,
-              mode: 'insensitive',
             },
           },
         ],

@@ -2,6 +2,8 @@ import type {
   VeterinaryHospital,
   VeterinaryHospitalInput,
   UseVeterinaryHospitalsReturn,
+  PaginationInfo,
+  VeterinaryHospitalListResponse,
 } from '~/types/veterinary-master';
 
 /**
@@ -180,7 +182,7 @@ export const useVeterinaryHospitals = (): UseVeterinaryHospitalsReturn => {
 
     try {
       await $fetch(`/api/veterinary-hospitals/${id}`, {
-        method: 'DELETE',
+        method: 'DELETE' as any,
       });
 
       // ローカルの配列から削除
@@ -267,7 +269,7 @@ export const useVeterinaryHospitals = (): UseVeterinaryHospitalsReturn => {
 
   return {
     // リアクティブデータ
-    hospitals: readonly(hospitals),
+    hospitals: readonly(hospitals) as Readonly<Ref<VeterinaryHospital[]>>,
     loading: readonly(loading),
     error: readonly(error),
     pagination: readonly(pagination),

@@ -1,11 +1,15 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { VeterinaryDoctorInputSchema } from '~/lib/validations/veterinary-visit';
+import { requireAuth } from '~/lib/auth-middleware';
 
 export default defineEventHandler(async (event) => {
   try {
     // Only allow POST method
     assertMethod(event, 'POST');
+
+    // 認証チェック
+    const user = await requireAuth(event);
 
     // Parse and validate request body
     const body = await readBody(event);
@@ -46,6 +50,7 @@ export default defineEventHandler(async (event) => {
         name: doctorData.name,
         hospitalId: doctorData.hospitalId || null,
         specialty: doctorData.specialty || null,
+        userId: user.userId,
       },
       include: {
         hospital: {

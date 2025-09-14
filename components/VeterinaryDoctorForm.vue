@@ -115,27 +115,27 @@
       <!-- 専門分野 -->
       <div>
         <label
-          for="specialization"
+          for="specialty"
           class="block text-sm font-medium text-gray-700 mb-1"
         >
           専門分野
         </label>
         <input
-          id="specialization"
-          v-model="formData.specialization"
+          id="specialty"
+          v-model="formData.specialty"
           type="text"
           :class="[
             'block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
-            errors.specialization ? 'border-red-300' : 'border-gray-300',
+            errors.specialty ? 'border-red-300' : 'border-gray-300',
           ]"
           placeholder="専門分野を入力してください"
-          @blur="validateField('specialization')"
+          @blur="validateField('specialty')"
         >
         <p
-          v-if="errors.specialization"
+          v-if="errors.specialty"
           class="mt-1 text-sm text-red-600"
         >
-          {{ errors.specialization }}
+          {{ errors.specialty }}
         </p>
         <p class="mt-1 text-xs text-gray-500">
           例: 内科、外科、皮膚科など
@@ -227,7 +227,7 @@ const { hospitals, fetchHospitals } = useVeterinaryHospitals();
 const formData = ref<VeterinaryDoctorInput>({
   name: '',
   hospitalId: '',
-  specialization: '',
+  specialty: '',
 });
 
 const errors = ref<Record<string, string>>({});
@@ -248,14 +248,14 @@ const initializeForm = () => {
     formData.value = {
       name: props.doctor.name,
       hospitalId: props.doctor.hospitalId || '',
-      specialization: props.doctor.specialization || '',
+      specialty: props.doctor.specialty || '',
     };
   }
   else {
     formData.value = {
       name: '',
       hospitalId: props.preselectedHospitalId || '',
-      specialization: '',
+      specialty: '',
     };
   }
   errors.value = {};
@@ -265,8 +265,12 @@ const initializeForm = () => {
 // バリデーション
 const validateField = (field: keyof VeterinaryDoctorInput) => {
   try {
-    const fieldSchema = VeterinaryDoctorInputSchema.pick({ [field]: true });
-    fieldSchema.parse({ [field]: formData.value[field] });
+    // 特定のフィールドのみバリデーション
+    const value = formData.value[field];
+    if (field === 'name' && (!value || value.trim().length === 0)) {
+      errors.value[field] = '先生名は必須です';
+      return;
+    }
     delete errors.value[field];
   }
   catch (error: any) {
@@ -310,7 +314,7 @@ const handleSubmit = async () => {
     const cleanedData: VeterinaryDoctorInput = {
       name: formData.value.name.trim(),
       hospitalId: formData.value.hospitalId?.trim() || undefined,
-      specialization: formData.value.specialization?.trim() || undefined,
+      specialty: formData.value.specialty?.trim() || undefined,
     };
 
     emit('save', cleanedData);

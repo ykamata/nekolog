@@ -463,12 +463,12 @@
 
     <!-- 削除確認ダイアログ -->
     <ConfirmationDialog
-      v-if="showDeleteConfirmation"
+      :is-open="showDeleteConfirmation"
       :title="'病院を削除'"
       :message="`「${hospitalToDelete?.name}」を削除してもよろしいですか？この操作は取り消せません。`"
       :confirm-text="'削除'"
       :cancel-text="'キャンセル'"
-      :is-destructive="true"
+      type="danger"
       @confirm="confirmDelete"
       @cancel="cancelDelete"
     />

@@ -140,8 +140,8 @@ const loadMealStats = async (): Promise<void> => {
   }
 };
 
-const formatWeight = (weight?: number): string => {
-  if (!weight) return '未記録';
+const formatWeight = (weight?: number | null): string => {
+  if (!weight || weight === null) return '未記録';
   return `${weight}kg`;
 };
 

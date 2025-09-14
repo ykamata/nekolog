@@ -9,7 +9,8 @@ export default defineEventHandler(async (event) => {
     const user = await requireAuth(event);
 
     // パラメータを検証
-    const { id } = await getValidatedRouterParams(event, veterinaryIdSchema);
+    const params = getRouterParams(event);
+    const { id } = veterinaryIdSchema.parse(params);
 
     // 先生を取得（ユーザーが作成したもののみ）
     const doctor = await prisma.veterinaryDoctor.findFirst({

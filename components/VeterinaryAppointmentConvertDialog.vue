@@ -395,6 +395,7 @@ const newTreatmentName = ref('');
 
               <VeterinaryMasterSelector
                 v-model="newTreatmentName"
+                type="doctor"
                 :items="treatments"
                 :loading="loadingTreatments"
                 :disabled="isSubmitting"

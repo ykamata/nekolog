@@ -1,15 +1,16 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { VeterinaryAppointmentUpdateSchema } from '~/lib/validations/veterinary-visit';
+import { requireAuth } from '~/lib/auth-middleware';
 
 const paramsSchema = z.object({
   id: z.string().min(1, '有効なIDを指定してください'),
 });
 
 // マスタデータの検索または作成を行うヘルパー関数
-async function findOrCreateHospital(name: string) {
+async function findOrCreateHospital(name: string, userId: string) {
   const existing = await prisma.veterinaryHospital.findFirst({
-    where: { name },
+    where: { name, userId },
   });
 
   if (existing) {
@@ -17,15 +18,19 @@ async function findOrCreateHospital(name: string) {
   }
 
   return await prisma.veterinaryHospital.create({
-    data: { name },
+    data: {
+      name,
+      user: { connect: { id: userId } },
+    },
   });
 }
 
-async function findOrCreateDoctor(name: string, hospitalId: string) {
+async function findOrCreateDoctor(name: string, hospitalId: string, userId: string) {
   const existing = await prisma.veterinaryDoctor.findFirst({
     where: {
       name,
       hospitalId,
+      userId,
     },
   });
 
@@ -37,6 +42,7 @@ async function findOrCreateDoctor(name: string, hospitalId: string) {
     data: {
       name,
       hospitalId,
+      userId,
     },
   });
 }
@@ -45,6 +51,9 @@ export default defineEventHandler(async (event) => {
   try {
     // Only allow PUT method
     assertMethod(event, 'PUT');
+
+    // 認証チェック
+    const user = await requireAuth(event);
 
     // Parse and validate route parameters
     const params = getRouterParams(event);
@@ -111,7 +120,7 @@ export default defineEventHandler(async (event) => {
 
     // Handle hospital update
     if (updateData.hospitalName) {
-      const hospital = await findOrCreateHospital(updateData.hospitalName);
+      const hospital = await findOrCreateHospital(updateData.hospitalName, user.userId);
       appointmentUpdateData.hospitalId = hospital.id;
     }
 
@@ -120,7 +129,7 @@ export default defineEventHandler(async (event) => {
       if (updateData.doctorName && updateData.doctorName.trim()) {
         // Get hospital ID (either from update data or existing appointment)
         const hospitalId = appointmentUpdateData.hospitalId || existingAppointment.hospitalId;
-        const doctor = await findOrCreateDoctor(updateData.doctorName.trim(), hospitalId);
+        const doctor = await findOrCreateDoctor(updateData.doctorName.trim(), hospitalId, user.userId);
         appointmentUpdateData.doctorId = doctor.id;
       }
       else {

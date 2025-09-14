@@ -82,7 +82,7 @@
               </div>
 
               <VeterinaryHospitalForm
-                :hospital="selectedHospital"
+                :hospital="selectedHospital || undefined"
                 :mode="formMode"
                 @save="handleSaveHospital"
                 @cancel="handleCloseForm"
@@ -288,7 +288,7 @@ const handleAddDoctorFromDetail = (hospitalId: string) => {
   navigateTo(`/veterinary-doctors?hospitalId=${hospitalId}`);
 };
 
-const handleEditDoctorFromDetail = (doctor: unknown) => {
+const handleEditDoctorFromDetail = (doctor: any) => {
   // 先生管理ページに遷移（編集モード）
   navigateTo(`/veterinary-doctors?editId=${doctor.id}`);
 };

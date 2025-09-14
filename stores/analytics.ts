@@ -114,7 +114,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
           },
           {
             label: 'ウェットフード',
-            data: dailyData.map((item: unknown) => item.wetCalories || 0),
+            data: dailyData.map((item: any) => item.wetCalories || 0),
           },
         ],
         appliedFilters: {
@@ -150,6 +150,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
     const dryData = dates.map((date) => {
       // 日付フォーマットを統一（YYYY-MM-DD → YYYY/MM/DD）
+      if (!date) return 0;
       const formattedDate = date.replace(/-/g, '/');
       const dayData = analytics.value!.dailyCalories.filter(item => item.date === formattedDate && item.type === 'DRY');
       return dayData.reduce((sum, item) => sum + item.calories, 0);
@@ -157,12 +158,14 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
     const wetData = dates.map((date) => {
       // 日付フォーマットを統一（YYYY-MM-DD → YYYY/MM/DD）
+      if (!date) return 0;
       const formattedDate = date.replace(/-/g, '/');
       const dayData = analytics.value!.dailyCalories.filter(item => item.date === formattedDate && item.type === 'WET');
       return dayData.reduce((sum, item) => sum + item.calories, 0);
     });
 
     const missingDataDates = dates.filter((date) => {
+      if (!date) return false;
       const formattedDate = date.replace(/-/g, '/');
       return !analytics.value!.dailyCalories.some(item => item.date === formattedDate);
     });
@@ -332,7 +335,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         hasAnalytics: !!response.analytics,
         hasChartData: !!response.chartData,
         dailyCaloriesCount: response.analytics?.dailyCalories?.length || 0,
-        chartDataType: response.chartData?.chartType,
+        chartDataType: (response.chartData as any)?.chartType,
       });
 
       analytics.value = response.analytics;

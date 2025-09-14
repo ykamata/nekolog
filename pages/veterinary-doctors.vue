@@ -82,7 +82,7 @@
               </div>
 
               <VeterinaryDoctorForm
-                :doctor="selectedDoctor"
+                :doctor="selectedDoctor || undefined"
                 :mode="formMode"
                 :preselected-hospital-id="preselectedHospitalId"
                 @save="handleSaveDoctor"
@@ -160,12 +160,12 @@
                       </dd>
                     </div>
 
-                    <div v-if="selectedDoctor.specialization">
+                    <div v-if="selectedDoctor.specialty">
                       <dt class="text-sm font-medium text-gray-500">
                         専門分野
                       </dt>
                       <dd class="mt-1 text-sm text-gray-900">
-                        {{ selectedDoctor.specialization }}
+                        {{ selectedDoctor.specialty }}
                       </dd>
                     </div>
 

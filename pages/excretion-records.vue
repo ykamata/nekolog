@@ -118,7 +118,7 @@
         aria-labelledby="calendar-tab"
       >
         <ExcretionCalendar
-          :cats="cats"
+          :cats="cats as any"
           :cat-id="selectedCatId"
           @date-selected="handleDateSelected"
           @month-changed="handleMonthChanged"

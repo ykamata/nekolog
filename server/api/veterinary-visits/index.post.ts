@@ -1,11 +1,12 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { VeterinaryVisitInputSchema } from '~/lib/validations/veterinary-visit';
+import { requireAuth } from '~/lib/auth-middleware';
 
 // マスタデータの検索または作成を行うヘルパー関数
-async function findOrCreateHospital(name: string) {
+async function findOrCreateHospital(name: string, userId: string) {
   const existing = await prisma.veterinaryHospital.findFirst({
-    where: { name },
+    where: { name, userId },
   });
 
   if (existing) {
@@ -13,15 +14,19 @@ async function findOrCreateHospital(name: string) {
   }
 
   return await prisma.veterinaryHospital.create({
-    data: { name },
+    data: {
+      name,
+      user: { connect: { id: userId } },
+    },
   });
 }
 
-async function findOrCreateDoctor(name: string, hospitalId: string) {
+async function findOrCreateDoctor(name: string, hospitalId: string, userId: string) {
   const existing = await prisma.veterinaryDoctor.findFirst({
     where: {
       name,
       hospitalId,
+      userId,
     },
   });
 
@@ -33,6 +38,7 @@ async function findOrCreateDoctor(name: string, hospitalId: string) {
     data: {
       name,
       hospitalId,
+      userId,
     },
   });
 }
@@ -62,6 +68,9 @@ export default defineEventHandler(async (event) => {
     // Only allow POST method
     assertMethod(event, 'POST');
 
+    // 認証チェック
+    const user = await requireAuth(event);
+
     // Parse and validate request body
     const body = await readBody(event);
     const visitData = VeterinaryVisitInputSchema.parse(body);
@@ -79,12 +88,12 @@ export default defineEventHandler(async (event) => {
     }
 
     // Find or create hospital
-    const hospital = await findOrCreateHospital(visitData.hospitalName);
+    const hospital = await findOrCreateHospital(visitData.hospitalName, user.userId);
 
     // Find or create doctor if provided
     let doctor = null;
     if (visitData.doctorName && visitData.doctorName.trim()) {
-      doctor = await findOrCreateDoctor(visitData.doctorName.trim(), hospital.id);
+      doctor = await findOrCreateDoctor(visitData.doctorName.trim(), hospital.id, user.userId);
     }
 
     // Find or create treatments

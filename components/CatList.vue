@@ -56,7 +56,7 @@ const handleAddCat = () => {
 };
 
 // Calculate age from birthdate
-const calculateAge = (birthdate?: Date | string): string => {
+const calculateAge = (birthdate?: Date | string | null): string => {
   if (!birthdate) return '不明';
 
   const today = new Date();

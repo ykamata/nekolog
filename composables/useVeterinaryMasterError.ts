@@ -12,7 +12,7 @@ import {
  */
 export const useVeterinaryMasterError = () => {
   // Toast機能を安全に取得（テスト環境では利用できない場合がある）
-  let addToast: ((type: string, options: any) => void) | null = null;
+  let addToast: ((type: any, options: any) => any) | null = null;
   try {
     const toast = useToast();
     addToast = toast.addToast;
@@ -87,7 +87,7 @@ export const useVeterinaryMasterError = () => {
       }
 
       // その他のHTTPエラー
-      if (fetchError.status >= 500) {
+      if (fetchError.status && fetchError.status >= 500) {
         return {
           hasError: true,
           message: VETERINARY_ERROR_MESSAGES.NETWORK.SERVER_ERROR,
@@ -273,7 +273,7 @@ export const useVeterinaryMasterError = () => {
 
     // 最初のエラーメッセージを返す（複数ある場合は最も重要なもの）
     const firstError = errors[0];
-    return firstError?.message || VETERINARY_ERROR_MESSAGES.VALIDATION.INVALID_FORMAT;
+    return (firstError as any)?.message || VETERINARY_ERROR_MESSAGES.VALIDATION.INVALID_FORMAT;
   };
 
   return {

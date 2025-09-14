@@ -471,7 +471,7 @@
 
     <!-- 削除確認ダイアログ -->
     <ConfirmationDialog
-      v-if="showDeleteConfirmation"
+      :is-open="showDeleteConfirmation"
       :title="'先生を削除'"
       :message="`「${doctorToDelete?.name}」を削除してもよろしいですか？この操作は取り消せません。`"
       :confirm-text="'削除'"
@@ -562,7 +562,7 @@ const filteredDoctors = computed(() => {
     const query = searchQuery.value.toLowerCase().trim();
     filtered = filtered.filter(doctor =>
       doctor.name.toLowerCase().includes(query)
-      || doctor.specialization?.toLowerCase().includes(query)
+      || doctor.specialty?.toLowerCase().includes(query)
       || doctor.hospital?.name.toLowerCase().includes(query),
     );
   }
