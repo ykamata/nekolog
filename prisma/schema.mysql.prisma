@@ -19,7 +19,13 @@ model Cat {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  meals     MealRecord[]
+  meals              MealRecord[]
+  medicationRecords  MedicationRecord[]
+  medicationSchedules MedicationSchedule[]
+  medicationReminders MedicationReminder[]
+  veterinaryVisits   VeterinaryVisit[]
+  veterinaryAppointments VeterinaryAppointment[]
+  excretionRecords   ExcretionRecord[]
 
   @@map("cats")
 }
@@ -47,7 +53,7 @@ model MealRecord {
   quantity  Float    // in grams
   calories  Float    // calculated or manual
   mealTime  DateTime
-  notes     String?
+  notes     String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -57,7 +63,246 @@ model MealRecord {
   @@map("meal_records")
 }
 
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  veterinaryHospitals VeterinaryHospital[]
+  veterinaryDoctors   VeterinaryDoctor[]
+
+  @@map("users")
+}
+
 enum FoodType {
   DRY
   WET
+}
+
+model Medication {
+  id          String   @id @default(cuid())
+  name        String
+  type        MedicationType
+  description String?  @db.Text
+  dosage      String?  @db.Text // 投与量の説明
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  records     MedicationRecord[]
+  schedules   MedicationSchedule[]
+  reminders   MedicationReminder[]
+
+  @@map("medications")
+}
+
+model MedicationRecord {
+  id           String   @id @default(cuid())
+  catId        String
+  medicationId String
+  quantity     Int      // 投与個数
+  administeredAt DateTime
+  status       MedicationStatus @default(PENDING)
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cat          Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+
+  @@map("medication_records")
+}
+
+model MedicationSchedule {
+  id           String   @id @default(cuid())
+  catId        String
+  medicationId String
+  frequency    String   // "daily", "twice_daily", "weekly", etc.
+  times        String   @db.Text // JSON array of times: ["08:00", "20:00"]
+  startDate    DateTime
+  endDate      DateTime?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cat          Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+  reminders    MedicationReminder[]
+
+  @@map("medication_schedules")
+}
+
+model MedicationReminder {
+  id           String   @id @default(cuid())
+  scheduleId   String
+  catId        String
+  medicationId String
+  scheduledAt  DateTime
+  status       ReminderStatus @default(PENDING)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  schedule     MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  cat          Cat      @relation(fields: [catId], references: [id], onDelete: Cascade)
+  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+
+  @@map("medication_reminders")
+}
+
+enum MedicationType {
+  MEDICINE
+  SUPPLEMENT
+  VITAMIN
+}
+
+enum MedicationStatus {
+  PENDING
+  ADMINISTERED
+  SKIPPED
+  MISSED
+}
+
+enum ReminderStatus {
+  PENDING
+  ACKNOWLEDGED
+  SNOOZED
+  DISMISSED
+}
+
+model VeterinaryVisit {
+  id           String   @id @default(cuid())
+  catId        String
+  visitDate    DateTime
+  hospitalId   String
+  doctorId     String?
+  cost         Float
+  notes        String?  @db.Text
+  hasBloodTest Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cat          Cat                    @relation(fields: [catId], references: [id], onDelete: Cascade)
+  hospital     VeterinaryHospital     @relation(fields: [hospitalId], references: [id])
+  doctor       VeterinaryDoctor?      @relation(fields: [doctorId], references: [id])
+  treatments   VeterinaryVisitTreatment[]
+
+  @@map("veterinary_visits")
+}
+
+model VeterinaryAppointment {
+  id                String            @id @default(cuid())
+  catId             String
+  appointmentDate   DateTime
+  hospitalId        String
+  doctorId          String?
+  plannedTreatments String?          @db.Text
+  notes             String?          @db.Text
+  status            AppointmentStatus @default(SCHEDULED)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  cat      Cat                  @relation(fields: [catId], references: [id], onDelete: Cascade)
+  hospital VeterinaryHospital   @relation(fields: [hospitalId], references: [id])
+  doctor   VeterinaryDoctor?    @relation(fields: [doctorId], references: [id])
+
+  @@map("veterinary_appointments")
+}
+
+model VeterinaryHospital {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  address   String?  @db.Text
+  phone     String?
+  memo      String?  @db.Text
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  visits       VeterinaryVisit[]
+  appointments VeterinaryAppointment[]
+  doctors      VeterinaryDoctor[]
+
+  @@map("veterinary_hospitals")
+}
+
+model VeterinaryDoctor {
+  id           String  @id @default(cuid())
+  name         String  @unique
+  hospitalId   String?
+  specialty    String? @db.Text
+  memo         String? @db.Text
+  userId       String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user         User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hospital     VeterinaryHospital?     @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
+  visits       VeterinaryVisit[]
+  appointments VeterinaryAppointment[]
+
+  @@map("veterinary_doctors")
+}
+
+model VeterinaryTreatment {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String?
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  visitTreatments VeterinaryVisitTreatment[]
+
+  @@map("veterinary_treatments")
+}
+
+model VeterinaryVisitTreatment {
+  id          String @id @default(cuid())
+  visitId     String
+  treatmentId String
+
+  visit     VeterinaryVisit     @relation(fields: [visitId], references: [id], onDelete: Cascade)
+  treatment VeterinaryTreatment @relation(fields: [treatmentId], references: [id])
+
+  @@unique([visitId, treatmentId])
+  @@map("veterinary_visit_treatments")
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model ExcretionRecord {
+  id         String        @id @default(cuid())
+  catId      String
+  type       ExcretionType
+  recordedAt DateTime
+  notes      String?       @db.Text
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  cat        Cat           @relation(fields: [catId], references: [id], onDelete: Cascade)
+
+  // パフォーマンス最適化のためのインデックス
+  @@index([catId])                           // 猫別フィルタリング用
+  @@index([recordedAt])                      // 日付範囲検索用
+  @@index([type])                            // 排泄タイプフィルタリング用
+  @@index([catId, recordedAt])               // 猫別 + 日付範囲の複合検索用
+  @@index([catId, type])                     // 猫別 + タイプの複合検索用
+  @@index([recordedAt, type])                // 日付範囲 + タイプの複合検索用
+  @@index([catId, recordedAt, type])         // 全フィルタ条件の複合検索用
+  @@map("excretion_records")
+}
+
+enum ExcretionType {
+  URINE  // おしっこ
+  FECES  // うんち
 }
