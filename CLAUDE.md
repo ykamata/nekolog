@@ -24,9 +24,19 @@ Nekolog is a comprehensive cat care management application built with Nuxt 3 and
 
 ### Testing
 
+#### Vitest (Unit/Integration Tests)
+
 - `npm test` or `npm run test:run` - Run unit tests with Vitest
 - `npm run test:components` - Run component tests only
 - `npm run test:performance` - Run performance tests
+- `npm run test:agent` - Run all tests with comprehensive reporting (Vitest Sub-Agent)
+- `npm run test:agent [category]` - Run tests by category (api, components, composables, auth, accessibility, performance)
+- `npm run test:agent:watch` - Run tests in watch mode
+- `npm run test:agent:coverage` - Run tests with coverage report
+- `npm run test:agent:verbose` - Run tests with verbose output
+
+#### Playwright (E2E Tests)
+
 - `npm run test:e2e` - Run Playwright end-to-end tests
 - `npm run test:e2e:ui` - Run E2E tests with Playwright UI
 - `npm run test:e2e:headed` - Run E2E tests in headed mode
@@ -91,6 +101,11 @@ Nekolog is a comprehensive cat care management application built with Nuxt 3 and
 - **Integration Tests**: API and database testing
 - **E2E Tests**: Playwright across multiple browsers
 - **Performance Tests**: Custom benchmarking suite
+- **Test Management**: Vitest Sub-Agent for comprehensive test organization and reporting
+  - Category-based test execution (api, components, composables, auth, accessibility, performance)
+  - Detailed test result analysis and summaries
+  - Failed test retry mechanism
+  - Coverage reporting capabilities
 
 ### Styling and UI
 
