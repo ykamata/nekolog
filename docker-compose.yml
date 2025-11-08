@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # MySQL Database Service
+  mysql:
+    image: mysql:8.0
+    container_name: nekolog-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: nekolog
+      MYSQL_USER: ykamata
+      MYSQL_PASSWORD: ykamata
+    ports:
+      - "3306:3306"
+    volumes:
+      # MySQL data persistence
+      - mysql_data:/var/lib/mysql
+      # Initialization scripts (executed in alphabetical order)
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-authentication-plugin=mysql_native_password
+    networks:
+      - nekolog-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Node.js Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nekolog-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: mysql://ykamata:ykamata@mysql:3306/nekolog
+      JWT_SECRET: your-super-secret-jwt-key-change-this-in-production
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mount source code for hot reload in development
+      - .:/app
+      - /app/node_modules
+      - /app/.nuxt
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - nekolog-network
+    command: npm run dev
+
+networks:
+  nekolog-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
