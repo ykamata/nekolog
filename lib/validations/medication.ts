@@ -38,8 +38,8 @@ export const MedicationUpdateSchema = MedicationInputSchema.partial();
 
 // Medication record validation schema
 export const MedicationRecordInputSchema = z.object({
-  catId: z.string().min(1, '猫を選択してください'),
-  medicationId: z.string().min(1, '薬を選択してください'),
+  catId: z.coerce.number().int().positive('猫を選択してください'),
+  medicationId: z.coerce.number().int().positive('薬を選択してください'),
   quantity: z
     .number()
     .int('投与個数は整数で入力してください')
@@ -63,8 +63,8 @@ export const MedicationRecordUpdateSchema
 
 // Base medication schedule schema without refinement
 const MedicationScheduleBaseSchema = z.object({
-  catId: z.string().min(1, '猫を選択してください'),
-  medicationId: z.string().min(1, '薬を選択してください'),
+  catId: z.coerce.number().int().positive('猫を選択してください'),
+  medicationId: z.coerce.number().int().positive('薬を選択してください'),
   frequency: z
     .string()
     .min(1, '投与頻度を選択してください')
@@ -115,9 +115,9 @@ export const MedicationScheduleUpdateSchema
 
 // Medication reminder validation schema
 export const MedicationReminderInputSchema = z.object({
-  scheduleId: z.string().min(1, 'スケジュールIDは必須です'),
-  catId: z.string().min(1, '猫を選択してください'),
-  medicationId: z.string().min(1, '薬を選択してください'),
+  scheduleId: z.coerce.number().int().positive('スケジュールIDは必須です'),
+  catId: z.coerce.number().int().positive('猫を選択してください'),
+  medicationId: z.coerce.number().int().positive('薬を選択してください'),
   scheduledAt: z.date({
     errorMap: () => ({ message: '有効な予定日時を入力してください' }),
   }),
@@ -133,8 +133,8 @@ export const MedicationFilterSchema = z.object({
 
 export const MedicationRecordFilterSchema = z
   .object({
-    catId: z.string().optional(),
-    medicationId: z.string().optional(),
+    catId: z.coerce.number().int().positive().optional(),
+    medicationId: z.coerce.number().int().positive().optional(),
     startDate: z.date().optional(),
     endDate: z.date().optional(),
     status: z.nativeEnum(MedicationStatus).optional(),
@@ -151,8 +151,8 @@ export const MedicationRecordFilterSchema = z
   );
 
 export const MedicationScheduleFilterSchema = z.object({
-  catId: z.string().optional(),
-  medicationId: z.string().optional(),
+  catId: z.coerce.number().int().positive().optional(),
+  medicationId: z.coerce.number().int().positive().optional(),
   isActive: z.boolean().optional(),
   limit: z.number().int().min(1).max(100).optional(),
   offset: z.number().int().min(0).optional(),
@@ -160,9 +160,9 @@ export const MedicationScheduleFilterSchema = z.object({
 
 export const MedicationReminderFilterSchema = z
   .object({
-    catId: z.string().optional(),
-    medicationId: z.string().optional(),
-    scheduleId: z.string().optional(),
+    catId: z.coerce.number().int().positive().optional(),
+    medicationId: z.coerce.number().int().positive().optional(),
+    scheduleId: z.coerce.number().int().positive().optional(),
     status: z.nativeEnum(ReminderStatus).optional(),
     startDate: z.date().optional(),
     endDate: z.date().optional(),
@@ -180,7 +180,7 @@ export const MedicationReminderFilterSchema = z
 
 // ID validation schema for route parameters
 export const MedicationIdSchema = z.object({
-  id: z.string().min(1, '有効なIDを指定してください'),
+  id: z.coerce.number().int().positive('有効なIDを指定してください'),
 });
 
 // Utility function to parse and validate medication input

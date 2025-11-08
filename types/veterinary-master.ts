@@ -2,12 +2,12 @@
 
 // Base types from Prisma
 export interface VeterinaryHospital {
-  id: string;
+  id: number;
   name: string;
   address?: string | null;
   phone?: string | null;
   memo?: string | null;
-  userId: string;
+  userId: number;
   createdAt: Date;
   updatedAt: Date;
   doctors?: VeterinaryDoctor[];
@@ -19,12 +19,12 @@ export interface VeterinaryHospital {
 }
 
 export interface VeterinaryDoctor {
-  id: string;
+  id: number;
   name: string;
-  hospitalId?: string | null;
+  hospitalId?: number | null;
   specialty?: string | null;
   memo?: string | null;
-  userId: string;
+  userId: number;
   createdAt: Date;
   updatedAt: Date;
   hospital?: VeterinaryHospital | null;
@@ -44,18 +44,18 @@ export interface VeterinaryHospitalInput {
 
 export interface VeterinaryDoctorInput {
   name: string;
-  hospitalId?: string;
+  hospitalId?: number;
   specialty?: string;
   memo?: string;
 }
 
 // Update types (with ID)
 export interface VeterinaryHospitalUpdate extends VeterinaryHospitalInput {
-  id: string;
+  id: number;
 }
 
 export interface VeterinaryDoctorUpdate extends VeterinaryDoctorInput {
-  id: string;
+  id: number;
 }
 
 // Pagination types
@@ -76,7 +76,7 @@ export interface PaginationInfo {
 // Search and filter types
 export interface VeterinarySearchParams extends PaginationParams {
   query?: string;
-  hospitalId?: string;
+  hospitalId?: number;
 }
 
 export interface VeterinarySearchResult<T> {
@@ -122,7 +122,7 @@ export interface VeterinaryHospitalFormProps {
 export interface VeterinaryDoctorFormProps {
   doctor?: VeterinaryDoctor;
   mode: 'create' | 'edit';
-  preselectedHospitalId?: string;
+  preselectedHospitalId?: number;
 }
 
 // List component props
@@ -140,10 +140,10 @@ export interface VeterinaryDoctorListProps {
 // Selector component props
 export interface VeterinaryMasterSelectorProps {
   type: 'hospital' | 'doctor';
-  selectedHospitalId?: string; // 先生選択時の病院フィルタ用
+  selectedHospitalId?: number; // 先生選択時の病院フィルタ用
   allowFreeInput: boolean;
   placeholder?: string;
-  modelValue?: string;
+  modelValue?: number;
 }
 
 // Error types
@@ -161,14 +161,14 @@ export interface UseVeterinaryHospitalsReturn {
   pagination: Readonly<Ref<PaginationInfo | null>>;
   fetchHospitals: (searchQuery?: string, page?: number, limit?: number) => Promise<void>;
   createHospital: (hospital: VeterinaryHospitalInput) => Promise<VeterinaryHospital>;
-  updateHospital: (id: string, hospital: VeterinaryHospitalInput) => Promise<VeterinaryHospital>;
-  deleteHospital: (id: string) => Promise<void>;
+  updateHospital: (id: number, hospital: VeterinaryHospitalInput) => Promise<VeterinaryHospital>;
+  deleteHospital: (id: number) => Promise<void>;
   searchHospitals: (query: string) => Promise<VeterinaryHospital[]>;
-  getHospitalById: (id: string) => VeterinaryHospital | undefined;
-  checkDuplicateName: (name: string, excludeId?: string) => boolean;
+  getHospitalById: (id: number) => VeterinaryHospital | undefined;
+  checkDuplicateName: (name: string, excludeId?: number) => boolean;
   refreshHospitals: () => Promise<void>;
   clearError: () => void;
-  checkHospitalRelatedData: (id: string) => Promise<{ hasDoctors: boolean; hasVisits: boolean; hasAppointments: boolean }>;
+  checkHospitalRelatedData: (id: number) => Promise<{ hasDoctors: boolean; hasVisits: boolean; hasAppointments: boolean }>;
 }
 
 export interface UseVeterinaryDoctorsReturn {
@@ -176,15 +176,15 @@ export interface UseVeterinaryDoctorsReturn {
   loading: Readonly<Ref<boolean>>;
   error: Readonly<Ref<string | null>>;
   pagination: Readonly<Ref<PaginationInfo | null>>;
-  fetchDoctors: (hospitalId?: string, searchQuery?: string, page?: number, limit?: number) => Promise<void>;
+  fetchDoctors: (hospitalId?: number, searchQuery?: string, page?: number, limit?: number) => Promise<void>;
   createDoctor: (doctor: VeterinaryDoctorInput) => Promise<VeterinaryDoctor>;
-  updateDoctor: (id: string, doctor: VeterinaryDoctorInput) => Promise<VeterinaryDoctor>;
-  deleteDoctor: (id: string) => Promise<void>;
-  searchDoctors: (query: string, hospitalId?: string) => Promise<VeterinaryDoctor[]>;
-  getDoctorById: (id: string) => VeterinaryDoctor | undefined;
-  checkDuplicateName: (name: string, excludeId?: string) => boolean;
-  getDoctorsByHospitalId: (hospitalId: string) => VeterinaryDoctor[];
+  updateDoctor: (id: number, doctor: VeterinaryDoctorInput) => Promise<VeterinaryDoctor>;
+  deleteDoctor: (id: number) => Promise<void>;
+  searchDoctors: (query: string, hospitalId?: number) => Promise<VeterinaryDoctor[]>;
+  getDoctorById: (id: number) => VeterinaryDoctor | undefined;
+  checkDuplicateName: (name: string, excludeId?: number) => boolean;
+  getDoctorsByHospitalId: (hospitalId: number) => VeterinaryDoctor[];
   refreshDoctors: () => Promise<void>;
   clearError: () => void;
-  checkDoctorRelatedData: (id: string) => Promise<{ hasVisits: boolean; hasAppointments: boolean }>;
+  checkDoctorRelatedData: (id: number) => Promise<{ hasVisits: boolean; hasAppointments: boolean }>;
 }

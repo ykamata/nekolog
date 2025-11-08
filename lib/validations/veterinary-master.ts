@@ -21,7 +21,7 @@ export const veterinaryHospitalSchema = z.object({
 
 // 病院更新用スキーマ（IDを含む）
 export const veterinaryHospitalUpdateSchema = veterinaryHospitalSchema.extend({
-  id: z.string().min(1, 'IDは必須です'),
+  id: z.coerce.number().int().positive('IDは正の整数である必要があります'),
 });
 
 // 先生バリデーションスキーマ
@@ -29,10 +29,9 @@ export const veterinaryDoctorSchema = z.object({
   name: z.string()
     .min(1, '先生名は必須です')
     .max(50, '先生名は50文字以内で入力してください'),
-  hospitalId: z.string()
-    .min(1, '病院IDは必須です')
+  hospitalId: z.coerce.number().int().positive('病院IDは正の整数である必要があります')
     .optional()
-    .or(z.literal('')),
+    .nullable(),
   specialty: z.string()
     .max(100, '専門分野は100文字以内で入力してください')
     .optional()
@@ -45,13 +44,13 @@ export const veterinaryDoctorSchema = z.object({
 
 // 先生更新用スキーマ（IDを含む）
 export const veterinaryDoctorUpdateSchema = veterinaryDoctorSchema.extend({
-  id: z.string().min(1, 'IDは必須です'),
+  id: z.coerce.number().int().positive('IDは正の整数である必要があります'),
 });
 
 // 検索パラメータ用スキーマ
 export const veterinarySearchSchema = z.object({
   query: z.string().optional(),
-  hospitalId: z.string().optional(),
+  hospitalId: z.coerce.number().int().positive().optional(),
   limit: z.number().min(1).max(100).optional().default(50),
   offset: z.number().min(0).optional().default(0),
 });
@@ -136,7 +135,7 @@ export interface UserFeedback {
 
 // APIルートパラメータ用スキーマ
 export const veterinaryIdSchema = z.object({
-  id: z.string().min(1, 'IDは必須です'),
+  id: z.coerce.number().int().positive('IDは正の整数である必要があります'),
 });
 
 // TypeScript型定義

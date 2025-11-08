@@ -10,7 +10,7 @@ export enum FoodType {
 
 // Core entity interfaces
 export interface Cat {
-  id: string;
+  id: number;
   name: string;
   birthdate?: Date | null;
   weight?: number | null;
@@ -20,7 +20,7 @@ export interface Cat {
 }
 
 export interface Food {
-  id: string;
+  id: number;
   name: string;
   type: FoodType;
   brand?: string;
@@ -35,9 +35,9 @@ export interface Food {
 }
 
 export interface MealRecord {
-  id: string;
-  catId: string;
-  foodId: string;
+  id: number;
+  catId: number;
+  foodId: number;
   quantity: number;
   calories: number;
   mealTime: Date;
@@ -66,8 +66,8 @@ export interface FoodInput {
 }
 
 export interface MealRecordInput {
-  catId: string;
-  foodId: string;
+  catId: number;
+  foodId: number;
   quantity: number;
   calories?: number;
   mealTime: Date;
@@ -109,8 +109,8 @@ export interface MealAnalytics {
 
 // Filter interfaces
 export interface MealRecordFilter {
-  catId?: string;
-  foodId?: string;
+  catId?: number;
+  foodId?: number;
   startDate?: Date;
   endDate?: Date;
   foodType?: FoodType;
