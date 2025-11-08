@@ -11,7 +11,7 @@ datasource db {
 }
 
 model Cat {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   name      String
   birthdate DateTime?
   weight    Float?
@@ -31,7 +31,7 @@ model Cat {
 }
 
 model Food {
-  id              String   @id @default(cuid())
+  id              Int      @id @default(autoincrement())
   name            String
   type            FoodType
   brand           String?
@@ -47,9 +47,9 @@ model Food {
 }
 
 model MealRecord {
-  id        String   @id @default(cuid())
-  catId     String
-  foodId    String
+  id        Int      @id @default(autoincrement())
+  catId     Int
+  foodId    Int
   quantity  Float    // in grams
   calories  Float    // calculated or manual
   mealTime  DateTime
@@ -64,7 +64,7 @@ model MealRecord {
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   email     String   @unique
   password  String
   name      String?
@@ -84,7 +84,7 @@ enum FoodType {
 }
 
 model Medication {
-  id          String   @id @default(cuid())
+  id          Int      @id @default(autoincrement())
   name        String
   type        MedicationType
   description String?
@@ -100,9 +100,9 @@ model Medication {
 }
 
 model MedicationRecord {
-  id           String   @id @default(cuid())
-  catId        String
-  medicationId String
+  id           Int      @id @default(autoincrement())
+  catId        Int
+  medicationId Int
   quantity     Int      // 投与個数
   administeredAt DateTime
   status       MedicationStatus @default(PENDING)
@@ -117,9 +117,9 @@ model MedicationRecord {
 }
 
 model MedicationSchedule {
-  id           String   @id @default(cuid())
-  catId        String
-  medicationId String
+  id           Int      @id @default(autoincrement())
+  catId        Int
+  medicationId Int
   frequency    String   // "daily", "twice_daily", "weekly", etc.
   times        String   // JSON array of times: ["08:00", "20:00"]
   startDate    DateTime
@@ -136,10 +136,10 @@ model MedicationSchedule {
 }
 
 model MedicationReminder {
-  id           String   @id @default(cuid())
-  scheduleId   String
-  catId        String
-  medicationId String
+  id           Int      @id @default(autoincrement())
+  scheduleId   Int
+  catId        Int
+  medicationId Int
   scheduledAt  DateTime
   status       ReminderStatus @default(PENDING)
   createdAt    DateTime @default(now())
@@ -173,11 +173,11 @@ enum ReminderStatus {
 }
 
 model VeterinaryVisit {
-  id           String   @id @default(cuid())
-  catId        String
+  id           Int      @id @default(autoincrement())
+  catId        Int
   visitDate    DateTime
-  hospitalId   String
-  doctorId     String?
+  hospitalId   Int
+  doctorId     Int?
   cost         Float
   notes        String?
   hasBloodTest Boolean  @default(false)
@@ -193,11 +193,11 @@ model VeterinaryVisit {
 }
 
 model VeterinaryAppointment {
-  id                String            @id @default(cuid())
-  catId             String
+  id                Int               @id @default(autoincrement())
+  catId             Int
   appointmentDate   DateTime
-  hospitalId        String
-  doctorId          String?
+  hospitalId        Int
+  doctorId          Int?
   plannedTreatments String?
   notes             String?
   status            AppointmentStatus @default(SCHEDULED)
@@ -212,12 +212,12 @@ model VeterinaryAppointment {
 }
 
 model VeterinaryHospital {
-  id        String   @id @default(cuid())
+  id        Int      @id @default(autoincrement())
   name      String   @unique
   address   String?
   phone     String?
   memo      String?
-  userId    String
+  userId    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -231,12 +231,12 @@ model VeterinaryHospital {
 }
 
 model VeterinaryDoctor {
-  id           String  @id @default(cuid())
+  id           Int     @id @default(autoincrement())
   name         String  @unique
-  hospitalId   String?
+  hospitalId   Int?
   specialty    String?
   memo         String?
-  userId       String
+  userId       Int
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -250,7 +250,7 @@ model VeterinaryDoctor {
 }
 
 model VeterinaryTreatment {
-  id          String   @id @default(cuid())
+  id          Int      @id @default(autoincrement())
   name        String   @unique
   category    String?
   description String?
@@ -263,9 +263,9 @@ model VeterinaryTreatment {
 }
 
 model VeterinaryVisitTreatment {
-  id          String @id @default(cuid())
-  visitId     String
-  treatmentId String
+  id          Int @id @default(autoincrement())
+  visitId     Int
+  treatmentId Int
 
   visit     VeterinaryVisit     @relation(fields: [visitId], references: [id], onDelete: Cascade)
   treatment VeterinaryTreatment @relation(fields: [treatmentId], references: [id])
@@ -281,8 +281,8 @@ enum AppointmentStatus {
 }
 
 model ExcretionRecord {
-  id         String        @id @default(cuid())
-  catId      String
+  id         Int           @id @default(autoincrement())
+  catId      Int
   type       ExcretionType
   recordedAt DateTime
   notes      String?

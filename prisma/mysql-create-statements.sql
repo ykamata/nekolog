@@ -11,7 +11,7 @@
 
 -- Table: users
 CREATE TABLE `users` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
     `email` VARCHAR(191) NOT NULL,
     `password` VARCHAR(191) NOT NULL,
     `name` VARCHAR(191) NULL,
@@ -23,7 +23,7 @@ CREATE TABLE `users` (
 
 -- Table: cats
 CREATE TABLE `cats` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `birthdate` DATETIME(3) NULL,
     `weight` DOUBLE NULL,
@@ -35,7 +35,7 @@ CREATE TABLE `cats` (
 
 -- Table: foods
 CREATE TABLE `foods` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `type` ENUM('DRY', 'WET') NOT NULL,
     `brand` VARCHAR(191) NULL,
@@ -49,9 +49,9 @@ CREATE TABLE `foods` (
 
 -- Table: meal_records
 CREATE TABLE `meal_records` (
-    `id` VARCHAR(191) NOT NULL,
-    `catId` VARCHAR(191) NOT NULL,
-    `foodId` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
+    `catId` INT NOT NULL,
+    `foodId` INT NOT NULL,
     `quantity` DOUBLE NOT NULL,
     `calories` DOUBLE NOT NULL,
     `mealTime` DATETIME(3) NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE `meal_records` (
 
 -- Table: medications
 CREATE TABLE `medications` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `type` ENUM('MEDICINE', 'SUPPLEMENT', 'VITAMIN') NOT NULL,
     `description` TEXT NULL,
@@ -79,9 +79,9 @@ CREATE TABLE `medications` (
 
 -- Table: medication_records
 CREATE TABLE `medication_records` (
-    `id` VARCHAR(191) NOT NULL,
-    `catId` VARCHAR(191) NOT NULL,
-    `medicationId` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
+    `catId` INT NOT NULL,
+    `medicationId` INT NOT NULL,
     `quantity` INT NOT NULL,
     `administeredAt` DATETIME(3) NOT NULL,
     `status` ENUM('PENDING', 'ADMINISTERED', 'SKIPPED', 'MISSED') NOT NULL DEFAULT 'PENDING',
@@ -97,9 +97,9 @@ CREATE TABLE `medication_records` (
 
 -- Table: medication_schedules
 CREATE TABLE `medication_schedules` (
-    `id` VARCHAR(191) NOT NULL,
-    `catId` VARCHAR(191) NOT NULL,
-    `medicationId` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
+    `catId` INT NOT NULL,
+    `medicationId` INT NOT NULL,
     `frequency` VARCHAR(191) NOT NULL,
     `times` TEXT NOT NULL,
     `startDate` DATETIME(3) NOT NULL,
@@ -116,10 +116,10 @@ CREATE TABLE `medication_schedules` (
 
 -- Table: medication_reminders
 CREATE TABLE `medication_reminders` (
-    `id` VARCHAR(191) NOT NULL,
-    `scheduleId` VARCHAR(191) NOT NULL,
-    `catId` VARCHAR(191) NOT NULL,
-    `medicationId` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
+    `scheduleId` INT NOT NULL,
+    `catId` INT NOT NULL,
+    `medicationId` INT NOT NULL,
     `scheduledAt` DATETIME(3) NOT NULL,
     `status` ENUM('PENDING', 'ACKNOWLEDGED', 'SNOOZED', 'DISMISSED') NOT NULL DEFAULT 'PENDING',
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
@@ -135,12 +135,12 @@ CREATE TABLE `medication_reminders` (
 
 -- Table: veterinary_hospitals
 CREATE TABLE `veterinary_hospitals` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `address` TEXT NULL,
     `phone` VARCHAR(191) NULL,
     `memo` TEXT NULL,
-    `userId` VARCHAR(191) NOT NULL,
+    `userId` INT NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
     PRIMARY KEY (`id`),
@@ -151,12 +151,12 @@ CREATE TABLE `veterinary_hospitals` (
 
 -- Table: veterinary_doctors
 CREATE TABLE `veterinary_doctors` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
     `name` VARCHAR(191) NOT NULL,
-    `hospitalId` VARCHAR(191) NULL,
+    `hospitalId` INT NULL,
     `specialty` TEXT NULL,
     `memo` TEXT NULL,
-    `userId` VARCHAR(191) NOT NULL,
+    `userId` INT NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updatedAt` DATETIME(3) NOT NULL,
     PRIMARY KEY (`id`),
@@ -169,7 +169,7 @@ CREATE TABLE `veterinary_doctors` (
 
 -- Table: veterinary_treatments
 CREATE TABLE `veterinary_treatments` (
-    `id` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
     `name` VARCHAR(191) NOT NULL,
     `category` VARCHAR(191) NULL,
     `description` TEXT NULL,
@@ -181,11 +181,11 @@ CREATE TABLE `veterinary_treatments` (
 
 -- Table: veterinary_visits
 CREATE TABLE `veterinary_visits` (
-    `id` VARCHAR(191) NOT NULL,
-    `catId` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
+    `catId` INT NOT NULL,
     `visitDate` DATETIME(3) NOT NULL,
-    `hospitalId` VARCHAR(191) NOT NULL,
-    `doctorId` VARCHAR(191) NULL,
+    `hospitalId` INT NOT NULL,
+    `doctorId` INT NULL,
     `cost` DOUBLE NOT NULL,
     `notes` TEXT NULL,
     `hasBloodTest` BOOLEAN NOT NULL DEFAULT false,
@@ -202,9 +202,9 @@ CREATE TABLE `veterinary_visits` (
 
 -- Table: veterinary_visit_treatments
 CREATE TABLE `veterinary_visit_treatments` (
-    `id` VARCHAR(191) NOT NULL,
-    `visitId` VARCHAR(191) NOT NULL,
-    `treatmentId` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
+    `visitId` INT NOT NULL,
+    `treatmentId` INT NOT NULL,
     PRIMARY KEY (`id`),
     UNIQUE INDEX `veterinary_visit_treatments_visitId_treatmentId_key`(`visitId`, `treatmentId`),
     INDEX `veterinary_visit_treatments_visitId_fkey`(`visitId`),
@@ -215,11 +215,11 @@ CREATE TABLE `veterinary_visit_treatments` (
 
 -- Table: veterinary_appointments
 CREATE TABLE `veterinary_appointments` (
-    `id` VARCHAR(191) NOT NULL,
-    `catId` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
+    `catId` INT NOT NULL,
     `appointmentDate` DATETIME(3) NOT NULL,
-    `hospitalId` VARCHAR(191) NOT NULL,
-    `doctorId` VARCHAR(191) NULL,
+    `hospitalId` INT NOT NULL,
+    `doctorId` INT NULL,
     `plannedTreatments` TEXT NULL,
     `notes` TEXT NULL,
     `status` ENUM('SCHEDULED', 'COMPLETED', 'CANCELLED') NOT NULL DEFAULT 'SCHEDULED',
@@ -236,8 +236,8 @@ CREATE TABLE `veterinary_appointments` (
 
 -- Table: excretion_records
 CREATE TABLE `excretion_records` (
-    `id` VARCHAR(191) NOT NULL,
-    `catId` VARCHAR(191) NOT NULL,
+    `id` INT AUTO_INCREMENT NOT NULL,
+    `catId` INT NOT NULL,
     `type` ENUM('URINE', 'FECES') NOT NULL,
     `recordedAt` DATETIME(3) NOT NULL,
     `notes` TEXT NULL,
