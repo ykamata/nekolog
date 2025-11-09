@@ -3,7 +3,7 @@ import { ExcretionType } from '~/types/excretion';
 
 // 排泄記録作成用のスキーマ
 export const ExcretionRecordInputSchema = z.object({
-  catId: z.string().min(1, '猫を選択してください'),
+  catId: z.coerce.number().int().positive('猫を選択してください'),
   type: z.nativeEnum(ExcretionType, {
     errorMap: () => ({ message: '排泄タイプを選択してください' }),
   }),
@@ -16,7 +16,7 @@ export const ExcretionRecordInputSchema = z.object({
 
 // 排泄記録更新用のスキーマ
 export const ExcretionRecordUpdateSchema = z.object({
-  catId: z.string().min(1, '猫を選択してください').optional(),
+  catId: z.coerce.number().int().positive('猫を選択してください').optional(),
   type: z.nativeEnum(ExcretionType, {
     errorMap: () => ({ message: '排泄タイプを選択してください' }),
   }).optional(),
@@ -29,7 +29,7 @@ export const ExcretionRecordUpdateSchema = z.object({
 
 // フィルタリング用のスキーマ
 export const ExcretionRecordFilterSchema = z.object({
-  catId: z.string().optional(),
+  catId: z.coerce.number().int().positive().optional(),
   type: z.nativeEnum(ExcretionType).optional(),
   startDate: z.coerce.date().optional(),
   endDate: z.coerce.date().optional(),
@@ -50,14 +50,14 @@ export const ExcretionRecordFilterSchema = z.object({
 
 // カレンダークエリ用のスキーマ
 export const ExcretionCalendarQuerySchema = z.object({
-  catId: z.string().optional(),
+  catId: z.coerce.number().int().positive().optional(),
   year: z.coerce.number().int().min(2000).max(2100),
   month: z.coerce.number().int().min(1).max(12),
 });
 
 // フォーム用のスキーマ（ISO文字列を受け取る）
 export const ExcretionRecordFormSchema = z.object({
-  catId: z.string().min(1, '猫を選択してください'),
+  catId: z.coerce.number().int().positive('猫を選択してください'),
   type: z.nativeEnum(ExcretionType, {
     errorMap: () => ({ message: '排泄タイプを選択してください' }),
   }),

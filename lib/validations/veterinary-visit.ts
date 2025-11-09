@@ -10,7 +10,7 @@ export const AppointmentStatusSchema = z.nativeEnum(AppointmentStatus);
 
 // Base validation schemas for master data
 export const VeterinaryHospitalSchema = z.object({
-  id: z.string().min(1, 'IDは必須です'),
+  id: z.number().int().positive(),
   name: z
     .string()
     .min(1, '病院名は必須です')
@@ -34,13 +34,13 @@ export const VeterinaryHospitalSchema = z.object({
 });
 
 export const VeterinaryDoctorSchema = z.object({
-  id: z.string().min(1, 'IDは必須です'),
+  id: z.number().int().positive(),
   name: z
     .string()
     .min(1, '先生名は必須です')
     .max(50, '先生名は50文字以内で入力してください')
     .trim(),
-  hospitalId: z.string().min(1, 'IDは必須です').optional().nullable(),
+  hospitalId: z.number().int().positive().optional().nullable(),
   specialty: z
     .string()
     .max(100, '専門分野は100文字以内で入力してください')
@@ -52,7 +52,7 @@ export const VeterinaryDoctorSchema = z.object({
 });
 
 export const VeterinaryTreatmentSchema = z.object({
-  id: z.string().min(1, 'IDは必須です'),
+  id: z.number().int().positive(),
   name: z
     .string()
     .min(1, '処方内容名は必須です')
@@ -76,13 +76,13 @@ export const VeterinaryTreatmentSchema = z.object({
 
 // Base validation schemas for main entities
 export const VeterinaryVisitSchema = z.object({
-  id: z.string().min(1, 'IDは必須です'),
-  catId: z.string().min(1, '有効な猫IDを選択してください'),
+  id: z.number().int().positive(),
+  catId: z.number().int().positive(),
   visitDate: z.date({
     errorMap: () => ({ message: '有効な診察日時を入力してください' }),
   }),
-  hospitalId: z.string().min(1, '有効な病院IDを選択してください'),
-  doctorId: z.string().min(1, 'IDは必須です').optional().nullable(),
+  hospitalId: z.number().int().positive(),
+  doctorId: z.number().int().positive().optional().nullable(),
   cost: z
     .number()
     .min(0, '費用は0以上で入力してください')
@@ -99,13 +99,13 @@ export const VeterinaryVisitSchema = z.object({
 });
 
 export const VeterinaryAppointmentSchema = z.object({
-  id: z.string().min(1, 'IDは必須です'),
-  catId: z.string().min(1, '有効な猫IDを選択してください'),
+  id: z.number().int().positive(),
+  catId: z.number().int().positive(),
   appointmentDate: z.date({
     errorMap: () => ({ message: '有効な予約日時を入力してください' }),
   }),
-  hospitalId: z.string().min(1, '有効な病院IDを選択してください'),
-  doctorId: z.string().min(1, 'IDは必須です').optional().nullable(),
+  hospitalId: z.number().int().positive(),
+  doctorId: z.number().int().positive().optional().nullable(),
   plannedTreatments: z
     .string()
     .max(500, '予定処方内容は500文字以内で入力してください')
@@ -151,7 +151,7 @@ export const VeterinaryDoctorInputSchema = z.object({
     .min(1, '先生名は必須です')
     .max(50, '先生名は50文字以内で入力してください')
     .trim(),
-  hospitalId: z.string().optional(),
+  hospitalId: z.coerce.number().int().positive().optional(),
   specialty: z
     .string()
     .max(100, '専門分野は100文字以内で入力してください')
@@ -182,7 +182,7 @@ export const VeterinaryTreatmentInputSchema = z.object({
 
 // Input validation schemas for main entities
 export const VeterinaryVisitInputSchema = z.object({
-  catId: z.string().min(1, '猫を選択してください'),
+  catId: z.coerce.number().int().positive(),
   visitDate: z.date({
     errorMap: () => ({ message: '診察日時を入力してください' }),
   }),
@@ -215,7 +215,7 @@ export const VeterinaryVisitInputSchema = z.object({
 });
 
 export const VeterinaryAppointmentInputSchema = z.object({
-  catId: z.string().min(1, '猫を選択してください'),
+  catId: z.coerce.number().int().positive(),
   appointmentDate: z
     .date({
       errorMap: () => ({ message: '予約日時を入力してください' }),
@@ -259,7 +259,7 @@ export const VeterinaryAppointmentUpdateSchema = VeterinaryAppointmentInputSchem
 
 // Special validation schema for appointment conversion
 export const ConvertAppointmentToVisitSchema = z.object({
-  appointmentId: z.string().min(1, '予約IDは必須です'),
+  appointmentId: z.coerce.number().int().positive(),
   actualVisitDate: z.date().optional(),
   actualCost: z
     .number()
@@ -282,9 +282,9 @@ export const ConvertAppointmentToVisitSchema = z.object({
 // Filter validation schemas
 export const VeterinaryVisitFilterSchema = z
   .object({
-    catId: z.string().optional(),
-    hospitalId: z.string().optional(),
-    doctorId: z.string().optional(),
+    catId: z.coerce.number().int().positive().optional(),
+    hospitalId: z.coerce.number().int().positive().optional(),
+    doctorId: z.coerce.number().int().positive().optional(),
     startDate: z.date().optional(),
     endDate: z.date().optional(),
     hasBloodTest: z.boolean().optional(),
@@ -301,9 +301,9 @@ export const VeterinaryVisitFilterSchema = z
 
 export const VeterinaryAppointmentFilterSchema = z
   .object({
-    catId: z.string().optional(),
-    hospitalId: z.string().optional(),
-    doctorId: z.string().optional(),
+    catId: z.coerce.number().int().positive().optional(),
+    hospitalId: z.coerce.number().int().positive().optional(),
+    doctorId: z.coerce.number().int().positive().optional(),
     status: AppointmentStatusSchema.optional(),
     startDate: z.date().optional(),
     endDate: z.date().optional(),
@@ -326,7 +326,7 @@ export const VeterinaryHospitalFilterSchema = z.object({
 
 export const VeterinaryDoctorFilterSchema = z.object({
   name: z.string().optional(),
-  hospitalId: z.string().optional(),
+  hospitalId: z.coerce.number().int().positive().optional(),
   specialty: z.string().optional(),
   limit: z.number().int().min(1).max(100).optional().default(20),
   offset: z.number().int().min(0).optional().default(0),
@@ -341,7 +341,7 @@ export const VeterinaryTreatmentFilterSchema = z.object({
 
 // Special validation schemas for form handling
 export const VeterinaryVisitFormSchema = z.object({
-  catId: z.string().min(1, '猫を選択してください'),
+  catId: z.coerce.number().int().positive(),
   visitDate: z.date({
     errorMap: () => ({ message: '診察日時を入力してください' }),
   }),
@@ -371,7 +371,7 @@ export const VeterinaryVisitFormSchema = z.object({
 });
 
 export const VeterinaryAppointmentFormSchema = z.object({
-  catId: z.string().min(1, '猫を選択してください'),
+  catId: z.coerce.number().int().positive(),
   appointmentDate: z
     .date({
       errorMap: () => ({ message: '予約日時を入力してください' }),
@@ -412,11 +412,11 @@ export const DateRangeSchema = z
 
 // ID validation schema for route parameters
 export const VeterinaryVisitIdSchema = z.object({
-  id: z.string().min(1, '有効なIDを指定してください'),
+  id: z.coerce.number().int().positive(),
 });
 
 export const VeterinaryAppointmentIdSchema = z.object({
-  id: z.string().min(1, '有効なIDを指定してください'),
+  id: z.coerce.number().int().positive(),
 });
 
 // Utility validation functions

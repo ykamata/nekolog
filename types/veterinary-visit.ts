@@ -53,7 +53,7 @@ export type VeterinaryTreatmentWithRelations = VeterinaryTreatment & {
 
 // Form input types
 export interface CreateVeterinaryVisitInput {
-  catId: string;
+  catId: number;
   visitDate: Date;
   hospitalName: string;
   doctorName?: string;
@@ -64,11 +64,11 @@ export interface CreateVeterinaryVisitInput {
 }
 
 export interface UpdateVeterinaryVisitInput extends Partial<CreateVeterinaryVisitInput> {
-  id: string;
+  id: number;
 }
 
 export interface CreateVeterinaryAppointmentInput {
-  catId: string;
+  catId: number;
   appointmentDate: Date;
   hospitalName: string;
   doctorName?: string;
@@ -77,12 +77,12 @@ export interface CreateVeterinaryAppointmentInput {
 }
 
 export interface UpdateVeterinaryAppointmentInput extends Partial<CreateVeterinaryAppointmentInput> {
-  id: string;
+  id: number;
   status?: AppointmentStatus;
 }
 
 export interface ConvertAppointmentToVisitInput {
-  appointmentId: string;
+  appointmentId: number;
   actualVisitDate?: Date;
   actualCost?: number;
   actualTreatments?: string[];
@@ -104,7 +104,7 @@ export interface GetVeterinaryAppointmentsResponse {
 
 // Query parameter types
 export interface GetVeterinaryVisitsParams {
-  catId?: string;
+  catId?: number;
   startDate?: string;
   endDate?: string;
   limit?: number;
@@ -112,7 +112,7 @@ export interface GetVeterinaryVisitsParams {
 }
 
 export interface GetVeterinaryAppointmentsParams {
-  catId?: string;
+  catId?: number;
   status?: AppointmentStatus;
   startDate?: string;
   endDate?: string;
@@ -129,7 +129,7 @@ export interface CreateVeterinaryHospitalInput {
 
 export interface CreateVeterinaryDoctorInput {
   name: string;
-  hospitalId?: string;
+  hospitalId?: number;
   specialization?: string;
 }
 
@@ -141,8 +141,8 @@ export interface CreateVeterinaryTreatmentInput {
 
 // Calendar display types
 export interface CalendarVisitData {
-  id: string;
-  catId: string;
+  id: number;
+  catId: number;
   catName: string;
   visitDate: Date;
   hospitalName: string;
@@ -153,8 +153,8 @@ export interface CalendarVisitData {
 }
 
 export interface CalendarAppointmentData {
-  id: string;
-  catId: string;
+  id: number;
+  catId: number;
   catName: string;
   appointmentDate: Date;
   hospitalName: string;

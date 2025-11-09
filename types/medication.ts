@@ -28,7 +28,7 @@ export enum ReminderStatus {
 
 // Core entity interfaces
 export interface Medication {
-  id: string;
+  id: number;
   name: string;
   type: MedicationType;
   description?: string;
@@ -38,9 +38,9 @@ export interface Medication {
 }
 
 export interface MedicationRecord {
-  id: string;
-  catId: string;
-  medicationId: string;
+  id: number;
+  catId: number;
+  medicationId: number;
   quantity: number;
   administeredAt: Date;
   status: MedicationStatus;
@@ -52,9 +52,9 @@ export interface MedicationRecord {
 }
 
 export interface MedicationSchedule {
-  id: string;
-  catId: string;
-  medicationId: string;
+  id: number;
+  catId: number;
+  medicationId: number;
   frequency: string;
   times: string[];
   startDate: Date;
@@ -67,10 +67,10 @@ export interface MedicationSchedule {
 }
 
 export interface MedicationReminder {
-  id: string;
-  scheduleId: string;
-  catId: string;
-  medicationId: string;
+  id: number;
+  scheduleId: number;
+  catId: number;
+  medicationId: number;
   scheduledAt: Date;
   status: ReminderStatus;
   createdAt: Date;
@@ -89,8 +89,8 @@ export interface MedicationInput {
 }
 
 export interface MedicationRecordInput {
-  catId: string;
-  medicationId: string;
+  catId: number;
+  medicationId: number;
   quantity: number;
   administeredAt: Date;
   status?: MedicationStatus;
@@ -98,8 +98,8 @@ export interface MedicationRecordInput {
 }
 
 export interface MedicationScheduleInput {
-  catId: string;
-  medicationId: string;
+  catId: number;
+  medicationId: number;
   frequency: string;
   times: string[];
   startDate: Date;
@@ -107,9 +107,9 @@ export interface MedicationScheduleInput {
 }
 
 export interface MedicationReminderInput {
-  scheduleId: string;
-  catId: string;
-  medicationId: string;
+  scheduleId: number;
+  catId: number;
+  medicationId: number;
   scheduledAt: Date;
 }
 
@@ -127,8 +127,8 @@ export interface MedicationFilter {
 }
 
 export interface MedicationRecordFilter {
-  catId?: string;
-  medicationId?: string;
+  catId?: number;
+  medicationId?: number;
   startDate?: Date;
   endDate?: Date;
   status?: MedicationStatus;
@@ -137,17 +137,17 @@ export interface MedicationRecordFilter {
 }
 
 export interface MedicationScheduleFilter {
-  catId?: string;
-  medicationId?: string;
+  catId?: number;
+  medicationId?: number;
   isActive?: boolean;
   limit?: number;
   offset?: number;
 }
 
 export interface MedicationReminderFilter {
-  catId?: string;
-  medicationId?: string;
-  scheduleId?: string;
+  catId?: number;
+  medicationId?: number;
+  scheduleId?: number;
   status?: ReminderStatus;
   startDate?: Date;
   endDate?: Date;

@@ -10,7 +10,7 @@ export const FoodTypeSchema = z.nativeEnum(FoodType);
 
 // Base validation schemas
 export const CatSchema = z.object({
-  id: z.string().min(1, 'IDは必須です'),
+  id: z.number().int().positive('IDは正の整数である必要があります'),
   name: z
     .string()
     .min(1, '猫の名前は必須です')
@@ -28,7 +28,7 @@ export const CatSchema = z.object({
 });
 
 export const FoodSchema = z.object({
-  id: z.string().min(1, 'IDは必須です'),
+  id: z.number().int().positive('IDは正の整数である必要があります'),
   name: z
     .string()
     .min(1, 'フード名は必須です')
@@ -58,9 +58,9 @@ export const FoodSchema = z.object({
 });
 
 export const MealRecordSchema = z.object({
-  id: z.string().min(1, 'IDは必須です'),
-  catId: z.string().min(1, '有効な猫IDを選択してください'),
-  foodId: z.string().min(1, '有効なフードIDを選択してください'),
+  id: z.number().int().positive('IDは正の整数である必要があります'),
+  catId: z.number().int().positive('有効な猫IDを選択してください'),
+  foodId: z.number().int().positive('有効なフードIDを選択してください'),
   quantity: z
     .number()
     .positive('量は正の数値で入力してください')
@@ -157,8 +157,8 @@ export const FoodInputSchema = z.object({
 });
 
 export const MealRecordInputSchema = z.object({
-  catId: z.string().min(1, '有効な猫IDを選択してください'),
-  foodId: z.string().min(1, '有効なフードIDを選択してください'),
+  catId: z.coerce.number().int().positive('有効な猫IDを選択してください'),
+  foodId: z.coerce.number().int().positive('有効なフードIDを選択してください'),
   quantity: z
     .number()
     .positive('量は正の数値で入力してください')
@@ -183,8 +183,8 @@ export const MealRecordUpdateSchema = MealRecordInputSchema.partial();
 
 // Filter validation schemas
 export const MealRecordFilterSchema = z.object({
-  catId: z.string().min(1).optional(),
-  foodId: z.string().min(1).optional(),
+  catId: z.coerce.number().int().positive().optional(),
+  foodId: z.coerce.number().int().positive().optional(),
   startDate: z.date().optional(),
   endDate: z.date().optional(),
   foodType: FoodTypeSchema.optional(),
@@ -208,8 +208,8 @@ export const FoodFilterSchema = z.object({
 
 // Special validation schemas for form handling
 export const MealRecordFormSchema = z.object({
-  catId: z.string().min(1, '猫を選択してください'),
-  foodId: z.string().min(1, 'フードを選択してください'),
+  catId: z.coerce.number().int().positive('猫を選択してください'),
+  foodId: z.coerce.number().int().positive('フードを選択してください'),
   quantity: z
     .number()
     .positive('量は正の数値で入力してください')

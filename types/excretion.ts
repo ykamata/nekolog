@@ -12,8 +12,8 @@ export type ExcretionType = typeof ExcretionType[keyof typeof ExcretionType];
 
 // 基本的な排泄記録
 export interface ExcretionRecord {
-  id: string;
-  catId: string;
+  id: number;
+  catId: number;
   type: ExcretionType;
   recordedAt: Date;
   memo?: string;
@@ -21,14 +21,14 @@ export interface ExcretionRecord {
   createdAt: Date;
   updatedAt: Date;
   cat?: {
-    id: string;
+    id: number;
     name: string;
   };
 }
 
 // 排泄記録作成用の入力データ
 export interface ExcretionRecordInput {
-  catId: string;
+  catId: number;
   type: ExcretionType;
   recordedAt: Date;
   memo?: string;
@@ -45,7 +45,7 @@ export interface ExcretionRecordUpdateInput {
 
 // 排泄記録検索・フィルタ条件
 export interface ExcretionRecordFilter {
-  catId?: string;
+  catId?: number;
   type?: ExcretionType;
   startDate?: Date;
   endDate?: Date;
