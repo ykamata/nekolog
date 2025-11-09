@@ -30,7 +30,7 @@ describe('CatMedicationDashboard', () => {
   });
 
   const createTestCat = (overrides?: Partial<Cat>): Cat => ({
-    id: 'cat-1',
+    id: 1,
     name: 'みけ',
     birthdate: new Date('2020-01-01'),
     weight: 4.5,
@@ -43,7 +43,7 @@ describe('CatMedicationDashboard', () => {
   const createTestMedication = (
     overrides?: Partial<Medication>,
   ): Medication => ({
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: 'MEDICINE' as MedicationType,
     description: 'テスト用の薬です',
@@ -56,9 +56,9 @@ describe('CatMedicationDashboard', () => {
   const createTestMedicationRecord = (
     overrides?: Partial<MedicationRecord>,
   ): MedicationRecord => ({
-    id: 'record-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     quantity: 1,
     administeredAt: new Date(),
     status: 'ADMINISTERED' as MedicationStatus,
@@ -71,10 +71,10 @@ describe('CatMedicationDashboard', () => {
   const createTestMedicationReminder = (
     overrides?: Partial<MedicationReminder>,
   ): MedicationReminder => ({
-    id: 'reminder-1',
-    scheduleId: 'schedule-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    scheduleId: 1,
+    catId: 1,
+    medicationId: 1,
     scheduledAt: new Date(),
     status: 'PENDING' as ReminderStatus,
     createdAt: new Date(),
@@ -84,12 +84,12 @@ describe('CatMedicationDashboard', () => {
 
   const defaultProps = {
     cats: [
-      createTestCat({ id: 'cat-1', name: 'みけ' }),
-      createTestCat({ id: 'cat-2', name: 'しろ' }),
+      createTestCat({ id: 1, name: 'みけ' }),
+      createTestCat({ id: 2, name: 'しろ' }),
     ],
     medications: [
-      createTestMedication({ id: 'med-1', name: '血圧薬' }),
-      createTestMedication({ id: 'med-2', name: 'ビタミンC' }),
+      createTestMedication({ id: 1, name: '血圧薬' }),
+      createTestMedication({ id: 2, name: 'ビタミンC' }),
     ],
   };
 
@@ -200,13 +200,13 @@ describe('CatMedicationDashboard', () => {
       // Mock store data
       const store = useMedicationsStore();
       store.records = [
-        createTestMedicationRecord({ catId: 'cat-1', status: 'ADMINISTERED' }),
-        createTestMedicationRecord({ catId: 'cat-1', status: 'PENDING' }),
-        createTestMedicationRecord({ catId: 'cat-2', status: 'ADMINISTERED' }),
+        createTestMedicationRecord({ catId: 1, status: 'ADMINISTERED' }),
+        createTestMedicationRecord({ catId: 1, status: 'PENDING' }),
+        createTestMedicationRecord({ catId: 2, status: 'ADMINISTERED' }),
       ];
       store.reminders = [
-        createTestMedicationReminder({ catId: 'cat-1', status: 'PENDING' }),
-        createTestMedicationReminder({ catId: 'cat-2', status: 'PENDING' }),
+        createTestMedicationReminder({ catId: 1, status: 'PENDING' }),
+        createTestMedicationReminder({ catId: 2, status: 'PENDING' }),
       ];
     });
 
@@ -233,7 +233,7 @@ describe('CatMedicationDashboard', () => {
 
     it('should display placeholder when cat has no photo', () => {
       const catsWithoutPhotos = [
-        createTestCat({ id: 'cat-1', name: 'みけ', photoUrl: undefined }),
+        createTestCat({ id: 1, name: 'みけ', photoUrl: undefined }),
       ];
 
       const wrapper = mount(CatMedicationDashboard, {

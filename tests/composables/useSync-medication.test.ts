@@ -52,7 +52,7 @@ describe('Medication Data Synchronization', () => {
   let offlineStorage: OfflineStorage;
 
   const mockMedication: Medication = {
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: 'MEDICINE' as MedicationType,
     description: 'テスト用の薬です',
@@ -62,9 +62,9 @@ describe('Medication Data Synchronization', () => {
   };
 
   const mockMedicationRecord: MedicationRecord = {
-    id: 'record-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     quantity: 1,
     administeredAt: new Date(),
     status: 'ADMINISTERED' as MedicationStatus,
@@ -74,9 +74,9 @@ describe('Medication Data Synchronization', () => {
   };
 
   const mockMedicationSchedule: MedicationSchedule = {
-    id: 'schedule-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     frequency: 'daily',
     times: JSON.stringify(['08:00', '20:00']),
     startDate: new Date(),
@@ -87,10 +87,10 @@ describe('Medication Data Synchronization', () => {
   };
 
   const mockMedicationReminder: MedicationReminder = {
-    id: 'reminder-1',
-    scheduleId: 'schedule-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    scheduleId: 1,
+    catId: 1,
+    medicationId: 1,
     scheduledAt: new Date(),
     status: 'PENDING' as ReminderStatus,
     createdAt: new Date(),
@@ -246,7 +246,7 @@ ion',
 );
 
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
+        catId: 1,
 
         quantity: 1,
         administeredAt: new Date(),
@@ -255,7 +255,7 @@ ion',
 
       offlineStorage.adffline({
         c: 'cat-1',
-'med-1',
+1,
         frequency: 'daily',
         times: ],
         startDate: new Date(),
@@ -263,9 +263,9 @@ ion',
       });
 
       offlineStorage.addMedicationReminderOffline({
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: new Date(),
         status: 'PENDING' as ReminderStatus,
       });
@@ -312,8 +312,8 @@ ion',
         type: 'MEDICINE' as MedicationType,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date(),
         status: 'ADMINISTERED' as MedicationStatus,
@@ -365,7 +365,7 @@ ord];
 
       const recentRecord = {
         ...mockMedicatid,
-        id: 'recent-record',
+        id: 999,
         ae(),
    };
 
@@ -398,15 +398,15 @@ eals
       });
 
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
 ty: 1,
         administeredAt: new Date(),
 s,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-2',
-        medicationId: 'med-1',
+        catId: 2,
+        medicationId: 1,
         q 2,
 (),
         status: 'PENDING' as MedicationStatus,
@@ -436,8 +436,8 @@ s,
 
       // Add record for yesterday
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: yesterday,
         status: 'ADMINISTERED' as MedicationStatus,
@@ -457,7 +457,7 @@ efined,
 
     it('s
 ffline({
-        catId: 'cat-1',
+        catId: 1,
         medicationId: med-1',
         frequency: 'daily',
         times: JSON.stringify(['08:00']),
@@ -466,7 +466,7 @@ ffline({
       });
       one({
 cat-1',
-        medicationId: 'med-2',
+        medicationId: 2,
         frequency: 'daily',
 '],
         startDate: new Date(),
@@ -492,7 +492,7 @@ ength(1);
 
       // Add in random order
 {
-        catId: 'cat-1',
+        catId: 1,
 
         quantity: 1,
         administeredAt: date2,
@@ -506,8 +506,8 @@ ength(1);
         status: 'ADMINISTERED' as MedicationStatus,
 
       offlineStorage.addMedicat
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         a: date3,
 atus,
@@ -531,23 +531,23 @@ ngth(3);
 
       //
 rOffline({
-        scheduleId: 'schedule-1',
+        scheduleId: 1,
 
-        medicationId: 'med-1',
+        medicationId: 1,
         scheduledAt: time2,
         status: 'PENDING' as ReminderStatus,
       };
 
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
+        scheduleId: 1,
+        catId: 1,
 ,
         scheduledAt: time3,
         status:s,
       });
       offlineStorage.addMedicationReminderOffline({
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: time1,
         status: 'PENDING' as ReminderStatus,
    });

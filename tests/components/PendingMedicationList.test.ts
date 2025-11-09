@@ -22,13 +22,13 @@ describe('PendingMedicationList', () => {
     setActivePinia(createPinia());
 
     cats = [
-      { id: 'cat1', name: 'ミケ', breed: 'mix', birthDate: new Date(), weight: 4.5, createdAt: new Date(), updatedAt: new Date() },
-      { id: 'cat2', name: 'タマ', breed: 'mix', birthDate: new Date(), weight: 3.8, createdAt: new Date(), updatedAt: new Date() },
+      { id: 1, name: 'ミケ', breed: 'mix', birthDate: new Date(), weight: 4.5, createdAt: new Date(), updatedAt: new Date() },
+      { id: 2, name: 'タマ', breed: 'mix', birthDate: new Date(), weight: 3.8, createdAt: new Date(), updatedAt: new Date() },
     ];
 
     medications = [
-      { id: 'med1', name: '薬A', type: 'MEDICINE' },
-      { id: 'med2', name: '薬B', type: 'SUPPLEMENT' },
+      { id: 1, name: '薬A', type: 'MEDICINE' },
+      { id: 2, name: '薬B', type: 'SUPPLEMENT' },
     ];
 
     // Reset mock store
@@ -131,9 +131,9 @@ describe('PendingMedicationList', () => {
     const futureDate = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
     const pendingRecord: MedicationRecord = {
-      id: 'record1',
-      catId: 'cat1',
-      medicationId: 'med1',
+      id: 1,
+      catId: 1,
+      medicationId: 1,
       quantity: 1,
       administeredAt: futureDate,
       status: MedicationStatus.PENDING,
@@ -161,9 +161,9 @@ describe('PendingMedicationList', () => {
     const futureDate = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
     const pendingRecord: MedicationRecord = {
-      id: 'record1',
-      catId: 'cat1',
-      medicationId: 'med1',
+      id: 1,
+      catId: 1,
+      medicationId: 1,
       quantity: 1,
       administeredAt: futureDate,
       status: MedicationStatus.PENDING,
@@ -196,9 +196,9 @@ describe('PendingMedicationList', () => {
     const futureDate = new Date(now.getTime() + 2 * 60 * 60 * 1000);
 
     const pendingRecord: MedicationRecord = {
-      id: 'record1',
-      catId: 'cat1',
-      medicationId: 'med1',
+      id: 1,
+      catId: 1,
+      medicationId: 1,
       quantity: 1,
       administeredAt: futureDate,
       status: MedicationStatus.PENDING,

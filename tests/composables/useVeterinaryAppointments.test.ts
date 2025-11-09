@@ -15,33 +15,33 @@ describe('useVeterinaryAppointments', () => {
 
   const mockAppointments: VeterinaryAppointmentWithRelations[] = [
     {
-      id: 'appointment1',
-      catId: 'cat1',
+      id: 1,
+      catId: 1,
       appointmentDate: futureDate1,
-      hospitalId: 'hospital1',
-      doctorId: 'doctor1',
+      hospitalId: 1,
+      doctorId: 1,
       plannedTreatments: '定期検診予定',
       notes: 'テスト予約メモ1',
       status: 'SCHEDULED',
       createdAt: new Date(),
       updatedAt: new Date(),
-      cat: { id: 'cat1', name: 'テスト猫1', birthdate: new Date(), weight: 4.5, photoUrl: null, createdAt: new Date(), updatedAt: new Date() },
-      hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-      doctor: { id: 'doctor1', name: 'テスト先生', hospitalId: 'hospital1', specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+      cat: { id: 1, name: 'テスト猫1', birthdate: new Date(), weight: 4.5, photoUrl: null, createdAt: new Date(), updatedAt: new Date() },
+      hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+      doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
     },
     {
       id: 'appointment2',
-      catId: 'cat2',
+      catId: 2,
       appointmentDate: futureDate2,
-      hospitalId: 'hospital1',
+      hospitalId: 1,
       doctorId: null,
       plannedTreatments: 'ワクチン接種予定',
       notes: 'テスト予約メモ2',
       status: 'SCHEDULED',
       createdAt: new Date(),
       updatedAt: new Date(),
-      cat: { id: 'cat2', name: 'テスト猫2', birthdate: new Date(), weight: 3.2, photoUrl: null, createdAt: new Date(), updatedAt: new Date() },
-      hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+      cat: { id: 2, name: 'テスト猫2', birthdate: new Date(), weight: 3.2, photoUrl: null, createdAt: new Date(), updatedAt: new Date() },
+      hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
       doctor: null,
     },
   ];
@@ -97,7 +97,7 @@ describe('useVeterinaryAppointments', () => {
       const { fetchAppointments } = useVeterinaryAppointments();
 
       const params = {
-        catId: 'cat1',
+        catId: 1,
         status: 'SCHEDULED' as const,
         startDate: new Date('2024-01-01'),
         endDate: new Date('2024-12-31'),
@@ -135,7 +135,7 @@ describe('useVeterinaryAppointments', () => {
       const additionalAppointments = [
         {
           ...mockAppointments[0],
-          id: 'appointment3',
+          id: 3,
           notes: 'テスト予約メモ3',
         },
       ];
@@ -171,7 +171,7 @@ describe('useVeterinaryAppointments', () => {
       const { appointments, createAppointment } = useVeterinaryAppointments();
 
       const newAppointmentData = {
-        catId: 'cat1',
+        catId: 1,
         appointmentDate: futureDate1,
         hospitalName: 'テスト動物病院',
         doctorName: 'テスト先生',
@@ -181,7 +181,7 @@ describe('useVeterinaryAppointments', () => {
 
       const createdAppointment = {
         ...mockAppointments[0],
-        id: 'appointment3',
+        id: 3,
         plannedTreatments: '新しい検診予定',
         notes: '新しい予約メモ',
       };
@@ -249,7 +249,7 @@ describe('useVeterinaryAppointments', () => {
       expect(result).toEqual(updatedAppointment);
 
       // 一覧内のデータも更新されることを確認
-      const updatedItem = appointments.value.find(a => a.id === 'appointment1');
+      const updatedItem = appointments.value.find(a => a.id === 1);
       expect(updatedItem?.plannedTreatments).toBe('更新された処方予定');
       expect(updatedItem?.status).toBe('CANCELLED');
     });
@@ -272,7 +272,7 @@ describe('useVeterinaryAppointments', () => {
 
       mockFetch.mockResolvedValueOnce({ message: '削除されました' });
 
-      const result = await deleteAppointment('appointment1');
+      const result = await deleteAppointment(1);
 
       expect(mockFetch).toHaveBeenCalledWith('/api/veterinary-appointments/appointment1', {
         method: 'DELETE',
@@ -281,7 +281,7 @@ describe('useVeterinaryAppointments', () => {
       expect(result).toBe(true);
       // 一覧から削除されることを確認
       expect(appointments.value).toHaveLength(1);
-      expect(appointments.value.find(a => a.id === 'appointment1')).toBeUndefined();
+      expect(appointments.value.find(a => a.id === 1)).toBeUndefined();
     });
 
     it('削除エラーが発生した場合、エラーがスローされる', async () => {
@@ -289,7 +289,7 @@ describe('useVeterinaryAppointments', () => {
 
       mockFetch.mockRejectedValueOnce(new Error('削除に失敗しました'));
 
-      await expect(deleteAppointment('appointment1')).rejects.toThrow('予約の削除に失敗しました');
+      await expect(deleteAppointment(1)).rejects.toThrow('予約の削除に失敗しました');
     });
   });
 
@@ -309,11 +309,11 @@ describe('useVeterinaryAppointments', () => {
       };
 
       const convertedVisit = {
-        id: 'visit1',
-        catId: 'cat1',
+        id: 1,
+        catId: 1,
         visitDate: conversionData.actualVisitDate,
-        hospitalId: 'hospital1',
-        doctorId: 'doctor1',
+        hospitalId: 1,
+        doctorId: 1,
         cost: conversionData.actualCost,
         notes: conversionData.actualNotes,
         hasBloodTest: conversionData.hasBloodTest,
@@ -323,8 +323,8 @@ describe('useVeterinaryAppointments', () => {
         hospital: mockAppointments[0].hospital,
         doctor: mockAppointments[0].doctor,
         treatments: [
-          { id: 'treatment1', name: '健康診断', category: '診察', description: '', createdAt: new Date(), updatedAt: new Date() },
-          { id: 'treatment2', name: 'ワクチン接種', category: '予防', description: '', createdAt: new Date(), updatedAt: new Date() },
+          { id: 1, name: '健康診断', category: '診察', description: '', createdAt: new Date(), updatedAt: new Date() },
+          { id: 2, name: 'ワクチン接種', category: '予防', description: '', createdAt: new Date(), updatedAt: new Date() },
         ],
       };
 
@@ -338,17 +338,17 @@ describe('useVeterinaryAppointments', () => {
         appointment: updatedAppointment,
       });
 
-      const result = await convertToVisit({ appointmentId: 'appointment1', ...conversionData });
+      const result = await convertToVisit({ appointmentId: 1, ...conversionData });
 
       expect(mockFetch).toHaveBeenCalledWith('/api/veterinary-appointments/appointment1/convert', {
         method: 'POST',
-        body: { appointmentId: 'appointment1', ...conversionData },
+        body: { appointmentId: 1, ...conversionData },
       });
       expect(result.visit).toEqual(convertedVisit);
       expect(result.appointment).toEqual(updatedAppointment);
 
       // 予約のステータスが更新されることを確認
-      const updatedItem = appointments.value.find(a => a.id === 'appointment1');
+      const updatedItem = appointments.value.find(a => a.id === 1);
       expect(updatedItem?.status).toBe('COMPLETED');
     });
 
@@ -358,7 +358,7 @@ describe('useVeterinaryAppointments', () => {
       mockFetch.mockRejectedValueOnce(new Error('変換に失敗しました'));
 
       await expect(convertToVisit({
-        appointmentId: 'appointment1',
+        appointmentId: 1,
         actualCost: 5000,
       })).rejects.toThrow('予約の変換に失敗しました');
     });
@@ -372,7 +372,7 @@ describe('useVeterinaryAppointments', () => {
       });
 
       await expect(convertToVisit({
-        appointmentId: 'appointment1',
+        appointmentId: 1,
         actualCost: 5000,
       })).rejects.toThrow('予約の変換に失敗しました');
     });
@@ -384,7 +384,7 @@ describe('useVeterinaryAppointments', () => {
 
       mockFetch.mockResolvedValueOnce(mockAppointments[0]);
 
-      const result = await fetchAppointment('appointment1');
+      const result = await fetchAppointment(1);
 
       expect(mockFetch).toHaveBeenCalledWith('/api/veterinary-appointments/appointment1');
       expect(result).toEqual(mockAppointments[0]);
@@ -416,7 +416,7 @@ describe('useVeterinaryAppointments', () => {
       // 追加データ
       const additionalAppointment = {
         ...mockAppointments[0],
-        id: 'appointment3',
+        id: 3,
         notes: '追加予約',
       };
 
@@ -457,11 +457,11 @@ describe('useVeterinaryAppointments', () => {
 
       mockFetch.mockResolvedValueOnce(cancelledAppointment);
 
-      const result = await cancelAppointment('appointment1');
+      const result = await cancelAppointment(1);
 
       expect(mockFetch).toHaveBeenCalledWith('/api/veterinary-appointments/appointment1', {
         method: 'PUT',
-        body: { id: 'appointment1', status: 'CANCELLED' },
+        body: { id: 1, status: 'CANCELLED' },
       });
       expect(result.status).toBe('CANCELLED');
     });
@@ -556,7 +556,7 @@ describe('useVeterinaryAppointments', () => {
     it('現在のパラメータで予約を再取得できる', async () => {
       const { refresh, fetchAppointments } = useVeterinaryAppointments();
 
-      const params = { catId: 'cat1', status: 'SCHEDULED' as const };
+      const params = { catId: 1, status: 'SCHEDULED' as const };
       await fetchAppointments(params);
 
       // 新しいデータでモックを更新
@@ -652,7 +652,7 @@ describe('useVeterinaryAppointments', () => {
         ...mockAppointments,
         {
           ...mockAppointments[0],
-          id: 'appointment3',
+          id: 3,
           status: 'COMPLETED' as const,
         },
         {
@@ -685,7 +685,7 @@ describe('useVeterinaryAppointments', () => {
         ...mockAppointments,
         {
           ...mockAppointments[0],
-          id: 'appointment3',
+          id: 3,
           appointmentDate: pastDate,
           status: 'SCHEDULED' as const,
         },
@@ -736,7 +736,7 @@ describe('useVeterinaryAppointments', () => {
       // 手動でデータを変更
       appointments.value.push({
         ...mockAppointments[0],
-        id: 'appointment3',
+        id: 3,
       });
       expect(appointments.value).toHaveLength(3);
     });

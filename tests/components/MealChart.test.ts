@@ -168,7 +168,7 @@ describe('MealChart', () => {
   });
 
   it('fetches analytics data with catId when provided', async () => {
-    const catId = 'test-cat-id';
+    const catId = 1;
     mount(MealChart, {
       props: { catId },
     });

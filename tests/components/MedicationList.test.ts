@@ -17,7 +17,7 @@ describe('MedicationList', () => {
   const createTestMedication = (
     overrides?: Partial<Medication>,
   ): Medication => ({
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: 'MEDICINE' as MedicationType,
     description: 'テスト用の薬です',
@@ -29,21 +29,21 @@ describe('MedicationList', () => {
 
   const createTestMedications = (): Medication[] => [
     createTestMedication({
-      id: 'med-1',
+      id: 1,
       name: '血圧薬',
       type: 'MEDICINE',
       description: '高血圧治療薬',
       dosage: '朝1錠',
     }),
     createTestMedication({
-      id: 'med-2',
+      id: 2,
       name: 'ビタミンC',
       type: 'VITAMIN',
       description: '免疫力向上のためのビタミン',
       dosage: '1日2錠',
     }),
     createTestMedication({
-      id: 'med-3',
+      id: 3,
       name: 'オメガ3',
       type: 'SUPPLEMENT',
       description: '心臓の健康をサポート',
@@ -243,8 +243,8 @@ describe('MedicationList', () => {
     it('should format medication types correctly', () => {
       const medications = [
         createTestMedication({ type: 'MEDICINE' }),
-        createTestMedication({ type: 'SUPPLEMENT', id: 'med-2' }),
-        createTestMedication({ type: 'VITAMIN', id: 'med-3' }),
+        createTestMedication({ type: 'SUPPLEMENT', id: 2 }),
+        createTestMedication({ type: 'VITAMIN', id: 3 }),
       ];
 
       const wrapper = mount(MedicationList, {

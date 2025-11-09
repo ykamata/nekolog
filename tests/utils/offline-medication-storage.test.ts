@@ -26,7 +26,7 @@ describe('OfflineStorage - Medication Management', () => {
   let offlineStorage: OfflineStorage;
 
   const mockMedication: Medication = {
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: 'MEDICINE' as MedicationType,
     description: 'テスト用の薬です',
@@ -36,9 +36,9 @@ describe('OfflineStorage - Medication Management', () => {
   };
 
   const mockMedicationRecord: MedicationRecord = {
-    id: 'record-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     quantity: 1,
     administeredAt: new Date(), // Use current date
     status: 'ADMINISTERED' as MedicationStatus,
@@ -48,9 +48,9 @@ describe('OfflineStorage - Medication Management', () => {
   };
 
   const mockMedicationSchedule: MedicationSchedule = {
-    id: 'schedule-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     frequency: 'daily',
     times: JSON.stringify(['08:00', '20:00']),
     startDate: new Date(),
@@ -61,10 +61,10 @@ describe('OfflineStorage - Medication Management', () => {
   };
 
   const mockMedicationReminder: MedicationReminder = {
-    id: 'reminder-1',
-    scheduleId: 'schedule-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    scheduleId: 1,
+    catId: 1,
+    medicationId: 1,
     scheduledAt: new Date(),
     status: 'PENDING' as ReminderStatus,
     createdAt: new Date(),
@@ -199,15 +199,15 @@ describe('OfflineStorage - Medication Management', () => {
 
     it('should filter medication records by cat', () => {
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date(),
         status: 'ADMINISTERED' as MedicationStatus,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-2',
-        medicationId: 'med-1',
+        catId: 2,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date(),
         status: 'ADMINISTERED' as MedicationStatus,
@@ -228,22 +228,22 @@ describe('OfflineStorage - Medication Management', () => {
       const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: yesterday,
         status: 'ADMINISTERED' as MedicationStatus,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: today,
         status: 'ADMINISTERED' as MedicationStatus,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: tomorrow,
         status: 'ADMINISTERED' as MedicationStatus,
@@ -267,22 +267,22 @@ describe('OfflineStorage - Medication Management', () => {
 
       // Add in random order
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: date2,
         status: 'ADMINISTERED' as MedicationStatus,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: date1,
         status: 'ADMINISTERED' as MedicationStatus,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: date3,
         status: 'ADMINISTERED' as MedicationStatus,
@@ -325,16 +325,16 @@ describe('OfflineStorage - Medication Management', () => {
 
     it('should filter medication schedules by active status', () => {
       offlineStorage.addMedicationScheduleOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         frequency: 'daily',
         times: JSON.stringify(['08:00']),
         startDate: new Date(),
         isActive: true,
       });
       offlineStorage.addMedicationScheduleOffline({
-        catId: 'cat-1',
-        medicationId: 'med-2',
+        catId: 1,
+        medicationId: 2,
         frequency: 'daily',
         times: JSON.stringify(['08:00']),
         startDate: new Date(),
@@ -352,16 +352,16 @@ describe('OfflineStorage - Medication Management', () => {
 
     it('should filter medication schedules by cat and medication', () => {
       offlineStorage.addMedicationScheduleOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         frequency: 'daily',
         times: JSON.stringify(['08:00']),
         startDate: new Date(),
         isActive: true,
       });
       offlineStorage.addMedicationScheduleOffline({
-        catId: 'cat-2',
-        medicationId: 'med-1',
+        catId: 2,
+        medicationId: 1,
         frequency: 'daily',
         times: JSON.stringify(['08:00']),
         startDate: new Date(),
@@ -369,7 +369,7 @@ describe('OfflineStorage - Medication Management', () => {
       });
 
       const cat1Schedules = offlineStorage.getMedicationSchedules('cat-1');
-      const med1Schedules = offlineStorage.getMedicationSchedules(undefined, 'med-1');
+      const med1Schedules = offlineStorage.getMedicationSchedules(undefined, 1);
 
       expect(cat1Schedules).toHaveLength(1);
       expect(med1Schedules).toHaveLength(2);
@@ -407,23 +407,23 @@ describe('OfflineStorage - Medication Management', () => {
       const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
 
       offlineStorage.addMedicationReminderOffline({
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: yesterday,
         status: 'PENDING' as ReminderStatus,
       });
       offlineStorage.addMedicationReminderOffline({
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: today,
         status: 'PENDING' as ReminderStatus,
       });
       offlineStorage.addMedicationReminderOffline({
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: tomorrow,
         status: 'PENDING' as ReminderStatus,
       });
@@ -447,23 +447,23 @@ describe('OfflineStorage - Medication Management', () => {
 
       // Add in random order
       offlineStorage.addMedicationReminderOffline({
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: time2,
         status: 'PENDING' as ReminderStatus,
       });
       offlineStorage.addMedicationReminderOffline({
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: time3,
         status: 'PENDING' as ReminderStatus,
       });
       offlineStorage.addMedicationReminderOffline({
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: time1,
         status: 'PENDING' as ReminderStatus,
       });
@@ -506,13 +506,13 @@ describe('OfflineStorage - Medication Management', () => {
 
       const oldRecord = {
         ...mockMedicationRecord,
-        id: 'old-record',
+        id: 998,
         administeredAt: twoMonthsAgo,
       };
 
       const recentRecord = {
         ...mockMedicationRecord,
-        id: 'recent-record',
+        id: 999,
         administeredAt: new Date(),
       };
 
@@ -565,8 +565,8 @@ describe('OfflineStorage - Medication Management', () => {
         type: 'MEDICINE' as MedicationType,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date(),
         status: 'ADMINISTERED' as MedicationStatus,

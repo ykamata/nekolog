@@ -95,12 +95,12 @@ const VeterinaryMasterSelectorMock = {
 vi.mock('~/composables/useVeterinaryMasters', () => ({
   useVeterinaryMasters: vi.fn(() => ({
     hospitals: ref([
-      { id: '1', name: 'テスト動物病院' },
-      { id: '2', name: 'サンプル病院' },
+      { id: 1, name: 'テスト動物病院' },
+      { id: 2, name: 'サンプル病院' },
     ]),
     doctors: ref([
-      { id: '1', name: 'テスト先生', hospitalId: '1', specialization: '内科' },
-      { id: '2', name: 'サンプル先生', hospitalId: '2', specialization: '外科' },
+      { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科' },
+      { id: 2, name: 'サンプル先生', hospitalId: 2, specialization: '外科' },
     ]),
     loadHospitals: vi.fn(),
     loadDoctors: vi.fn(),
@@ -112,7 +112,7 @@ vi.mock('~/composables/useVeterinaryMasters', () => ({
 describe('VeterinaryAppointmentForm', () => {
   const mockCats: Cat[] = [
     {
-      id: 'cat1',
+      id: 1,
       name: 'テスト猫1',
       birthdate: new Date('2020-01-01'),
       weight: 4.5,
@@ -121,7 +121,7 @@ describe('VeterinaryAppointmentForm', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'cat2',
+      id: 2,
       name: 'テスト猫2',
       birthdate: new Date('2021-06-15'),
       weight: 3.2,
@@ -204,19 +204,19 @@ describe('VeterinaryAppointmentForm', () => {
   describe('初期データ設定', () => {
     it('既存の予約データでフォームが初期化される', async () => {
       const existingAppointment: VeterinaryAppointmentWithRelations = {
-        id: 'appointment1',
-        catId: 'cat1',
+        id: 1,
+        catId: 1,
         appointmentDate: futureDate,
-        hospitalId: 'hospital1',
-        doctorId: 'doctor1',
+        hospitalId: 1,
+        doctorId: 1,
         plannedTreatments: '定期検診予定',
         notes: 'テスト予約メモ',
         status: 'SCHEDULED',
         createdAt: new Date(),
         updatedAt: new Date(),
         cat: mockCats[0],
-        hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-        doctor: { id: 'doctor1', name: 'テスト先生', hospitalId: 'hospital1', specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+        hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+        doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
       };
 
       const wrapper = mount(VeterinaryAppointmentForm, {
@@ -253,7 +253,7 @@ describe('VeterinaryAppointmentForm', () => {
 
     it('初期データが設定される', async () => {
       const initialData = {
-        catId: 'cat2',
+        catId: 2,
         hospitalName: '初期病院',
         plannedTreatments: '初期処方予定',
       };
@@ -465,7 +465,7 @@ describe('VeterinaryAppointmentForm', () => {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(onSave).toHaveBeenCalledWith({
-        catId: 'cat1',
+        catId: 1,
         appointmentDate: expect.any(Date),
         hospitalName: 'テスト動物病院',
         doctorName: 'テスト先生',
@@ -506,19 +506,19 @@ describe('VeterinaryAppointmentForm', () => {
   describe('通院記録変換機能', () => {
     it('通院記録変換ボタンが表示される', () => {
       const existingAppointment: VeterinaryAppointmentWithRelations = {
-        id: 'appointment1',
-        catId: 'cat1',
+        id: 1,
+        catId: 1,
         appointmentDate: futureDate,
-        hospitalId: 'hospital1',
-        doctorId: 'doctor1',
+        hospitalId: 1,
+        doctorId: 1,
         plannedTreatments: '定期検診予定',
         notes: 'テスト予約メモ',
         status: 'SCHEDULED',
         createdAt: new Date(),
         updatedAt: new Date(),
         cat: mockCats[0],
-        hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-        doctor: { id: 'doctor1', name: 'テスト先生', hospitalId: 'hospital1', specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+        hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+        doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
       };
 
       const wrapper = mount(VeterinaryAppointmentForm, {
@@ -533,19 +533,19 @@ describe('VeterinaryAppointmentForm', () => {
 
     it('通院記録変換イベントが発火される', async () => {
       const existingAppointment: VeterinaryAppointmentWithRelations = {
-        id: 'appointment1',
-        catId: 'cat1',
+        id: 1,
+        catId: 1,
         appointmentDate: futureDate,
-        hospitalId: 'hospital1',
-        doctorId: 'doctor1',
+        hospitalId: 1,
+        doctorId: 1,
         plannedTreatments: '定期検診予定',
         notes: 'テスト予約メモ',
         status: 'SCHEDULED',
         createdAt: new Date(),
         updatedAt: new Date(),
         cat: mockCats[0],
-        hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-        doctor: { id: 'doctor1', name: 'テスト先生', hospitalId: 'hospital1', specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+        hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+        doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
       };
 
       const wrapper = mount(VeterinaryAppointmentForm, {
@@ -569,19 +569,19 @@ describe('VeterinaryAppointmentForm', () => {
 
     it('変換確認ダイアログが表示される', async () => {
       const existingAppointment: VeterinaryAppointmentWithRelations = {
-        id: 'appointment1',
-        catId: 'cat1',
+        id: 1,
+        catId: 1,
         appointmentDate: futureDate,
-        hospitalId: 'hospital1',
-        doctorId: 'doctor1',
+        hospitalId: 1,
+        doctorId: 1,
         plannedTreatments: '定期検診予定',
         notes: 'テスト予約メモ',
         status: 'SCHEDULED',
         createdAt: new Date(),
         updatedAt: new Date(),
         cat: mockCats[0],
-        hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-        doctor: { id: 'doctor1', name: 'テスト先生', hospitalId: 'hospital1', specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+        hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+        doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
       };
 
       const wrapper = mount(VeterinaryAppointmentForm, {
@@ -598,19 +598,19 @@ describe('VeterinaryAppointmentForm', () => {
 
     it('COMPLETED状態の予約では変換ボタンが表示されない', () => {
       const completedAppointment: VeterinaryAppointmentWithRelations = {
-        id: 'appointment1',
-        catId: 'cat1',
+        id: 1,
+        catId: 1,
         appointmentDate: futureDate,
-        hospitalId: 'hospital1',
-        doctorId: 'doctor1',
+        hospitalId: 1,
+        doctorId: 1,
         plannedTreatments: '定期検診予定',
         notes: 'テスト予約メモ',
         status: 'COMPLETED',
         createdAt: new Date(),
         updatedAt: new Date(),
         cat: mockCats[0],
-        hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-        doctor: { id: 'doctor1', name: 'テスト先生', hospitalId: 'hospital1', specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+        hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+        doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
       };
 
       const wrapper = mount(VeterinaryAppointmentForm, {

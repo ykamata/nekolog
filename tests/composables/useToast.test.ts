@@ -149,7 +149,7 @@ describe('useToast', () => {
     addToast('success', { message: 'Message' });
     expect(toasts.value).toHaveLength(1);
 
-    removeToast('non-existent-id');
+    removeToast(999999);
     expect(toasts.value).toHaveLength(1);
   });
 });

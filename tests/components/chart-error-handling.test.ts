@@ -12,7 +12,7 @@ describe('Chart Data Validation Utilities', () => {
     });
 
     it('should detect data with cat filter', () => {
-      const result = analyzeChartData([], { catId: 'test-cat' });
+      const result = analyzeChartData([], { catId: 1 });
 
       expect(result.hasData).toBe(false);
       expect(result.reason).toBe('no_data_for_cat');
@@ -72,7 +72,7 @@ describe('Chart Data Validation Utilities', () => {
 
     it('should generate message for no data for cat', () => {
       const message = generateNoDataMessage('no_data_for_cat', {
-        catId: 'test-cat',
+        catId: 1,
         catName: 'テスト猫',
       });
       expect(message).toContain('テスト猫');

@@ -3,8 +3,8 @@ import { prisma } from '~/lib/prisma';
 import { veterinaryDoctorSchema } from '~/lib/validations/veterinary-master';
 
 describe('Veterinary Doctors API Logic', () => {
-  let testUserId: string;
-  let testHospitalId: string;
+  let testUserId: number;
+  let testHospitalId: number;
 
   beforeEach(async () => {
     // テスト用ユーザーを作成

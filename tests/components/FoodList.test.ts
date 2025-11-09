@@ -8,7 +8,7 @@ import type { Food } from '~/types/cat-meal';
 // Mock food data
 const mockFoods: Food[] = [
   {
-    id: 'food-1',
+    id: 1,
     name: 'プレミアムキャットフード',
     type: FoodType.DRY,
     brand: 'ロイヤルカナン',
@@ -19,7 +19,7 @@ const mockFoods: Food[] = [
     updatedAt: new Date('2024-01-01'),
   },
   {
-    id: 'food-2',
+    id: 2,
     name: 'ウェットフード缶詰',
     type: FoodType.WET,
     brand: 'ヒルズ',
@@ -30,7 +30,7 @@ const mockFoods: Food[] = [
     updatedAt: new Date('2024-01-01'),
   },
   {
-    id: 'food-3',
+    id: 3,
     name: 'シニア用ドライフード',
     type: FoodType.DRY,
     brand: 'ピュリナ',
@@ -41,7 +41,7 @@ const mockFoods: Food[] = [
     updatedAt: new Date('2024-01-01'),
   },
   {
-    id: 'food-4',
+    id: 4,
     name: 'グレインフリーフード',
     type: FoodType.DRY,
     brand: 'オリジン',

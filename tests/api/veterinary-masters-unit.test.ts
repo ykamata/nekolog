@@ -19,7 +19,7 @@ describe.skip('Veterinary Master Data API Logic', () => {
 
   const testDoctorData = {
     name: 'テスト先生',
-    hospitalId: '',
+    hospitalId: 0,
     specialization: '内科',
   };
 
@@ -29,9 +29,9 @@ describe.skip('Veterinary Master Data API Logic', () => {
     description: 'テスト用の処方内容',
   };
 
-  let testHospitalId: string;
-  let testDoctorId: string;
-  let testTreatmentId: string;
+  let testHospitalId: number;
+  let testDoctorId: number;
+  let testTreatmentId: number;
 
   beforeEach(async () => {
     await cleanupTestData();

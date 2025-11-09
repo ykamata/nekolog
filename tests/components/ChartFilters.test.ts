@@ -6,8 +6,8 @@ import ChartFilters from '~/components/ChartFilters.vue';
 // Mock composables
 const mockCatsStore = {
   cats: ref([
-    { id: 'cat1', name: 'ミケ' },
-    { id: 'cat2', name: 'タマ' },
+    { id: 1, name: 'ミケ' },
+    { id: 2, name: 'タマ' },
   ]),
   fetchCats: vi.fn().mockResolvedValue([]),
 };
@@ -206,7 +206,7 @@ describe('ChartFilters', () => {
     expect(mockRouter.push).toHaveBeenCalledWith(
       expect.objectContaining({
         query: expect.objectContaining({
-          catId: 'cat1',
+          catId: 1,
         }),
       }),
     );
@@ -217,7 +217,7 @@ describe('ChartFilters', () => {
       currentRoute: {
         value: {
           query: {
-            catId: 'cat1',
+            catId: 1,
             chartType: 'bar',
             startDate: '2024-01-01',
             endDate: '2024-01-31',
@@ -290,7 +290,7 @@ describe('ChartFilters', () => {
 
   it('clears filters when reset button is clicked', async () => {
     const wrapper = mountComponent({
-      selectedCatId: 'cat1',
+      selectedCatId: 1,
       chartType: 'bar',
     });
 

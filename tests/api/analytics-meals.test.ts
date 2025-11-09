@@ -17,9 +17,9 @@ describe('Chart Data Processing', () => {
   // テスト用のモックデータ
   const mockMealRecords: MealRecord[] = [
     {
-      id: 'meal1',
-      catId: 'cat1',
-      foodId: 'food1',
+      id: 1,
+      catId: 1,
+      foodId: 1,
       quantity: 30,
       calories: 105,
       mealTime: new Date('2024-01-01T08:00:00Z'),
@@ -27,7 +27,7 @@ describe('Chart Data Processing', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       cat: {
-        id: 'cat1',
+        id: 1,
         name: 'テスト猫1',
         birthdate: null,
         weight: null,
@@ -36,7 +36,7 @@ describe('Chart Data Processing', () => {
         updatedAt: new Date(),
       },
       food: {
-        id: 'food1',
+        id: 1,
         name: 'ドライフード',
         type: 'DRY',
         brand: null,
@@ -48,9 +48,9 @@ describe('Chart Data Processing', () => {
       },
     },
     {
-      id: 'meal2',
-      catId: 'cat1',
-      foodId: 'food2',
+      id: 2,
+      catId: 1,
+      foodId: 2,
       quantity: 50,
       calories: 60,
       mealTime: new Date('2024-01-02T08:00:00Z'),
@@ -58,7 +58,7 @@ describe('Chart Data Processing', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       cat: {
-        id: 'cat1',
+        id: 1,
         name: 'テスト猫1',
         birthdate: null,
         weight: null,
@@ -67,7 +67,7 @@ describe('Chart Data Processing', () => {
         updatedAt: new Date(),
       },
       food: {
-        id: 'food2',
+        id: 2,
         name: 'ウェットフード',
         type: 'WET',
         brand: null,
@@ -95,7 +95,7 @@ describe('Chart Data Processing', () => {
       expect(result).toHaveLength(2);
       expect(result[0]).toMatchObject({
         date: '2024/01/01',
-        catId: 'cat1',
+        catId: 1,
         catName: 'テスト猫1',
         totalCalories: 105,
         dryFoodCalories: 105,
@@ -104,7 +104,7 @@ describe('Chart Data Processing', () => {
       });
       expect(result[1]).toMatchObject({
         date: '2024/01/02',
-        catId: 'cat1',
+        catId: 1,
         catName: 'テスト猫1',
         totalCalories: 60,
         dryFoodCalories: 0,
@@ -115,7 +115,7 @@ describe('Chart Data Processing', () => {
 
     it('猫IDでフィルタリングできる', () => {
       const filters: ChartFilters = {
-        catId: 'cat1',
+        catId: 1,
         dateRange: {
           start: new Date('2024-01-01'),
           end: new Date('2024-01-02'),
@@ -127,7 +127,7 @@ describe('Chart Data Processing', () => {
 
       expect(result).toHaveLength(2);
       result.forEach((point) => {
-        expect(point.catId).toBe('cat1');
+        expect(point.catId).toBe(1);
       });
     });
 
@@ -187,7 +187,7 @@ describe('Chart Data Processing', () => {
         chartType: 'line',
       };
 
-      const result = generateChartData(mockMealRecords, filters, ['cat1']);
+      const result = generateChartData(mockMealRecords, filters, [1]);
 
       expect(result.isEmpty).toBe(false);
       expect(result.labels).toEqual(['2024/01/01', '2024/01/02']);
@@ -206,7 +206,7 @@ describe('Chart Data Processing', () => {
         chartType: 'bar',
       };
 
-      const result = generateChartData(mockMealRecords, filters, ['cat1']);
+      const result = generateChartData(mockMealRecords, filters, [1]);
 
       expect(result.isEmpty).toBe(false);
       expect(result.datasets).toHaveLength(1);

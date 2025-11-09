@@ -24,12 +24,12 @@ describe('useVeterinaryHospitals', () => {
   it('病院一覧を正常に取得できる', async () => {
     const mockHospitals: VeterinaryHospital[] = [
       {
-        id: '1',
+        id: 1,
         name: 'テスト動物病院',
         address: 'テスト住所',
         phone: '03-1234-5678',
         memo: null,
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
         _count: { doctors: 2 },
@@ -72,9 +72,9 @@ describe('useVeterinaryHospitals', () => {
     };
 
     const mockCreatedHospital: VeterinaryHospital = {
-      id: '2',
+      id: 2,
       ...hospitalInput,
-      userId: 'user1',
+      userId: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -101,11 +101,11 @@ describe('useVeterinaryHospitals', () => {
     };
 
     const mockUpdatedHospital: VeterinaryHospital = {
-      id: '1',
+      id: 1,
       ...hospitalInput,
       phone: null,
       memo: null,
-      userId: 'user1',
+      userId: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -114,9 +114,9 @@ describe('useVeterinaryHospitals', () => {
     const { hospitals, updateHospital } = useVeterinaryHospitals();
     hospitals.value = [
       {
-        id: '1',
+        id: 1,
         name: '元の病院名',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -140,16 +140,16 @@ describe('useVeterinaryHospitals', () => {
     const { hospitals, deleteHospital } = useVeterinaryHospitals();
     hospitals.value = [
       {
-        id: '1',
+        id: 1,
         name: '削除対象病院',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
-        id: '2',
+        id: 2,
         name: '残る病院',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -170,9 +170,9 @@ describe('useVeterinaryHospitals', () => {
   it('病院検索を正常に実行できる', async () => {
     const mockSearchResults: VeterinaryHospital[] = [
       {
-        id: '1',
+        id: 1,
         name: 'テスト動物病院',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -194,9 +194,9 @@ describe('useVeterinaryHospitals', () => {
     const { hospitals, checkDuplicateName } = useVeterinaryHospitals();
     hospitals.value = [
       {
-        id: '1',
+        id: 1,
         name: '既存の病院',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },

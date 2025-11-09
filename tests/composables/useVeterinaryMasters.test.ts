@@ -16,7 +16,7 @@ global.$fetch = mockFetch;
 describe('useVeterinaryMasters', () => {
   const mockHospitals: (VeterinaryHospital & { _count: { visits: number; appointments: number; doctors: number } })[] = [
     {
-      id: 'hospital1',
+      id: 1,
       name: 'テスト動物病院',
       address: '東京都渋谷区',
       phone: '03-1234-5678',
@@ -25,7 +25,7 @@ describe('useVeterinaryMasters', () => {
       _count: { visits: 5, appointments: 2, doctors: 3 },
     },
     {
-      id: 'hospital2',
+      id: 2,
       name: 'サンプル獣医クリニック',
       address: '東京都新宿区',
       phone: '03-9876-5432',
@@ -40,9 +40,9 @@ describe('useVeterinaryMasters', () => {
     _count: { visits: number; appointments: number };
   })[] = [
     {
-      id: 'doctor1',
+      id: 1,
       name: 'テスト先生',
-      hospitalId: 'hospital1',
+      hospitalId: 1,
       specialization: '内科',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -50,9 +50,9 @@ describe('useVeterinaryMasters', () => {
       _count: { visits: 10, appointments: 3 },
     },
     {
-      id: 'doctor2',
+      id: 2,
       name: 'サンプル先生',
-      hospitalId: 'hospital1',
+      hospitalId: 1,
       specialization: '外科',
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -63,7 +63,7 @@ describe('useVeterinaryMasters', () => {
 
   const mockTreatments: (VeterinaryTreatment & { _count: { visitTreatments: number } })[] = [
     {
-      id: 'treatment1',
+      id: 1,
       name: '健康診断',
       category: '診察',
       description: '定期的な健康チェック',
@@ -72,7 +72,7 @@ describe('useVeterinaryMasters', () => {
       _count: { visitTreatments: 15 },
     },
     {
-      id: 'treatment2',
+      id: 2,
       name: 'ワクチン接種',
       category: '予防',
       description: '感染症予防のためのワクチン',
@@ -176,7 +176,7 @@ describe('useVeterinaryMasters', () => {
         };
 
         const createdHospital: VeterinaryHospital = {
-          id: 'hospital3',
+          id: 3,
           ...newHospitalData,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -226,7 +226,7 @@ describe('useVeterinaryMasters', () => {
         const { findOrCreateHospital } = useVeterinaryMasters();
 
         const newHospital: VeterinaryHospital = {
-          id: 'hospital3',
+          id: 3,
           name: '新しい病院',
           address: null,
           phone: null,
@@ -279,7 +279,7 @@ describe('useVeterinaryMasters', () => {
       it('病院IDでフィルタリングして先生を取得できる', async () => {
         const { fetchDoctorsByHospital } = useVeterinaryMasters();
 
-        const hospitalId = 'hospital1';
+        const hospitalId = 1;
         mockFetch.mockResolvedValueOnce({ doctors: [], total: 0, hasMore: false });
 
         await fetchDoctorsByHospital(hospitalId);
@@ -296,12 +296,12 @@ describe('useVeterinaryMasters', () => {
 
         const newDoctorData: CreateVeterinaryDoctorInput = {
           name: '新しい先生',
-          hospitalId: 'hospital1',
+          hospitalId: 1,
           specialization: '皮膚科',
         };
 
         const createdDoctor: VeterinaryDoctor = {
-          id: 'doctor3',
+          id: 3,
           ...newDoctorData,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -332,7 +332,7 @@ describe('useVeterinaryMasters', () => {
         });
         await fetchDoctors();
 
-        const result = await findOrCreateDoctor('テスト先生', 'hospital1');
+        const result = await findOrCreateDoctor('テスト先生', 1);
 
         expect(result).toEqual(mockDoctors[0]);
       });
@@ -341,9 +341,9 @@ describe('useVeterinaryMasters', () => {
         const { findOrCreateDoctor } = useVeterinaryMasters();
 
         const newDoctor: VeterinaryDoctor = {
-          id: 'doctor3',
+          id: 3,
           name: '新しい先生',
-          hospitalId: 'hospital1',
+          hospitalId: 1,
           specialization: null,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -359,7 +359,7 @@ describe('useVeterinaryMasters', () => {
         // 新規作成
         mockFetch.mockResolvedValueOnce(newDoctor);
 
-        const result = await findOrCreateDoctor('新しい先生', 'hospital1');
+        const result = await findOrCreateDoctor('新しい先生', 1);
 
         expect(result).toEqual(newDoctor);
         expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -416,7 +416,7 @@ describe('useVeterinaryMasters', () => {
         };
 
         const createdTreatment: VeterinaryTreatment = {
-          id: 'treatment3',
+          id: 3,
           ...newTreatmentData,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -446,7 +446,7 @@ describe('useVeterinaryMasters', () => {
 
         // 新しい処方内容
         const newTreatment: VeterinaryTreatment = {
-          id: 'treatment3',
+          id: 3,
           name: '新しい処方',
           category: null,
           description: null,

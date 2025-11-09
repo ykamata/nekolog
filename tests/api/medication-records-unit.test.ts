@@ -9,9 +9,9 @@ import { MedicationType, MedicationStatus } from '~/types/medication';
 
 describe.skip('Medication Record Management API Logic', () => {
   // Test data
-  let testCatId: string;
-  let testMedicationId: string;
-  let createdRecordId: string;
+  let testCatId: number;
+  let testMedicationId: number;
+  let createdRecordId: number;
 
   const testMedication = {
     name: 'テスト薬',
@@ -658,7 +658,7 @@ describe.skip('Medication Record Management API Logic', () => {
     });
 
     it('should handle deletion of non-existent record', async () => {
-      const nonExistentId = 'non-existent-id';
+      const nonExistentId = 999999;
 
       const existingRecord = await prisma.medicationRecord.findUnique({
         where: { id: nonExistentId },

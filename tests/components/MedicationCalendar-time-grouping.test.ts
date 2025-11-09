@@ -34,7 +34,7 @@ describe('MedicationCalendar - Time Grouping', () => {
   // Test data
   const mockCats: Cat[] = [
     {
-      id: 'cat-1',
+      id: 1,
       name: 'みけ',
       birthdate: new Date('2020-01-01'),
       weight: 4.5,
@@ -45,7 +45,7 @@ describe('MedicationCalendar - Time Grouping', () => {
 
   const mockMedications: Medication[] = [
     {
-      id: 'med-1',
+      id: 1,
       name: 'テスト薬A',
       type: MedicationType.MEDICINE,
       description: 'テスト用の薬です',
@@ -86,9 +86,9 @@ describe('MedicationCalendar - Time Grouping', () => {
     const testDate = new Date('2024-01-15');
     const testRecords: MedicationRecord[] = [
       {
-        id: 'record-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 1,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T08:00:00'), // Morning
         status: MedicationStatus.ADMINISTERED,
@@ -96,9 +96,9 @@ describe('MedicationCalendar - Time Grouping', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'record-2',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 2,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T14:00:00'), // Afternoon
         status: MedicationStatus.ADMINISTERED,
@@ -106,9 +106,9 @@ describe('MedicationCalendar - Time Grouping', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'record-3',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 3,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T20:00:00'), // Evening
         status: MedicationStatus.ADMINISTERED,
@@ -167,9 +167,9 @@ describe('MedicationCalendar - Time Grouping', () => {
     const testDate = new Date('2024-01-15');
     const testRecords: MedicationRecord[] = [
       {
-        id: 'record-morning',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 101,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T07:00:00'), // 7 AM - Morning
         status: MedicationStatus.ADMINISTERED,
@@ -177,9 +177,9 @@ describe('MedicationCalendar - Time Grouping', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'record-afternoon',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 102,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T15:00:00'), // 3 PM - Afternoon
         status: MedicationStatus.ADMINISTERED,
@@ -187,9 +187,9 @@ describe('MedicationCalendar - Time Grouping', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'record-evening',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 103,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T22:00:00'), // 10 PM - Evening
         status: MedicationStatus.ADMINISTERED,
@@ -262,9 +262,9 @@ describe('MedicationCalendar - Time Grouping', () => {
     const testDate = new Date('2024-01-15');
     const testRecords: MedicationRecord[] = [
       {
-        id: 'record-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 1,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T05:00:00'), // 5 AM - Morning boundary
         status: MedicationStatus.ADMINISTERED,
@@ -272,9 +272,9 @@ describe('MedicationCalendar - Time Grouping', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'record-2',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 2,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T12:00:00'), // 12 PM - Afternoon boundary
         status: MedicationStatus.ADMINISTERED,
@@ -282,9 +282,9 @@ describe('MedicationCalendar - Time Grouping', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'record-3',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 3,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T18:00:00'), // 6 PM - Evening boundary
         status: MedicationStatus.ADMINISTERED,
@@ -292,9 +292,9 @@ describe('MedicationCalendar - Time Grouping', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'record-4',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 4,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T04:59:59'), // Just before morning
         status: MedicationStatus.ADMINISTERED,
@@ -366,9 +366,9 @@ describe('MedicationCalendar - Time Grouping', () => {
     const testDate = new Date('2024-01-15');
     const testRecords: MedicationRecord[] = [
       {
-        id: 'record-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 1,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T08:00:00'), // Morning
         status: MedicationStatus.ADMINISTERED,
@@ -376,9 +376,9 @@ describe('MedicationCalendar - Time Grouping', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'record-2',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 2,
+        catId: 1,
+        medicationId: 1,
         quantity: 2,
         administeredAt: new Date('2024-01-15T09:30:00'), // Also morning
         status: MedicationStatus.ADMINISTERED,
@@ -439,9 +439,9 @@ describe('MedicationCalendar - Time Grouping', () => {
     const testDate = new Date('2024-01-15');
     const testRecords: MedicationRecord[] = [
       {
-        id: 'record-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 1,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-15T08:00:00'), // Only morning
         status: MedicationStatus.ADMINISTERED,

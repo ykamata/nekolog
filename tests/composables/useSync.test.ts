@@ -30,14 +30,14 @@ describe('useSync', () => {
   let mockSyncStatus: any;
 
   const mockCat: Cat = {
-    id: 'cat-1',
+    id: 1,
     name: 'Test Cat',
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   const mockFood: Food = {
-    id: 'food-1',
+    id: 1,
     name: 'Test Food',
     type: 'DRY',
     caloriesPerGram: 3.5,
@@ -47,9 +47,9 @@ describe('useSync', () => {
   };
 
   const mockMeal: MealRecord = {
-    id: 'meal-1',
-    catId: 'cat-1',
-    foodId: 'food-1',
+    id: 1,
+    catId: 1,
+    foodId: 1,
     quantity: 50,
     calories: 175,
     mealTime: new Date(),
@@ -403,8 +403,8 @@ describe('useSync', () => {
       );
 
       const mealData = {
-        catId: 'cat-1',
-        foodId: 'food-1',
+        catId: 1,
+        foodId: 1,
         quantity: 50,
         calories: 175,
         mealTime: new Date(),

@@ -17,16 +17,16 @@ vi.mock('~/composables/useToast', () => ({
 vi.mock('~/composables/useVeterinaryMasters', () => ({
   useVeterinaryMasters: () => ({
     hospitals: global.ref([
-      { id: '1', name: 'テスト動物病院', address: '', phone: '' },
-      { id: '2', name: 'サンプル病院', address: '', phone: '' },
+      { id: 1, name: 'テスト動物病院', address: '', phone: '' },
+      { id: 2, name: 'サンプル病院', address: '', phone: '' },
     ]),
     doctors: global.ref([
-      { id: '1', name: 'テスト先生', hospitalId: '1', specialization: '内科' },
-      { id: '2', name: 'サンプル先生', hospitalId: '2', specialization: '外科' },
+      { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科' },
+      { id: 2, name: 'サンプル先生', hospitalId: 2, specialization: '外科' },
     ]),
     treatments: global.ref([
-      { id: '1', name: '健康診断', category: '診察', description: '' },
-      { id: '2', name: 'ワクチン接種', category: '予防', description: '' },
+      { id: 1, name: '健康診断', category: '診察', description: '' },
+      { id: 2, name: 'ワクチン接種', category: '予防', description: '' },
     ]),
     loading: global.ref(false),
     error: global.ref(null),
@@ -43,7 +43,7 @@ vi.mock('~/composables/useVeterinaryMasters', () => ({
 describe('VeterinaryVisitForm', () => {
   const mockCats: Cat[] = [
     {
-      id: 'cat1',
+      id: 1,
       name: 'テスト猫1',
       birthdate: new Date('2020-01-01'),
       weight: 4.5,
@@ -52,7 +52,7 @@ describe('VeterinaryVisitForm', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'cat2',
+      id: 2,
       name: 'テスト猫2',
       birthdate: new Date('2021-06-15'),
       weight: 3.2,
@@ -112,22 +112,22 @@ describe('VeterinaryVisitForm', () => {
   describe('初期データ設定', () => {
     it('既存の通院記録データでフォームが初期化される', () => {
       const existingVisit: VeterinaryVisitWithRelations = {
-        id: 'visit1',
-        catId: 'cat1',
+        id: 1,
+        catId: 1,
         visitDate: new Date('2024-01-15T10:00:00Z'),
-        hospitalId: 'hospital1',
-        doctorId: 'doctor1',
+        hospitalId: 1,
+        doctorId: 1,
         cost: 5000,
         notes: 'テストメモ',
         hasBloodTest: true,
         createdAt: new Date(),
         updatedAt: new Date(),
         cat: mockCats[0],
-        hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-        doctor: { id: 'doctor1', name: 'テスト先生', hospitalId: 'hospital1', specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+        hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+        doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
         treatments: [
           {
-            id: 'treatment1',
+            id: 1,
             name: '健康診断',
             category: '診察',
             description: '',
@@ -153,7 +153,7 @@ describe('VeterinaryVisitForm', () => {
 
     it('初期データが設定される', () => {
       const initialData = {
-        catId: 'cat2',
+        catId: 2,
         hospitalName: '初期病院',
         cost: 3000,
       };
@@ -283,7 +283,7 @@ describe('VeterinaryVisitForm', () => {
       await wrapper.find('[data-testid="submit-button"]').trigger('click');
 
       expect(onSave).toHaveBeenCalledWith({
-        catId: 'cat1',
+        catId: 1,
         visitDate: expect.any(Date),
         hospitalName: 'テスト動物病院',
         doctorName: 'テスト先生',

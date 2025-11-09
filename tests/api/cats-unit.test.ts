@@ -17,7 +17,7 @@ describe('Cat Management API Logic', () => {
     weight: 3.2,
   };
 
-  let createdCatId: string;
+  let createdCatId: number;
 
   beforeEach(async () => {
     // Clean up any existing test data

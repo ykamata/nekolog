@@ -51,7 +51,7 @@ describe('Medication Component Integration', () => {
   // Test data
   const mockCats: Cat[] = [
     {
-      id: 'cat-1',
+      id: 1,
       name: 'みけ',
       birthdate: new Date('2020-01-01'),
       weight: 4.5,
@@ -59,7 +59,7 @@ describe('Medication Component Integration', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'cat-2',
+      id: 2,
       name: 'しろ',
       birthdate: new Date('2019-06-15'),
       weight: 3.8,
@@ -70,7 +70,7 @@ describe('Medication Component Integration', () => {
 
   const mockMedications: Medication[] = [
     {
-      id: 'med-1',
+      id: 1,
       name: 'テスト薬A',
       type: MedicationType.MEDICINE,
       description: 'テスト用の薬です',
@@ -79,7 +79,7 @@ describe('Medication Component Integration', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'med-2',
+      id: 2,
       name: 'サプリB',
       type: MedicationType.SUPPLEMENT,
       description: 'テスト用のサプリです',
@@ -91,9 +91,9 @@ describe('Medication Component Integration', () => {
 
   const mockRecords: MedicationRecord[] = [
     {
-      id: 'record-1',
-      catId: 'cat-1',
-      medicationId: 'med-1',
+      id: 1,
+      catId: 1,
+      medicationId: 1,
       quantity: 1,
       administeredAt: new Date('2024-01-15T08:00:00Z'),
       status: MedicationStatus.ADMINISTERED,
@@ -101,9 +101,9 @@ describe('Medication Component Integration', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'record-2',
-      catId: 'cat-2',
-      medicationId: 'med-2',
+      id: 2,
+      catId: 2,
+      medicationId: 2,
       quantity: 2,
       administeredAt: new Date('2024-01-15T20:00:00Z'),
       status: MedicationStatus.PENDING,
@@ -231,7 +231,7 @@ describe('Medication Component Integration', () => {
 
       const formWrapper = mount(MedicationForm, {
         props: {
-          medicationId: 'med-1',
+          medicationId: 1,
         },
         global: {
           plugins: [pinia],
@@ -255,7 +255,7 @@ describe('Medication Component Integration', () => {
       await nextTick();
 
       // Verify medication was updated
-      expect(medicationsStore.updateMedication).toHaveBeenCalledWith('med-1', {
+      expect(medicationsStore.updateMedication).toHaveBeenCalledWith(1, {
         name: '更新されたテスト薬A',
         type: MedicationType.MEDICINE,
         description: 'テスト用の薬です',
@@ -293,7 +293,7 @@ describe('Medication Component Integration', () => {
       await nextTick();
 
       // Verify medication was deleted
-      expect(medicationsStore.deleteMedication).toHaveBeenCalledWith('med-1');
+      expect(medicationsStore.deleteMedication).toHaveBeenCalledWith(1);
 
       // Verify list is updated
       expect(listWrapper.findAll('.medication-item')).toHaveLength(1);
@@ -324,7 +324,7 @@ describe('Medication Component Integration', () => {
 
       // Fill out record form
       await formWrapper.find('select[name="catId"]').setValue('cat-1');
-      await formWrapper.find('select[name="medicationId"]').setValue('med-1');
+      await formWrapper.find('select[name="medicationId"]').setValue(1);
       await formWrapper.find('input[name="quantity"]').setValue('2');
       await formWrapper.find('input[name="administeredAt"]').setValue('2024-01-16T10:00');
       await formWrapper.find('select[name="status"]').setValue(MedicationStatus.ADMINISTERED);
@@ -336,8 +336,8 @@ describe('Medication Component Integration', () => {
 
       // Verify record was created
       expect(medicationsStore.createMedicationRecord).toHaveBeenCalledWith({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 2,
         administeredAt: new Date('2024-01-16T10:00'),
         status: MedicationStatus.ADMINISTERED,
@@ -391,10 +391,10 @@ describe('Medication Component Integration', () => {
     it('should handle reminder acknowledgment and record creation', async () => {
       // Create mock reminder
       const mockReminder: MedicationReminderType = {
-        id: 'reminder-1',
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 1,
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: new Date('2024-01-15T08:00:00Z'),
         status: ReminderStatus.PENDING,
         createdAt: new Date(),
@@ -424,7 +424,7 @@ describe('Medication Component Integration', () => {
       // Mount MedicationRecordForm component
       const formWrapper = mount(MedicationRecordForm, {
         props: {
-          reminderId: 'reminder-1',
+          reminderId: 1,
         },
         global: {
           plugins: [pinia],
@@ -443,11 +443,11 @@ describe('Medication Component Integration', () => {
       await nextTick();
 
       // Verify reminder was acknowledged
-      expect(medicationsStore.acknowledgeReminder).toHaveBeenCalledWith('reminder-1');
+      expect(medicationsStore.acknowledgeReminder).toHaveBeenCalledWith(1);
 
       // Verify form is pre-populated with reminder data
       expect(formWrapper.find('select[name="catId"]').element.value).toBe('cat-1');
-      expect(formWrapper.find('select[name="medicationId"]').element.value).toBe('med-1');
+      expect(formWrapper.find('select[name="medicationId"]').element.value).toBe(1);
 
       // Fill remaining form fields and submit
       await formWrapper.find('input[name="quantity"]').setValue('1');
@@ -458,8 +458,8 @@ describe('Medication Component Integration', () => {
       // Verify record was created
       expect(medicationsStore.createMedicationRecord).toHaveBeenCalledWith(
         expect.objectContaining({
-          catId: 'cat-1',
-          medicationId: 'med-1',
+          catId: 1,
+          medicationId: 1,
           quantity: 1,
           status: MedicationStatus.ADMINISTERED,
         }),
@@ -468,10 +468,10 @@ describe('Medication Component Integration', () => {
 
     it('should handle reminder snoozing', async () => {
       const mockReminder: MedicationReminderType = {
-        id: 'reminder-2',
-        scheduleId: 'schedule-1',
-        catId: 'cat-2',
-        medicationId: 'med-2',
+        id: 2,
+        scheduleId: 1,
+        catId: 2,
+        medicationId: 2,
         scheduledAt: new Date('2024-01-15T20:00:00Z'),
         status: ReminderStatus.PENDING,
         createdAt: new Date(),
@@ -557,7 +557,7 @@ describe('Medication Component Integration', () => {
 
       // Step 3: Create medication record
       await recordFormWrapper.find('select[name="catId"]').setValue('cat-1');
-      await recordFormWrapper.find('select[name="medicationId"]').setValue('med-1');
+      await recordFormWrapper.find('select[name="medicationId"]').setValue(1);
       await recordFormWrapper.find('input[name="quantity"]').setValue('1');
       await recordFormWrapper.find('input[name="administeredAt"]').setValue('2024-01-16T08:00');
       await recordFormWrapper.find('select[name="status"]').setValue(MedicationStatus.ADMINISTERED);
@@ -658,7 +658,7 @@ describe('Medication Component Integration', () => {
       expect(listWrapper.findAll('.medication-item')).toHaveLength(2);
 
       // Update medication through store
-      await medicationsStore.updateMedication('med-1', {
+      await medicationsStore.updateMedication(1, {
         name: '一貫性テスト薬',
         dosage: '1日4回',
       });
@@ -680,7 +680,7 @@ describe('Medication Component Integration', () => {
       // Mount components
       const formWrapper1 = mount(MedicationForm, {
         props: {
-          medicationId: 'med-1',
+          medicationId: 1,
         },
         global: {
           plugins: [pinia],
@@ -689,7 +689,7 @@ describe('Medication Component Integration', () => {
 
       const formWrapper2 = mount(MedicationForm, {
         props: {
-          medicationId: 'med-1',
+          medicationId: 1,
         },
         global: {
           plugins: [pinia],

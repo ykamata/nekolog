@@ -29,7 +29,7 @@ global.$fetch = vi.fn();
 // Test data
 const mockCats: Cat[] = [
   {
-    id: 'cat-1',
+    id: 1,
     name: 'みけ',
     birthdate: new Date('2020-01-01'),
     weight: 4.5,
@@ -37,7 +37,7 @@ const mockCats: Cat[] = [
     updatedAt: new Date(),
   },
   {
-    id: 'cat-2',
+    id: 2,
     name: 'しろ',
     birthdate: new Date('2019-06-15'),
     weight: 3.8,
@@ -48,7 +48,7 @@ const mockCats: Cat[] = [
 
 const mockMedications: Medication[] = [
   {
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬A',
     type: MedicationType.MEDICINE,
     description: 'テスト用の薬です',
@@ -57,7 +57,7 @@ const mockMedications: Medication[] = [
     updatedAt: new Date(),
   },
   {
-    id: 'med-2',
+    id: 2,
     name: 'サプリB',
     type: MedicationType.SUPPLEMENT,
     description: 'テスト用のサプリです',
@@ -69,9 +69,9 @@ const mockMedications: Medication[] = [
 
 const mockMedicationRecords: MedicationRecord[] = [
   {
-    id: 'record-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     quantity: 1,
     administeredAt: new Date('2024-01-15T08:00:00'),
     status: MedicationStatus.ADMINISTERED,
@@ -79,9 +79,9 @@ const mockMedicationRecords: MedicationRecord[] = [
     updatedAt: new Date(),
   },
   {
-    id: 'record-2',
-    catId: 'cat-2',
-    medicationId: 'med-2',
+    id: 2,
+    catId: 2,
+    medicationId: 2,
     quantity: 2,
     administeredAt: new Date('2024-01-15T20:00:00'),
     status: MedicationStatus.PENDING,
@@ -92,10 +92,10 @@ const mockMedicationRecords: MedicationRecord[] = [
 
 const mockMedicationReminders: MedicationReminder[] = [
   {
-    id: 'reminder-1',
-    scheduleId: 'schedule-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    scheduleId: 1,
+    catId: 1,
+    medicationId: 1,
     scheduledAt: new Date('2024-01-16T08:00:00'),
     status: ReminderStatus.PENDING,
     createdAt: new Date(),
@@ -523,7 +523,7 @@ describe('MedicationCalendar', () => {
     // Verify that fetchMedicationRecords was called with catId filter
     expect(medicationsStore.fetchMedicationRecords).toHaveBeenCalledWith(
       expect.objectContaining({
-        catId: 'cat-1',
+        catId: 1,
       }),
     );
   });
@@ -579,7 +579,7 @@ describe('MedicationCalendar', () => {
   it('handles cat prop correctly', async () => {
     const wrapper = mount(MedicationCalendar, {
       props: {
-        catId: 'cat-1',
+        catId: 1,
       },
       global: {
         plugins: [pinia],
@@ -644,7 +644,7 @@ describe('MedicationCalendar', () => {
 
     const vm = wrapper.vm as any;
 
-    expect(vm.getMedicationName('med-1')).toBe('テスト薬A');
+    expect(vm.getMedicationName(1)).toBe('テスト薬A');
     expect(vm.getMedicationName('unknown')).toBe('不明な薬');
   });
 

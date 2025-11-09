@@ -7,8 +7,8 @@ describe('Data Sampling Utilities', () => {
     it('小さなデータセットではサンプリングを適用しない', () => {
       const smallDataset: MealRecord[] = Array.from({ length: 100 }, (_, i) => ({
         id: `record-${i}`,
-        catId: 'cat-1',
-        foodId: 'food-1',
+        catId: 1,
+        foodId: 1,
         quantity: 50,
         calories: 100,
         mealTime: new Date(`2024-01-${String((i % 31) + 1).padStart(2, '0')}T12:00:00Z`),
@@ -30,8 +30,8 @@ describe('Data Sampling Utilities', () => {
     it('大量データ時にサンプリングを適用する', () => {
       const largeDataset: MealRecord[] = Array.from({ length: 3000 }, (_, i) => ({
         id: `record-${i}`,
-        catId: 'cat-1',
-        foodId: 'food-1',
+        catId: 1,
+        foodId: 1,
         quantity: 50,
         calories: 100,
         mealTime: new Date(`2024-01-${String((i % 31) + 1).padStart(2, '0')}T${String(i % 24).padStart(2, '0')}:00:00Z`),
@@ -54,8 +54,8 @@ describe('Data Sampling Utilities', () => {
     it('最初と最後のレコードが保持される', () => {
       const dataset: MealRecord[] = Array.from({ length: 3000 }, (_, i) => ({
         id: `record-${i}`,
-        catId: 'cat-1',
-        foodId: 'food-1',
+        catId: 1,
+        foodId: 1,
         quantity: 50,
         calories: 100,
         mealTime: new Date(`2024-01-01T${String(i % 24).padStart(2, '0')}:${String(i % 60).padStart(2, '0')}:00Z`),
@@ -78,8 +78,8 @@ describe('Data Sampling Utilities', () => {
       // 逆順のデータを作成
       const dataset: MealRecord[] = Array.from({ length: 100 }, (_, i) => ({
         id: `record-${i}`,
-        catId: 'cat-1',
-        foodId: 'food-1',
+        catId: 1,
+        foodId: 1,
         quantity: 50,
         calories: 100,
         mealTime: new Date(`2024-01-${String(31 - (i % 31)).padStart(2, '0')}T12:00:00Z`),

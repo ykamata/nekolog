@@ -37,7 +37,7 @@ vi.mock('~/lib/prisma', () => ({
 
 describe('Auth Middleware', () => {
   const mockPayload = {
-    userId: 'test-user-id',
+    userId: 1,
     email: 'test@example.com',
   };
 

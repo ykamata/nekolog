@@ -30,7 +30,7 @@ vi.mock('~/components/MedicationRecordForm.vue', () => ({
 
 describe('CatMedicationHistory', () => {
   const createTestCat = (overrides?: Partial<Cat>): Cat => ({
-    id: 'cat-1',
+    id: 1,
     name: 'みけ',
     birthdate: new Date('2020-01-01'),
     weight: 4.5,
@@ -43,7 +43,7 @@ describe('CatMedicationHistory', () => {
   const createTestMedication = (
     overrides?: Partial<Medication>,
   ): Medication => ({
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: 'MEDICINE' as MedicationType,
     description: 'テスト用の薬です',
@@ -56,9 +56,9 @@ describe('CatMedicationHistory', () => {
   const createTestMedicationRecord = (
     overrides?: Partial<MedicationRecord>,
   ): MedicationRecord => ({
-    id: 'record-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     quantity: 1,
     administeredAt: new Date(),
     status: 'ADMINISTERED' as MedicationStatus,
@@ -71,8 +71,8 @@ describe('CatMedicationHistory', () => {
   const defaultProps = {
     cat: createTestCat(),
     medications: [
-      createTestMedication({ id: 'med-1', name: '血圧薬' }),
-      createTestMedication({ id: 'med-2', name: 'ビタミンC' }),
+      createTestMedication({ id: 1, name: '血圧薬' }),
+      createTestMedication({ id: 2, name: 'ビタミンC' }),
     ],
   };
 
@@ -230,8 +230,8 @@ describe('CatMedicationHistory', () => {
 
       // Save new record
       const recordInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 2,
         administeredAt: new Date(),
         status: 'ADMINISTERED' as MedicationStatus,
@@ -262,8 +262,8 @@ describe('CatMedicationHistory', () => {
 
       // Save updated record
       const recordInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 3,
         administeredAt: new Date(),
         status: 'PENDING' as MedicationStatus,

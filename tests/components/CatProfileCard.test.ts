@@ -9,7 +9,7 @@ global.$fetch = vi.fn();
 
 describe('CatProfileCard', () => {
   const mockCat: Cat = {
-    id: 'cat-1',
+    id: 1,
     name: 'テスト猫',
     birthdate: new Date('2019-01-01'), // 5 years ago to match the expected age
     weight: 4.5,

@@ -7,7 +7,7 @@ import type { Cat } from '~/types/cat-meal';
 describe('CatList', () => {
   const mockCats: Cat[] = [
     {
-      id: 'cat-1',
+      id: 1,
       name: 'テスト猫1',
       birthdate: new Date('2019-01-01'), // 5 years ago
       weight: 4.5,
@@ -16,7 +16,7 @@ describe('CatList', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'cat-2',
+      id: 2,
       name: 'テスト猫2',
       birthdate: new Date('2019-06-15'),
       weight: 3.2,
@@ -212,7 +212,7 @@ describe('CatList', () => {
 
   it('calculates age correctly for cats under 1 year', () => {
     const youngCat: Cat = {
-      id: 'young-cat',
+      id: 100,
       name: '子猫',
       birthdate: new Date(Date.now() - 5 * 30.44 * 24 * 60 * 60 * 1000), // 5 months ago (using more precise month calculation)
       weight: 2.0,

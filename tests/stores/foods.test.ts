@@ -14,7 +14,7 @@ describe('useFoodsStore', () => {
   });
 
   const mockDryFood: Food = {
-    id: '1',
+    id: 1,
     name: 'Dry Food',
     type: 'DRY' as FoodType,
     brand: 'Test Brand',
@@ -26,7 +26,7 @@ describe('useFoodsStore', () => {
   };
 
   const mockWetFood: Food = {
-    id: '2',
+    id: 2,
     name: 'Wet Food',
     type: 'WET' as FoodType,
     brand: 'Test Brand',
@@ -67,8 +67,8 @@ describe('useFoodsStore', () => {
     it('should get food by id', () => {
       const store = useFoodsStore();
 
-      expect(store.getFoodById('1')).toEqual(mockDryFood);
-      expect(store.getFoodById('nonexistent')).toBeUndefined();
+      expect(store.getFoodById(1)).toEqual(mockDryFood);
+      expect(store.getFoodById(999)).toBeUndefined();
     });
 
     it('should filter foods by search query', () => {
@@ -114,7 +114,7 @@ describe('useFoodsStore', () => {
 
     it('should get unique brands', () => {
       const store = useFoodsStore();
-      const food3 = { ...mockDryFood, id: '3', brand: 'Another Brand' };
+      const food3 = { ...mockDryFood, id: 3, brand: 'Another Brand' };
       store.foods = [mockDryFood, mockWetFood, food3];
 
       expect(store.uniqueBrands).toEqual(['Another Brand', 'Test Brand']);
@@ -208,7 +208,7 @@ describe('useFoodsStore', () => {
       mockFetch.mockResolvedValueOnce(updatedFood);
 
       const foodUpdate: FoodUpdate = { name: 'Updated Food' };
-      const result = await store.updateFood('1', foodUpdate);
+      const result = await store.updateFood(1, foodUpdate);
 
       expect(mockFetch).toHaveBeenCalledWith('/api/foods/1', {
         method: 'PUT',
@@ -225,7 +225,7 @@ describe('useFoodsStore', () => {
       store.foods = [mockDryFood];
       mockFetch.mockResolvedValueOnce(undefined);
 
-      await store.deleteFood('1');
+      await store.deleteFood(1);
 
       expect(mockFetch).toHaveBeenCalledWith('/api/foods/1', {
         method: 'DELETE',
@@ -295,12 +295,12 @@ describe('useFoodsStore', () => {
 
     it('should add food to state', () => {
       const store = useFoodsStore();
-      const newFood = { ...mockDryFood, id: '3', name: 'New Food' };
+      const newFood = { ...mockDryFood, id: 3, name: 'New Food' };
 
       store.addFoodToState(newFood);
 
       expect(store.foods).toHaveLength(3);
-      expect(store.foods.find(f => f.id === '3')).toEqual(newFood);
+      expect(store.foods.find(f => f.id === 3)).toEqual(newFood);
     });
 
     it('should update existing food in state', () => {
@@ -309,15 +309,15 @@ describe('useFoodsStore', () => {
 
       store.addFoodToState(updatedFood);
 
-      expect(store.foods.find(f => f.id === '1')?.name).toBe('Updated');
+      expect(store.foods.find(f => f.id === 1)?.name).toBe('Updated');
     });
 
     it('should remove food from state', () => {
       const store = useFoodsStore();
 
-      store.removeFoodFromState('1');
+      store.removeFoodFromState(1);
 
-      expect(store.foods.find(f => f.id === '1')).toBeUndefined();
+      expect(store.foods.find(f => f.id === 1)).toBeUndefined();
     });
   });
 });

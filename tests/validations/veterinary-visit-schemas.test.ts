@@ -21,7 +21,7 @@ describe('Veterinary Visit Validation Schemas', () => {
   describe('VeterinaryVisitInputSchema', () => {
     it('有効な通院記録データを受け入れる', () => {
       const validData = {
-        catId: 'test-cat-id',
+        catId: 1,
         visitDate: new Date('2024-01-15T10:00:00Z'),
         hospitalName: 'テスト動物病院',
         doctorName: 'テスト先生',
@@ -47,7 +47,7 @@ describe('Veterinary Visit Validation Schemas', () => {
 
     it('処方内容が空の場合はエラーを返す', () => {
       const invalidData = {
-        catId: 'test-cat-id',
+        catId: 1,
         visitDate: new Date('2024-01-15T10:00:00Z'),
         hospitalName: 'テスト動物病院',
         treatments: [],
@@ -59,7 +59,7 @@ describe('Veterinary Visit Validation Schemas', () => {
 
     it('費用が負の値の場合はエラーを返す', () => {
       const invalidData = {
-        catId: 'test-cat-id',
+        catId: 1,
         visitDate: new Date('2024-01-15T10:00:00Z'),
         hospitalName: 'テスト動物病院',
         treatments: ['健康診断'],
@@ -71,7 +71,7 @@ describe('Veterinary Visit Validation Schemas', () => {
 
     it('病院名が空の場合はエラーを返す', () => {
       const invalidData = {
-        catId: 'test-cat-id',
+        catId: 1,
         visitDate: new Date('2024-01-15T10:00:00Z'),
         hospitalName: '',
         treatments: ['健康診断'],
@@ -83,7 +83,7 @@ describe('Veterinary Visit Validation Schemas', () => {
 
     it('メモが長すぎる場合はエラーを返す', () => {
       const invalidData = {
-        catId: 'test-cat-id',
+        catId: 1,
         visitDate: new Date('2024-01-15T10:00:00Z'),
         hospitalName: 'テスト動物病院',
         treatments: ['健康診断'],
@@ -101,7 +101,7 @@ describe('Veterinary Visit Validation Schemas', () => {
       futureDate.setDate(futureDate.getDate() + 7);
 
       const validData = {
-        catId: 'test-cat-id',
+        catId: 1,
         appointmentDate: futureDate,
         hospitalName: 'テスト動物病院',
         doctorName: 'テスト先生',
@@ -117,7 +117,7 @@ describe('Veterinary Visit Validation Schemas', () => {
       pastDate.setDate(pastDate.getDate() - 1);
 
       const invalidData = {
-        catId: 'test-cat-id',
+        catId: 1,
         appointmentDate: pastDate,
         hospitalName: 'テスト動物病院',
       };
@@ -212,7 +212,7 @@ describe('Veterinary Visit Validation Schemas', () => {
   describe('ConvertAppointmentToVisitSchema', () => {
     it('有効な変換データを受け入れる', () => {
       const validData = {
-        appointmentId: 'test-appointment-id',
+        appointmentId: 1,
         actualVisitDate: new Date('2024-01-15T10:00:00Z'),
         actualCost: 5000,
         actualTreatments: ['健康診断', 'ワクチン接種'],
@@ -236,7 +236,7 @@ describe('Veterinary Visit Validation Schemas', () => {
   describe('VeterinaryVisitFilterSchema', () => {
     it('有効なフィルタデータを受け入れる', () => {
       const validData = {
-        catId: 'test-cat-id',
+        catId: 1,
         startDate: new Date('2024-01-01'),
         endDate: new Date('2024-01-31'),
         hasBloodTest: true,
@@ -260,7 +260,7 @@ describe('Veterinary Visit Validation Schemas', () => {
   describe('VeterinaryAppointmentFilterSchema', () => {
     it('有効なフィルタデータを受け入れる', () => {
       const validData = {
-        catId: 'test-cat-id',
+        catId: 1,
         status: AppointmentStatus.SCHEDULED,
         startDate: new Date('2024-01-01'),
         endDate: new Date('2024-01-31'),
@@ -275,7 +275,7 @@ describe('Veterinary Visit Validation Schemas', () => {
   describe('Utility Functions', () => {
     it('validateVeterinaryVisitInput は有効なデータを正しく処理する', () => {
       const validData = {
-        catId: 'test-cat-id',
+        catId: 1,
         visitDate: new Date('2024-01-15T10:00:00Z'),
         hospitalName: 'テスト動物病院',
         treatments: ['健康診断'],
@@ -291,7 +291,7 @@ describe('Veterinary Visit Validation Schemas', () => {
       futureDate.setDate(futureDate.getDate() + 7);
 
       const validData = {
-        catId: 'test-cat-id',
+        catId: 1,
         appointmentDate: futureDate,
         hospitalName: 'テスト動物病院',
       };
@@ -325,7 +325,7 @@ describe('Veterinary Visit Validation Schemas', () => {
 
     it('validateConvertAppointmentToVisit は有効なデータを正しく処理する', () => {
       const validData = {
-        appointmentId: 'test-appointment-id',
+        appointmentId: 1,
         actualCost: 5000,
       };
 
@@ -336,7 +336,7 @@ describe('Veterinary Visit Validation Schemas', () => {
   describe('Edge Cases', () => {
     it('空文字列は optional フィールドで null として扱われる', () => {
       const dataWithEmptyStrings = {
-        catId: 'test-cat-id',
+        catId: 1,
         visitDate: new Date('2024-01-15T10:00:00Z'),
         hospitalName: 'テスト動物病院',
         doctorName: '',
@@ -353,7 +353,7 @@ describe('Veterinary Visit Validation Schemas', () => {
 
     it('処方内容の配列が最大数を超える場合はエラーを返す', () => {
       const invalidData = {
-        catId: 'test-cat-id',
+        catId: 1,
         visitDate: new Date('2024-01-15T10:00:00Z'),
         hospitalName: 'テスト動物病院',
         treatments: Array(21).fill('処方内容'),
@@ -365,7 +365,7 @@ describe('Veterinary Visit Validation Schemas', () => {
 
     it('費用が上限を超える場合はエラーを返す', () => {
       const invalidData = {
-        catId: 'test-cat-id',
+        catId: 1,
         visitDate: new Date('2024-01-15T10:00:00Z'),
         hospitalName: 'テスト動物病院',
         treatments: ['健康診断'],

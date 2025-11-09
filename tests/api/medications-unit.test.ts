@@ -22,7 +22,7 @@ describe('Medication Management API Logic', () => {
     dosage: '1日2回',
   };
 
-  let createdMedicationId: string;
+  let createdMedicationId: number;
 
   beforeEach(async () => {
     // Clean up any existing test data

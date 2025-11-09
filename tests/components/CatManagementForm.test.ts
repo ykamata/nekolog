@@ -12,7 +12,7 @@ vi.mock('~/lib/validations/cat-meal', () => ({
 
 describe('CatManagementForm', () => {
   const mockCat: Cat = {
-    id: 'cat-1',
+    id: 1,
     name: 'テスト猫',
     birthdate: new Date('2020-01-01'),
     weight: 4.5,

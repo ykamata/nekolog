@@ -95,7 +95,7 @@ describe('Analytics Store - データ変換ロジックテスト', () => {
     });
 
     it('適用されたフィルター情報が正しく記録される', () => {
-      analyticsStore.setSelectedCat('test-cat-id');
+      analyticsStore.setSelectedCat(1);
       analyticsStore.setSelectedFoodType(FoodType.DRY);
 
       const chartData = analyticsStore.chartDataForBarChart;
@@ -105,7 +105,7 @@ describe('Analytics Store - データ変換ロジックテスト', () => {
           startDate: '2024-01-01T00:00:00.000Z',
           endDate: '2024-01-04T00:00:00.000Z',
         },
-        catId: 'test-cat-id',
+        catId: 1,
         foodType: FoodType.DRY,
       });
     });

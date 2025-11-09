@@ -11,7 +11,7 @@ vi.stubGlobal('$fetch', mockFetch);
 // Mock data
 const mockCats: Cat[] = [
   {
-    id: 'cat1',
+    id: 1,
     name: 'ミケ',
     birthdate: new Date('2020-01-01'),
     weight: 4.5,
@@ -20,7 +20,7 @@ const mockCats: Cat[] = [
     updatedAt: new Date(),
   },
   {
-    id: 'cat2',
+    id: 2,
     name: 'タマ',
     birthdate: new Date('2019-06-15'),
     weight: 3.8,
@@ -32,7 +32,7 @@ const mockCats: Cat[] = [
 
 const mockFoods: Food[] = [
   {
-    id: 'food1',
+    id: 1,
     name: 'プレミアムキャットフード',
     type: 'DRY',
     brand: 'ロイヤルカナン',
@@ -43,7 +43,7 @@ const mockFoods: Food[] = [
     updatedAt: new Date(),
   },
   {
-    id: 'food2',
+    id: 2,
     name: 'ウェットフード缶詰',
     type: 'WET',
     brand: 'ヒルズ',
@@ -57,9 +57,9 @@ const mockFoods: Food[] = [
 
 const mockMealRecords: MealRecord[] = [
   {
-    id: 'meal1',
-    catId: 'cat1',
-    foodId: 'food1',
+    id: 1,
+    catId: 1,
+    foodId: 1,
     quantity: 50,
     calories: 210,
     mealTime: new Date('2024-01-15T08:00:00'),
@@ -70,9 +70,9 @@ const mockMealRecords: MealRecord[] = [
     food: mockFoods[0],
   },
   {
-    id: 'meal2',
-    catId: 'cat2',
-    foodId: 'food2',
+    id: 2,
+    catId: 2,
+    foodId: 2,
     quantity: 85,
     calories: 153,
     mealTime: new Date('2024-01-15T12:00:00'),
@@ -272,7 +272,7 @@ describe('MealRecordList', () => {
       props: {
         cats: mockCats,
         foods: mockFoods,
-        initialFilter: { catId: 'cat1' },
+        initialFilter: { catId: 1 },
       },
     });
 
@@ -454,7 +454,7 @@ describe('MealRecordList', () => {
 
     expect(wrapper.emitted('filter-change')).toBeTruthy();
     expect(wrapper.emitted('filter-change')?.[0][0]).toMatchObject({
-      catId: 'cat1',
+      catId: 1,
     });
   });
 
@@ -482,7 +482,7 @@ describe('MealRecordList', () => {
   });
 
   it('respects initial filter prop', async () => {
-    const initialFilter = { catId: 'cat1', foodType: 'DRY' as const };
+    const initialFilter = { catId: 1, foodType: 'DRY' as const };
 
     mount(MealRecordList, {
       props: {

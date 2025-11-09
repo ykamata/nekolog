@@ -30,7 +30,7 @@ vi.mock('~/components/DateTimePicker.vue', () => ({
 describe('MealRecordForm', () => {
   const mockCats: Cat[] = [
     {
-      id: 'cat1',
+      id: 1,
       name: 'ミケ',
       weight: 4.5,
       birthdate: new Date('2020-01-01'),
@@ -38,7 +38,7 @@ describe('MealRecordForm', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'cat2',
+      id: 2,
       name: 'タマ',
       weight: 3.2,
       birthdate: new Date('2021-06-15'),
@@ -49,7 +49,7 @@ describe('MealRecordForm', () => {
 
   const mockFoods: Food[] = [
     {
-      id: 'food1',
+      id: 1,
       name: 'プレミアムドライフード',
       type: FoodType.DRY,
       brand: 'ロイヤルカナン',
@@ -60,7 +60,7 @@ describe('MealRecordForm', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'food2',
+      id: 2,
       name: 'ウェットフード缶詰',
       type: FoodType.WET,
       brand: 'ヒルズ',
@@ -349,8 +349,8 @@ describe('MealRecordForm', () => {
   describe('Props and Initial Data', () => {
     it('initializes form with provided initial data', async () => {
       const initialData: Partial<MealRecordInput> = {
-        catId: 'cat2',
-        foodId: 'food2',
+        catId: 2,
+        foodId: 2,
         quantity: 75,
         calories: 135,
         notes: '初期メモ',

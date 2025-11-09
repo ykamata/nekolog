@@ -46,7 +46,7 @@ describe('Server Error Handler', () => {
       const context = {
         endpoint: '/api/test',
         method: 'POST',
-        userId: 'user-123',
+        userId: 123,
       };
       const handleError = createApiErrorHandler(context);
 
@@ -84,7 +84,7 @@ describe('Server Error Handler', () => {
       const context = {
         endpoint: '/api/test',
         method: 'POST',
-        userId: 'user-123',
+        userId: 123,
       };
       const handleError = createApiErrorHandler(context);
 
@@ -112,7 +112,7 @@ describe('Server Error Handler', () => {
       const context = {
         endpoint: '/api/test',
         method: 'POST',
-        userId: 'user-123',
+        userId: 123,
       };
       const handleError = createApiErrorHandler(context);
 
@@ -140,7 +140,7 @@ describe('Server Error Handler', () => {
       const context = {
         endpoint: '/api/test',
         method: 'POST',
-        userId: 'user-123',
+        userId: 123,
       };
       const handleError = createApiErrorHandler(context);
 
@@ -168,7 +168,7 @@ describe('Server Error Handler', () => {
       const context = {
         endpoint: '/api/test',
         method: 'POST',
-        userId: 'user-123',
+        userId: 123,
       };
       const handleError = createApiErrorHandler(context);
 
@@ -195,7 +195,7 @@ describe('Server Error Handler', () => {
       const context = {
         endpoint: '/api/test',
         method: 'POST',
-        userId: 'user-123',
+        userId: 123,
       };
       const handleError = createApiErrorHandler(context);
 
@@ -217,7 +217,7 @@ describe('Server Error Handler', () => {
       const context = {
         endpoint: '/api/test',
         method: 'POST',
-        userId: 'user-123',
+        userId: 123,
       };
       const handleError = createApiErrorHandler(context);
 
@@ -316,14 +316,14 @@ describe('Server Error Handler', () => {
     it('should extract request context from H3 event', () => {
       const mockEvent = {
         context: {
-          user: { id: 'user-123' },
+          user: { id: 123 },
         },
       } as any;
 
       const context = getRequestContext(mockEvent);
 
       expect(context).toEqual({
-        userId: 'user-123',
+        userId: 123,
         requestId: 'test-request-id',
         userAgent: 'test-agent',
         ip: 'unknown',

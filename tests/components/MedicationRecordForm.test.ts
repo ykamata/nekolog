@@ -66,7 +66,7 @@ vi.mock('~/lib/validations/medication', () => ({
 
 describe('MedicationRecordForm', () => {
   const createTestCat = (overrides?: Partial<Cat>): Cat => ({
-    id: 'cat-1',
+    id: 1,
     name: 'テスト猫',
     birthdate: new Date('2020-01-01'),
     weight: 4.5,
@@ -79,7 +79,7 @@ describe('MedicationRecordForm', () => {
   const createTestMedication = (
     overrides?: Partial<Medication>,
   ): Medication => ({
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: 'MEDICINE' as MedicationType,
     description: 'テスト用の薬です',
@@ -92,9 +92,9 @@ describe('MedicationRecordForm', () => {
   const createTestMedicationRecord = (
     overrides?: Partial<MedicationRecord>,
   ): MedicationRecord => ({
-    id: 'record-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     quantity: 1,
     administeredAt: new Date(),
     status: 'ADMINISTERED' as MedicationStatus,
@@ -107,12 +107,12 @@ describe('MedicationRecordForm', () => {
   const defaultProps = {
     isOpen: true,
     cats: [
-      createTestCat({ id: 'cat-1', name: 'みけ' }),
-      createTestCat({ id: 'cat-2', name: 'しろ' }),
+      createTestCat({ id: 1, name: 'みけ' }),
+      createTestCat({ id: 2, name: 'しろ' }),
     ],
     medications: [
-      createTestMedication({ id: 'med-1', name: '血圧薬', type: 'MEDICINE' }),
-      createTestMedication({ id: 'med-2', name: 'ビタミンC', type: 'VITAMIN' }),
+      createTestMedication({ id: 1, name: '血圧薬', type: 'MEDICINE' }),
+      createTestMedication({ id: 2, name: 'ビタミンC', type: 'VITAMIN' }),
     ],
   };
 
@@ -170,8 +170,8 @@ describe('MedicationRecordForm', () => {
 
     it('should populate form fields when medicationRecord is provided', async () => {
       const medicationRecord = createTestMedicationRecord({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 2,
         status: 'PENDING',
         notes: 'テストメモ',
@@ -198,7 +198,7 @@ describe('MedicationRecordForm', () => {
         .element as HTMLTextAreaElement;
 
       expect(catSelect.value).toBe('cat-1');
-      expect(medicationSelect.value).toBe('med-1');
+      expect(medicationSelect.value).toBe(1);
       expect(quantityInput.value).toBe('2');
       expect(statusSelect.value).toBe('PENDING');
       expect(notesTextarea.value).toBe('テストメモ');
@@ -250,7 +250,7 @@ describe('MedicationRecordForm', () => {
 
       // Fill in form data
       await wrapper.find('#cat-select').setValue('cat-1');
-      await wrapper.find('#medication-select').setValue('med-1');
+      await wrapper.find('#medication-select').setValue(1);
       await wrapper.find('#quantity-input').setValue('2');
       await wrapper.find('#status-select').setValue('ADMINISTERED');
       await wrapper.find('#notes-textarea').setValue('テストメモ');
@@ -261,8 +261,8 @@ describe('MedicationRecordForm', () => {
       const saveEvents = wrapper.emitted('save');
       expect(saveEvents).toHaveLength(1);
       expect(saveEvents![0][0]).toMatchObject({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 2,
         status: 'ADMINISTERED',
         notes: 'テストメモ',
@@ -297,8 +297,8 @@ describe('MedicationRecordForm', () => {
 
     it('should reset form when reset button is clicked', async () => {
       const medicationRecord = createTestMedicationRecord({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 2,
       });
 
@@ -362,7 +362,7 @@ describe('MedicationRecordForm', () => {
 
       // Fill in required fields
       await wrapper.find('#cat-select').setValue('cat-1');
-      await wrapper.find('#medication-select').setValue('med-1');
+      await wrapper.find('#medication-select').setValue(1);
       await wrapper.vm.$nextTick();
 
       expect(wrapper.find('.form-summary').exists()).toBe(true);
@@ -408,7 +408,7 @@ describe('MedicationRecordForm', () => {
 
       // Fill only required fields
       await wrapper.find('#cat-select').setValue('cat-1');
-      await wrapper.find('#medication-select').setValue('med-1');
+      await wrapper.find('#medication-select').setValue(1);
       await wrapper.find('#quantity-input').setValue('1');
 
       // Submit form
@@ -417,8 +417,8 @@ describe('MedicationRecordForm', () => {
       const saveEvents = wrapper.emitted('save');
       expect(saveEvents).toHaveLength(1);
       expect(saveEvents![0][0]).toMatchObject({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         notes: undefined,
       });
@@ -430,7 +430,7 @@ describe('MedicationRecordForm', () => {
       const wrapper = mount(MedicationRecordForm, {
         props: {
           ...defaultProps,
-          selectedCatId: 'cat-1',
+          selectedCatId: 1,
         },
       });
 
@@ -448,7 +448,7 @@ describe('MedicationRecordForm', () => {
       expect(catSelect.value).toBe('');
 
       // Change selectedCatId prop
-      await wrapper.setProps({ selectedCatId: 'cat-2' });
+      await wrapper.setProps({ selectedCatId: 2 });
 
       catSelect = wrapper.find('#cat-select').element as HTMLSelectElement;
       expect(catSelect.value).toBe('cat-2');
@@ -456,14 +456,14 @@ describe('MedicationRecordForm', () => {
 
     it('should not change cat selection when in edit mode', async () => {
       const medicationRecord = createTestMedicationRecord({
-        catId: 'cat-1',
+        catId: 1,
       });
 
       const wrapper = mount(MedicationRecordForm, {
         props: {
           ...defaultProps,
           medicationRecord,
-          selectedCatId: 'cat-2',
+          selectedCatId: 2,
         },
       });
 
@@ -475,7 +475,7 @@ describe('MedicationRecordForm', () => {
       const wrapper = mount(MedicationRecordForm, {
         props: {
           ...defaultProps,
-          selectedCatId: 'cat-1',
+          selectedCatId: 1,
         },
       });
 
@@ -496,9 +496,9 @@ describe('MedicationRecordForm', () => {
   describe('Medication Type Formatting', () => {
     it('should format medication types correctly in options', () => {
       const medications = [
-        createTestMedication({ id: 'med-1', name: '薬A', type: 'MEDICINE' }),
-        createTestMedication({ id: 'med-2', name: '薬B', type: 'SUPPLEMENT' }),
-        createTestMedication({ id: 'med-3', name: '薬C', type: 'VITAMIN' }),
+        createTestMedication({ id: 1, name: '薬A', type: 'MEDICINE' }),
+        createTestMedication({ id: 2, name: '薬B', type: 'SUPPLEMENT' }),
+        createTestMedication({ id: 3, name: '薬C', type: 'VITAMIN' }),
       ];
 
       const wrapper = mount(MedicationRecordForm, {

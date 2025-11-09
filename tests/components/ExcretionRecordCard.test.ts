@@ -24,15 +24,15 @@ vi.mock('~/components/ConfirmationDialog.vue', () => ({
 
 describe('ExcretionRecordCard', () => {
   const mockRecord: ExcretionRecord = {
-    id: 'record1',
-    catId: 'cat1',
+    id: 1,
+    catId: 1,
     type: ExcretionType.URINE,
     recordedAt: new Date('2024-01-15T10:30:00'),
     notes: 'テストメモ',
     createdAt: new Date('2024-01-15T10:30:00'),
     updatedAt: new Date('2024-01-15T10:30:00'),
     cat: {
-      id: 'cat1',
+      id: 1,
       name: 'ミケ',
       weight: 4.5,
       birthdate: new Date('2020-01-01'),
@@ -43,13 +43,13 @@ describe('ExcretionRecordCard', () => {
 
   const mockRecordWithoutNotes: ExcretionRecord = {
     ...mockRecord,
-    id: 'record2',
+    id: 2,
     notes: undefined,
   };
 
   const mockFecesRecord: ExcretionRecord = {
     ...mockRecord,
-    id: 'record3',
+    id: 3,
     type: ExcretionType.FECES,
   };
 

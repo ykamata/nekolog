@@ -20,7 +20,7 @@ describe('Medications Store', () => {
   let store: ReturnType<typeof useMedicationsStore>;
 
   const mockMedication: Medication = {
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: MedicationType.MEDICINE,
     description: 'テスト用の薬です',
@@ -37,9 +37,9 @@ describe('Medications Store', () => {
   };
 
   const mockMedicationRecord: MedicationRecord = {
-    id: 'record-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     quantity: 2,
     administeredAt: new Date('2024-01-01T08:00:00Z'),
     status: MedicationStatus.ADMINISTERED,
@@ -49,8 +49,8 @@ describe('Medications Store', () => {
   };
 
   const mockMedicationRecordInput: MedicationRecordInput = {
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    catId: 1,
+    medicationId: 1,
     quantity: 2,
     administeredAt: new Date('2024-01-01T08:00:00Z'),
     status: MedicationStatus.ADMINISTERED,
@@ -58,10 +58,10 @@ describe('Medications Store', () => {
   };
 
   const mockMedicationReminder: MedicationReminder = {
-    id: 'reminder-1',
-    scheduleId: 'schedule-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    scheduleId: 1,
+    catId: 1,
+    medicationId: 1,
     scheduledAt: new Date('2024-01-01T08:00:00Z'),
     status: ReminderStatus.PENDING,
     createdAt: new Date('2024-01-01T08:00:00Z'),
@@ -69,9 +69,9 @@ describe('Medications Store', () => {
   };
 
   const mockMedicationReminderInput: MedicationReminderInput = {
-    scheduleId: 'schedule-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    scheduleId: 1,
+    catId: 1,
+    medicationId: 1,
     scheduledAt: new Date('2024-01-01T08:00:00Z'),
   };
 
@@ -100,7 +100,7 @@ describe('Medications Store', () => {
         mockMedication,
         {
           ...mockMedication,
-          id: 'med-2',
+          id: 2,
           name: 'テストサプリ',
           type: MedicationType.SUPPLEMENT,
         },
@@ -108,7 +108,7 @@ describe('Medications Store', () => {
     });
 
     it('should get medication by id', () => {
-      const medication = store.getMedicationById('med-1');
+      const medication = store.getMedicationById(1);
       expect(medication).toEqual(mockMedication);
     });
 
@@ -161,8 +161,8 @@ describe('Medications Store', () => {
         mockMedicationRecord,
         {
           ...mockMedicationRecord,
-          id: 'record-2',
-          catId: 'cat-2',
+          id: 2,
+          catId: 2,
           status: MedicationStatus.PENDING,
           administeredAt: new Date('2024-01-02T08:00:00Z'),
         },
@@ -181,7 +181,7 @@ describe('Medications Store', () => {
     });
 
     it('should get medication records by medication', () => {
-      const records = store.getMedicationRecordsByMedication('med-1');
+      const records = store.getMedicationRecordsByMedication(1);
       expect(records).toHaveLength(2);
     });
 
@@ -310,7 +310,7 @@ describe('Medications Store', () => {
 
         vi.mocked($fetch).mockResolvedValueOnce(updatedMedication);
 
-        const result = await store.updateMedication('med-1', updateData);
+        const result = await store.updateMedication(1, updateData);
 
         expect($fetch).toHaveBeenCalledWith('/api/medications/med-1', {
           method: 'PUT',
@@ -328,7 +328,7 @@ describe('Medications Store', () => {
         vi.mocked($fetch).mockRejectedValueOnce(error);
 
         await expect(
-          store.updateMedication('med-1', { name: 'Updated' }),
+          store.updateMedication(1, { name: 'Updated' }),
         ).rejects.toThrow('Not found');
         expect(store.error).toBe('Not found');
         expect(store.loading).toBe(false);
@@ -345,7 +345,7 @@ describe('Medications Store', () => {
           message: '薬が正常に削除されました',
         });
 
-        await store.deleteMedication('med-1');
+        await store.deleteMedication(1);
 
         expect($fetch).toHaveBeenCalledWith('/api/medications/med-1', {
           method: 'DELETE',
@@ -359,7 +359,7 @@ describe('Medications Store', () => {
         const error = new Error('Cannot delete');
         vi.mocked($fetch).mockRejectedValueOnce(error);
 
-        await expect(store.deleteMedication('med-1')).rejects.toThrow(
+        await expect(store.deleteMedication(1)).rejects.toThrow(
           'Cannot delete',
         );
         expect(store.error).toBe('Cannot delete');
@@ -404,8 +404,8 @@ describe('Medications Store', () => {
         vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
 
         await store.fetchMedicationRecords({
-          catId: 'cat-1',
-          medicationId: 'med-1',
+          catId: 1,
+          medicationId: 1,
           status: MedicationStatus.ADMINISTERED,
         });
 
@@ -523,7 +523,7 @@ describe('Medications Store', () => {
 
         expect($fetch).toHaveBeenCalledWith('/api/medication-reminders?');
         expect(store.medicationReminders).toHaveLength(1);
-        expect(store.medicationReminders[0].id).toBe('reminder-1');
+        expect(store.medicationReminders[0].id).toBe(1);
         expect(store.loading).toBe(false);
         expect(store.error).toBe(null);
       });
@@ -537,7 +537,7 @@ describe('Medications Store', () => {
         vi.mocked($fetch).mockResolvedValueOnce(mockResponse);
 
         await store.fetchMedicationReminders({
-          catId: 'cat-1',
+          catId: 1,
           status: ReminderStatus.PENDING,
         });
 
@@ -603,7 +603,7 @@ describe('Medications Store', () => {
         vi.mocked($fetch).mockResolvedValueOnce(updatedReminder);
 
         const result = await store.updateReminderStatus(
-          'reminder-1',
+          1,
           ReminderStatus.ACKNOWLEDGED,
         );
 
@@ -625,7 +625,7 @@ describe('Medications Store', () => {
         vi.mocked($fetch).mockRejectedValueOnce(error);
 
         await expect(
-          store.updateReminderStatus('reminder-1', ReminderStatus.ACKNOWLEDGED),
+          store.updateReminderStatus(1, ReminderStatus.ACKNOWLEDGED),
         ).rejects.toThrow('Not found');
         expect(store.error).toBe('Not found');
         expect(store.loading).toBe(false);
@@ -639,14 +639,14 @@ describe('Medications Store', () => {
         mockMedicationReminder,
         {
           ...mockMedicationReminder,
-          id: 'reminder-2',
-          catId: 'cat-2',
+          id: 2,
+          catId: 2,
           status: ReminderStatus.ACKNOWLEDGED,
           scheduledAt: new Date('2024-01-02T08:00:00Z'),
         },
         {
           ...mockMedicationReminder,
-          id: 'reminder-3',
+          id: 3,
           status: ReminderStatus.SNOOZED,
           scheduledAt: new Date('2024-01-01T09:00:00Z'),
         },
@@ -654,7 +654,7 @@ describe('Medications Store', () => {
     });
 
     it('should get medication reminder by id', () => {
-      const reminder = store.getMedicationReminderById('reminder-1');
+      const reminder = store.getMedicationReminderById(1);
       expect(reminder).toEqual(mockMedicationReminder);
     });
 

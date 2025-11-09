@@ -701,7 +701,7 @@ describe('Medication API Database Integration', () => {
     });
 
     it('should handle not found errors properly', async () => {
-      const nonExistentId = 'non-existent-id';
+      const nonExistentId = 999999;
 
       // Test reading non-existent medication
       const readEvent = {
@@ -788,7 +788,7 @@ describe('Medication API Database Integration', () => {
         return {
           ...actual,
           readBody: vi.fn().mockResolvedValue({
-            catId: 'non-existent-cat-id',
+            catId: 999999,
             medicationId: testMedicationId || 'test-med-id',
             quantity: 1,
             administeredAt: new Date(),

@@ -525,7 +525,7 @@ describe('Basic Medication Integration Tests', () => {
       try {
         await prisma.medicationRecord.create({
           data: {
-            catId: 'non-existent-cat-id',
+            catId: 999999,
             medicationId: testMedication.id,
             quantity: 1,
             administeredAt: new Date(),
@@ -543,7 +543,7 @@ describe('Basic Medication Integration Tests', () => {
         await prisma.medicationRecord.create({
           data: {
             catId: testCat.id,
-            medicationId: 'non-existent-medication-id',
+            medicationId: 999999,
             quantity: 1,
             administeredAt: new Date(),
             status: MedicationStatus.ADMINISTERED,
@@ -612,7 +612,7 @@ describe('Basic Medication Integration Tests', () => {
           // This should fail due to invalid catId
           await tx.medicationRecord.create({
             data: {
-              catId: 'invalid-cat-id',
+              catId: 0,
               medicationId: medication.id,
               quantity: 1,
               administeredAt: new Date(),

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { prisma } from '~/lib/prisma';
 
 describe('Veterinary Master Delete Validation', () => {
-  let testUserId: string;
+  let testUserId: number;
 
   beforeEach(async () => {
     // テスト用ユーザーを作成

@@ -6,11 +6,11 @@ import type { VeterinaryDoctor, VeterinaryHospital } from '~/types/veterinary-ma
 // Mock composables
 const mockHospitals = ref<VeterinaryHospital[]>([
   {
-    id: 'hospital-1',
+    id: 1,
     name: 'テスト動物病院',
     address: 'テスト住所',
     phone: '03-1234-5678',
-    userId: 'user-1',
+    userId: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -36,29 +36,29 @@ vi.mock('~/components/ConfirmationDialog.vue', () => ({
 describe('VeterinaryDoctorList', () => {
   const mockDoctors: VeterinaryDoctor[] = [
     {
-      id: 'doctor-1',
+      id: 1,
       name: 'テスト先生1',
-      hospitalId: 'hospital-1',
+      hospitalId: 1,
       specialization: '内科',
-      userId: 'user-1',
+      userId: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
       hospital: {
-        id: 'hospital-1',
+        id: 1,
         name: 'テスト動物病院',
         address: 'テスト住所',
         phone: '03-1234-5678',
-        userId: 'user-1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     },
     {
-      id: 'doctor-2',
+      id: 2,
       name: 'テスト先生2',
       hospitalId: null,
       specialization: '外科',
-      userId: 'user-1',
+      userId: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
       hospital: null,

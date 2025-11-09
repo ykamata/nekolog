@@ -280,7 +280,7 @@ describe.skip('Medication Reminders API', () => {
 
     it('should validate schedule existence', async () => {
       const schedule = await prisma.medicationSchedule.findUnique({
-        where: { id: 'non-existent-schedule' },
+        where: { id: 999999 },
       });
 
       expect(schedule).toBeNull();
@@ -343,7 +343,7 @@ describe.skip('Medication Reminders API', () => {
 
     it('should return null when reminder does not exist', async () => {
       const result = await prisma.medicationReminder.findUnique({
-        where: { id: 'non-existent-id' },
+        where: { id: 999999 },
       });
 
       expect(result).toBeNull();

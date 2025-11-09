@@ -5,7 +5,7 @@ import type { User } from '~/types/auth';
 
 // モック用のユーザーデータ
 const mockUser: User = {
-  id: 'test-user-id',
+  id: 1,
   email: 'test@example.com',
   name: 'Test User',
   createdAt: new Date(),

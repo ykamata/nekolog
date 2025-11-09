@@ -200,7 +200,7 @@ describe('useAnalyticsStore', () => {
       mockFetch.mockResolvedValueOnce({ data: mockAnalytics });
 
       const filter = {
-        catId: 'cat1',
+        catId: 1,
         startDate: new Date('2023-01-01'),
         endDate: new Date('2023-01-31'),
         foodType: 'DRY' as FoodType,

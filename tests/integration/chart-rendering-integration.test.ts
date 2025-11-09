@@ -69,8 +69,8 @@ const mockAnalyticsStore = {
 
 const mockCatsStore = {
   cats: ref([
-    { id: 'cat1', name: 'ミケ' },
-    { id: 'cat2', name: 'タマ' },
+    { id: 1, name: 'ミケ' },
+    { id: 2, name: 'タマ' },
   ]),
   fetchCats: vi.fn(),
 };
@@ -276,7 +276,7 @@ describe('Chart Rendering Integration', () => {
     });
 
     const wrapper = mount(MealChartWithDebug, {
-      props: { catId: 'cat1' },
+      props: { catId: 1 },
     });
 
     await nextTick();
