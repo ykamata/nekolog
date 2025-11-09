@@ -20,7 +20,7 @@ async function main() {
     where: { email: 'test@example.com' },
     update: {},
     create: {
-      id: 'user1',
+      id: 1,
       email: 'test@example.com',
       name: 'テストユーザー',
       password: hashedPassword,
@@ -31,10 +31,10 @@ async function main() {
 
   // Create sample cats
   const cat1 = await prisma.cat.upsert({
-    where: { id: 'cat1' },
+    where: { id: 1 },
     update: {},
     create: {
-      id: 'cat1',
+      id: 1,
       name: 'みけ',
       birthdate: new Date('2020-03-15'),
       weight: 4.2,
@@ -42,10 +42,10 @@ async function main() {
   });
 
   const cat2 = await prisma.cat.upsert({
-    where: { id: 'cat2' },
+    where: { id: 2 },
     update: {},
     create: {
-      id: 'cat2',
+      id: 2,
       name: 'しろ',
       birthdate: new Date('2021-07-22'),
       weight: 3.8,
@@ -54,10 +54,10 @@ async function main() {
 
   // Create sample foods
   const dryFood = await prisma.food.upsert({
-    where: { id: 'food1' },
+    where: { id: 1 },
     update: {},
     create: {
-      id: 'food1',
+      id: 1,
       name: 'ロイヤルカナン アダルト',
       type: FoodType.DRY,
       brand: 'ロイヤルカナン',
@@ -68,10 +68,10 @@ async function main() {
   });
 
   const wetFood = await prisma.food.upsert({
-    where: { id: 'food2' },
+    where: { id: 2 },
     update: {},
     create: {
-      id: 'food2',
+      id: 2,
       name: 'チャオ ちゅーる まぐろ',
       type: FoodType.WET,
       brand: 'チャオ',
@@ -83,10 +83,10 @@ async function main() {
 
   // Create additional foods for variety
   const wetFood2 = await prisma.food.upsert({
-    where: { id: 'food3' },
+    where: { id: 3 },
     update: {},
     create: {
-      id: 'food3',
+      id: 3,
       name: 'モンプチ パウチ まぐろ',
       type: FoodType.WET,
       brand: 'モンプチ',
@@ -97,10 +97,10 @@ async function main() {
   });
 
   const dryFood2 = await prisma.food.upsert({
-    where: { id: 'food4' },
+    where: { id: 4 },
     update: {},
     create: {
-      id: 'food4',
+      id: 4,
       name: 'ヒルズ サイエンスダイエット',
       type: FoodType.DRY,
       brand: 'ヒルズ',
@@ -112,10 +112,10 @@ async function main() {
 
   // Create veterinary hospitals
   const hospital1 = await prisma.veterinaryHospital.upsert({
-    where: { id: 'hospital1' },
+    where: { name: 'みどり動物病院' },
     update: {},
     create: {
-      id: 'hospital1',
+      id: 1,
       name: 'みどり動物病院',
       address: '東京都渋谷区1-2-3',
       phone: '03-1234-5678',
@@ -125,10 +125,10 @@ async function main() {
   });
 
   const hospital2 = await prisma.veterinaryHospital.upsert({
-    where: { id: 'hospital2' },
+    where: { name: 'ペットクリニック田中' },
     update: {},
     create: {
-      id: 'hospital2',
+      id: 2,
       name: 'ペットクリニック田中',
       address: '東京都新宿区4-5-6',
       phone: '03-9876-5432',
@@ -139,10 +139,10 @@ async function main() {
 
   // Create veterinary doctors
   const doctor1 = await prisma.veterinaryDoctor.upsert({
-    where: { id: 'doctor1' },
+    where: { name: '田中 太郎' },
     update: {},
     create: {
-      id: 'doctor1',
+      id: 1,
       name: '田中 太郎',
       hospitalId: hospital1.id,
       specialty: '内科・外科',
@@ -152,10 +152,10 @@ async function main() {
   });
 
   const doctor2 = await prisma.veterinaryDoctor.upsert({
-    where: { id: 'doctor2' },
+    where: { name: '佐藤 花子' },
     update: {},
     create: {
-      id: 'doctor2',
+      id: 2,
       name: '佐藤 花子',
       hospitalId: hospital1.id,
       specialty: '皮膚科',
@@ -165,10 +165,10 @@ async function main() {
   });
 
   const doctor3 = await prisma.veterinaryDoctor.upsert({
-    where: { id: 'doctor3' },
+    where: { name: '山田 次郎' },
     update: {},
     create: {
-      id: 'doctor3',
+      id: 3,
       name: '山田 次郎',
       hospitalId: hospital2.id,
       specialty: '歯科・口腔外科',
@@ -179,10 +179,10 @@ async function main() {
 
   // Create veterinary treatments
   const treatment1 = await prisma.veterinaryTreatment.upsert({
-    where: { id: 'treatment1' },
+    where: { name: '健康診断' },
     update: {},
     create: {
-      id: 'treatment1',
+      id: 1,
       name: '健康診断',
       category: '予防医療',
       description: '年1回の定期健康診断',
@@ -190,10 +190,10 @@ async function main() {
   });
 
   const treatment2 = await prisma.veterinaryTreatment.upsert({
-    where: { id: 'treatment2' },
+    where: { name: 'ワクチン接種' },
     update: {},
     create: {
-      id: 'treatment2',
+      id: 2,
       name: 'ワクチン接種',
       category: '予防医療',
       description: '3種混合ワクチン',
@@ -201,10 +201,10 @@ async function main() {
   });
 
   const treatment3 = await prisma.veterinaryTreatment.upsert({
-    where: { id: 'treatment3' },
+    where: { name: '血液検査' },
     update: {},
     create: {
-      id: 'treatment3',
+      id: 3,
       name: '血液検査',
       category: '検査',
       description: '一般的な血液検査',
@@ -212,10 +212,10 @@ async function main() {
   });
 
   const treatment4 = await prisma.veterinaryTreatment.upsert({
-    where: { id: 'treatment4' },
+    where: { name: '歯石除去' },
     update: {},
     create: {
-      id: 'treatment4',
+      id: 4,
       name: '歯石除去',
       category: '治療',
       description: '全身麻酔下での歯石除去',
@@ -224,10 +224,10 @@ async function main() {
 
   // Create medications
   const medication1 = await prisma.medication.upsert({
-    where: { id: 'med1' },
+    where: { id: 1 },
     update: {},
     create: {
-      id: 'med1',
+      id: 1,
       name: 'プレドニゾロン',
       type: MedicationType.MEDICINE,
       description: 'ステロイド系抗炎症薬',
@@ -236,10 +236,10 @@ async function main() {
   });
 
   const medication2 = await prisma.medication.upsert({
-    where: { id: 'med2' },
+    where: { id: 2 },
     update: {},
     create: {
-      id: 'med2',
+      id: 2,
       name: 'ビタミンB複合体',
       type: MedicationType.SUPPLEMENT,
       description: 'ビタミンB群のサプリメント',
@@ -248,10 +248,10 @@ async function main() {
   });
 
   const medication3 = await prisma.medication.upsert({
-    where: { id: 'med3' },
+    where: { id: 3 },
     update: {},
     create: {
-      id: 'med3',
+      id: 3,
       name: 'オメガ3脂肪酸',
       type: MedicationType.SUPPLEMENT,
       description: '関節と皮膚の健康維持',
@@ -260,10 +260,10 @@ async function main() {
   });
 
   const medication4 = await prisma.medication.upsert({
-    where: { id: 'med4' },
+    where: { id: 4 },
     update: {},
     create: {
-      id: 'med4',
+      id: 4,
       name: 'アンチノール',
       type: MedicationType.SUPPLEMENT,
       description: '関節サポートサプリメント',
@@ -278,6 +278,7 @@ async function main() {
   const mealTypes = ['朝食', '昼食', '夕食', 'おやつ'];
 
   // 過去30日間のデータを生成
+  let mealRecordId = 1;
   for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
     const baseDate = new Date();
     baseDate.setDate(baseDate.getDate() - dayOffset);
@@ -310,7 +311,7 @@ async function main() {
         const mealType = mealTypes[mealIndex % mealTypes.length];
 
         mealRecords.push({
-          id: `meal_${dayOffset}_${cat.id}_${mealIndex}`,
+          id: mealRecordId++,
           catId: cat.id,
           foodId: selectedFood.id,
           quantity: Math.round(quantity * 10) / 10, // 小数点1桁に丸める
@@ -343,6 +344,7 @@ async function main() {
   const doctors = [doctor1, doctor2, doctor3];
 
   // 過去6ヶ月の通院記録を生成
+  let veterinaryVisitId = 1;
   for (let monthOffset = 0; monthOffset < 6; monthOffset++) {
     for (const cat of cats) {
       // 月に1-2回の通院
@@ -371,7 +373,7 @@ async function main() {
         ];
 
         veterinaryVisits.push({
-          id: `visit_${monthOffset}_${cat.id}_${visitIndex}`,
+          id: veterinaryVisitId++,
           catId: cat.id,
           visitDate,
           hospitalId: selectedHospital.id,
@@ -418,6 +420,7 @@ async function main() {
 
   // Create veterinary appointments (future appointments)
   const futureAppointments = [];
+  let appointmentId = 1;
   for (const cat of cats) {
     // 今後1-2ヶ月の予約を作成
     for (let i = 0; i < 2; i++) {
@@ -430,7 +433,7 @@ async function main() {
       const selectedDoctor = availableDoctors[Math.floor(Math.random() * availableDoctors.length)];
 
       futureAppointments.push({
-        id: `appointment_${cat.id}_${i}`,
+        id: appointmentId++,
         catId: cat.id,
         appointmentDate,
         hospitalId: selectedHospital.id,
@@ -455,6 +458,10 @@ async function main() {
   const medicationSchedules = [];
   const medicationRecords = [];
   const medicationReminders = [];
+
+  let scheduleId = 1;
+  let medicationRecordId = 1;
+  let reminderId = 1;
 
   for (const cat of cats) {
     // 各猫に2-3個の薬のスケジュールを作成
@@ -486,8 +493,9 @@ async function main() {
           times = ['08:00'];
       }
 
+      const currentScheduleId = scheduleId++;
       const schedule = {
-        id: `schedule_${cat.id}_${medIndex}`,
+        id: currentScheduleId,
         catId: cat.id,
         medicationId: medication.id,
         frequency,
@@ -513,7 +521,7 @@ async function main() {
               : Math.random() > 0.5 ? MedicationStatus.SKIPPED : MedicationStatus.MISSED;
 
             medicationRecords.push({
-              id: `record_${cat.id}_${medIndex}_${currentDate.toISOString().split('T')[0]}_${timeStr.replace(':', '')}`,
+              id: medicationRecordId++,
               catId: cat.id,
               medicationId: medication.id,
               quantity: 1,
@@ -528,8 +536,8 @@ async function main() {
           // 未来のリマインダーを生成
           if (administeredAt > new Date() && administeredAt <= endDate) {
             medicationReminders.push({
-              id: `reminder_${cat.id}_${medIndex}_${administeredAt.toISOString()}`,
-              scheduleId: schedule.id,
+              id: reminderId++,
+              scheduleId: currentScheduleId,
               catId: cat.id,
               medicationId: medication.id,
               scheduledAt: administeredAt,
@@ -591,6 +599,7 @@ async function main() {
   ];
 
   // 過去30日間の排泄記録を生成
+  let excretionRecordId = 1;
   for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
     const baseDate = new Date();
     baseDate.setDate(baseDate.getDate() - dayOffset);
@@ -612,7 +621,7 @@ async function main() {
         const notes = excretionNotes[Math.floor(Math.random() * excretionNotes.length)];
 
         excretionRecords.push({
-          id: `excretion_${dayOffset}_${cat.id}_${recordIndex}`,
+          id: excretionRecordId++,
           catId: cat.id,
           type,
           recordedAt,
