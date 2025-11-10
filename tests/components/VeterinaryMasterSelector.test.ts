@@ -4,16 +4,16 @@ import VeterinaryMasterSelector from '@/components/VeterinaryMasterSelector.vue'
 
 // テスト用のモックデータ
 const mockHospitals = [
-  { id: '1', name: 'テスト動物病院1', address: '東京都渋谷区' },
-  { id: '2', name: 'テスト動物病院2', address: '東京都新宿区' },
-  { id: '3', name: 'サンプル病院', address: '東京都港区' },
+  { id: 1, name: 'テスト動物病院1', address: '東京都渋谷区' },
+  { id: 2, name: 'テスト動物病院2', address: '東京都新宿区' },
+  { id: 3, name: 'サンプル病院', address: '東京都港区' },
 ];
 
 const mockDoctors = [
-  { id: '1', name: 'テスト先生1', hospitalId: '1', specialization: '内科' },
-  { id: '2', name: 'テスト先生2', hospitalId: '1', specialization: '外科' },
-  { id: '3', name: 'サンプル先生', hospitalId: '2', specialization: '皮膚科' },
-  { id: '4', name: '田中先生', hospitalId: null, specialization: '総合診療' },
+  { id: 1, name: 'テスト先生1', hospitalId: 1, specialization: '内科' },
+  { id: 2, name: 'テスト先生2', hospitalId: 1, specialization: '外科' },
+  { id: 3, name: 'サンプル先生', hospitalId: 2, specialization: '皮膚科' },
+  { id: 4, name: '田中先生', hospitalId: null, specialization: '総合診療' },
 ];
 
 describe('VeterinaryMasterSelector', () => {
@@ -132,7 +132,7 @@ describe('VeterinaryMasterSelector', () => {
           modelValue: '',
           type: 'doctor',
           items: mockDoctors,
-          selectedHospitalId: '1',
+          selectedHospitalId: 1,
         },
       });
 
@@ -151,7 +151,7 @@ describe('VeterinaryMasterSelector', () => {
           modelValue: '',
           type: 'doctor',
           items: [...mockDoctors, ...mockHospitals], // 病院情報も含める
-          selectedHospitalId: '1',
+          selectedHospitalId: 1,
         },
       });
 
@@ -165,11 +165,11 @@ describe('VeterinaryMasterSelector', () => {
           modelValue: 'サンプル先生', // 病院2の先生
           type: 'doctor',
           items: mockDoctors,
-          selectedHospitalId: '1', // 病院1を選択
+          selectedHospitalId: 1, // 病院1を選択
         },
       });
 
-      await wrapper.setProps({ selectedHospitalId: '2' });
+      await wrapper.setProps({ selectedHospitalId: 2 });
       await wrapper.vm.$nextTick();
 
       // 病院1から病院2に変更されたので、サンプル先生は表示されるはず
@@ -177,7 +177,7 @@ describe('VeterinaryMasterSelector', () => {
       expect((input.element as HTMLInputElement).value).toBe('サンプル先生');
 
       // 病院3に変更（サンプル先生は所属していない）
-      await wrapper.setProps({ selectedHospitalId: '3' });
+      await wrapper.setProps({ selectedHospitalId: 3 });
       await wrapper.vm.$nextTick();
 
       expect(wrapper.emitted('update:modelValue')).toBeTruthy();

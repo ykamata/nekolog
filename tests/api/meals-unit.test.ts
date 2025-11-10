@@ -12,11 +12,11 @@ import {
 
 describe.skip('Meal Record Management API Logic', () => {
   // Test data
-  let testCatId: string;
-  let testCat2Id: string;
-  let testFoodId: string;
-  let testFood2Id: string;
-  let createdMealId: string;
+  let testCatId: number;
+  let testCat2Id: number;
+  let testFoodId: number;
+  let testFood2Id: number;
+  let createdMealId: number;
 
   const testMealRecord = {
     quantity: 50,
@@ -170,8 +170,8 @@ describe.skip('Meal Record Management API Logic', () => {
 
     it('should reject invalid meal record input data', () => {
       const invalidMeal = {
-        catId: 'invalid-id',
-        foodId: 'invalid-id',
+        catId: 999999,
+        foodId: 999999,
         quantity: -1, // Negative quantity
         calories: -1, // Negative calories
         mealTime: 'invalid-date',
@@ -256,13 +256,13 @@ describe.skip('Meal Record Management API Logic', () => {
     it('should validate cat and food existence', async () => {
       // Test with non-existent cat
       const catExists = await prisma.cat.findUnique({
-        where: { id: 'non-existent-cat-id' },
+        where: { id: 999999 },
       });
       expect(catExists).toBeNull();
 
       // Test with non-existent food
       const foodExists = await prisma.food.findUnique({
-        where: { id: 'non-existent-food-id' },
+        where: { id: 999999 },
       });
       expect(foodExists).toBeNull();
 
@@ -425,7 +425,7 @@ describe.skip('Meal Record Management API Logic', () => {
       expect(result.success).toBe(true);
 
       const invalidFilter = {
-        catId: 'invalid-id',
+        catId: 999999,
         limit: -1,
         offset: -1,
       };

@@ -18,7 +18,7 @@ describe('OfflineStorage', () => {
   let offlineStorage: OfflineStorage;
 
   const mockCat: Cat = {
-    id: 'cat-1',
+    id: 1,
     name: 'Test Cat',
     birthdate: new Date('2020-01-01'),
     weight: 4.5,
@@ -27,7 +27,7 @@ describe('OfflineStorage', () => {
   };
 
   const mockFood: Food = {
-    id: 'food-1',
+    id: 1,
     name: 'Test Food',
     type: 'DRY',
     brand: 'Test Brand',
@@ -39,9 +39,9 @@ describe('OfflineStorage', () => {
   };
 
   const mockMeal: MealRecord = {
-    id: 'meal-1',
-    catId: 'cat-1',
-    foodId: 'food-1',
+    id: 1,
+    catId: 1,
+    foodId: 1,
     quantity: 50,
     calories: 175,
     mealTime: new Date(),
@@ -146,12 +146,12 @@ describe('OfflineStorage', () => {
     it('should filter meals older than 1 month', () => {
       const oldMeal = {
         ...mockMeal,
-        id: 'old-meal',
+        id: 998,
         mealTime: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000), // 35 days ago
       };
       const recentMeal = {
         ...mockMeal,
-        id: 'recent-meal',
+        id: 999,
         mealTime: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000), // 15 days ago
       };
 
@@ -222,8 +222,8 @@ describe('OfflineStorage', () => {
     describe('addMealOffline', () => {
       it('should add meal with local ID and pending sync', () => {
         const mealInput = {
-          catId: 'cat-1',
-          foodId: 'food-1',
+          catId: 1,
+          foodId: 1,
           quantity: 60,
           calories: 210,
           mealTime: new Date(),
@@ -267,7 +267,7 @@ describe('OfflineStorage', () => {
       it('should update food and add to pending sync', () => {
         const updates = { name: 'Updated Food', caloriesPerGram: 4.0 };
 
-        offlineStorage.updateOffline('food', 'food-1', updates);
+        offlineStorage.updateOffline('food', 1, updates);
 
         const foods = offlineStorage.getFoods();
         expect(foods[0].name).toBe('Updated Food');
@@ -311,7 +311,7 @@ describe('OfflineStorage', () => {
       });
 
       it('should delete food and add to pending sync', () => {
-        offlineStorage.deleteOffline('food', 'food-1');
+        offlineStorage.deleteOffline('food', 1);
 
         const foods = offlineStorage.getFoods();
         expect(foods).toHaveLength(0);
@@ -345,20 +345,20 @@ describe('OfflineStorage', () => {
       const meals = [
         {
           ...mockMeal,
-          id: 'meal-1',
-          catId: 'cat-1',
+          id: 1,
+          catId: 1,
           mealTime: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
         },
         {
           ...mockMeal,
-          id: 'meal-2',
-          catId: 'cat-2',
+          id: 2,
+          catId: 2,
           mealTime: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000), // 2 days ago
         },
         {
           ...mockMeal,
-          id: 'meal-3',
-          catId: 'cat-1',
+          id: 3,
+          catId: 1,
           mealTime: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000), // 1 day ago
         },
       ];

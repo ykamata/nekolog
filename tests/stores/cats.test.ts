@@ -14,7 +14,7 @@ describe('useCatsStore', () => {
   });
 
   const mockCat: Cat = {
-    id: '1',
+    id: 1,
     name: 'Test Cat',
     birthdate: new Date('2020-01-01'),
     weight: 4.5,
@@ -46,14 +46,14 @@ describe('useCatsStore', () => {
       const store = useCatsStore();
       store.cats = [mockCat];
 
-      expect(store.getCatById('1')).toEqual(mockCat);
-      expect(store.getCatById('nonexistent')).toBeUndefined();
+      expect(store.getCatById(1)).toEqual(mockCat);
+      expect(store.getCatById(999)).toBeUndefined();
     });
 
     it('should get cats by name', () => {
       const store = useCatsStore();
       const cat1 = { ...mockCat, name: 'Fluffy' };
-      const cat2 = { ...mockCat, id: '2', name: 'Mittens' };
+      const cat2 = { ...mockCat, id: 2, name: 'Mittens' };
       store.cats = [cat1, cat2];
 
       expect(store.getCatsByName('flu')).toEqual([cat1]);
@@ -64,7 +64,7 @@ describe('useCatsStore', () => {
     it('should return sorted cats', () => {
       const store = useCatsStore();
       const cat1 = { ...mockCat, name: 'Zebra' };
-      const cat2 = { ...mockCat, id: '2', name: 'Alpha' };
+      const cat2 = { ...mockCat, id: 2, name: 'Alpha' };
       store.cats = [cat1, cat2];
 
       expect(store.sortedCats).toEqual([cat2, cat1]);
@@ -181,7 +181,7 @@ describe('useCatsStore', () => {
       mockFetch.mockResolvedValueOnce(updatedCat);
 
       const catUpdate: CatUpdate = { name: 'Updated Cat' };
-      const result = await store.updateCat('1', catUpdate);
+      const result = await store.updateCat(1, catUpdate);
 
       expect(mockFetch).toHaveBeenCalledWith('/api/cats/1', {
         method: 'PUT',
@@ -196,7 +196,7 @@ describe('useCatsStore', () => {
       const error = new Error('Update failed');
       mockFetch.mockRejectedValueOnce(error);
 
-      await expect(store.updateCat('1', { name: 'Updated' })).rejects.toThrow(
+      await expect(store.updateCat(1, { name: 'Updated' })).rejects.toThrow(
         'Update failed',
       );
       expect(store.error).toBe('Update failed');
@@ -209,7 +209,7 @@ describe('useCatsStore', () => {
       store.cats = [mockCat];
       mockFetch.mockResolvedValueOnce(undefined);
 
-      await store.deleteCat('1');
+      await store.deleteCat(1);
 
       expect(mockFetch).toHaveBeenCalledWith('/api/cats/1', {
         method: 'DELETE',
@@ -222,7 +222,7 @@ describe('useCatsStore', () => {
       const error = new Error('Delete failed');
       mockFetch.mockRejectedValueOnce(error);
 
-      await expect(store.deleteCat('1')).rejects.toThrow('Delete failed');
+      await expect(store.deleteCat(1)).rejects.toThrow('Delete failed');
       expect(store.error).toBe('Delete failed');
     });
   });
@@ -270,7 +270,7 @@ describe('useCatsStore', () => {
       const store = useCatsStore();
       store.cats = [mockCat];
 
-      store.removeCatFromState('1');
+      store.removeCatFromState(1);
 
       expect(store.cats).toHaveLength(0);
     });

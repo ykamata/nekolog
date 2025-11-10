@@ -6,11 +6,11 @@ import type { VeterinaryDoctor, VeterinaryHospital } from '~/types/veterinary-ma
 // Mock composables
 const mockHospitals = ref<VeterinaryHospital[]>([
   {
-    id: 'hospital-1',
+    id: 1,
     name: 'テスト動物病院',
     address: 'テスト住所',
     phone: '03-1234-5678',
-    userId: 'user-1',
+    userId: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -45,11 +45,11 @@ describe('VeterinaryDoctorForm', () => {
 
   it('編集モードで既存データが表示される', async () => {
     const mockDoctor: VeterinaryDoctor = {
-      id: 'doctor-1',
+      id: 1,
       name: 'テスト先生',
-      hospitalId: 'hospital-1',
+      hospitalId: 1,
       specialization: '内科',
-      userId: 'user-1',
+      userId: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -166,7 +166,7 @@ describe('VeterinaryDoctorForm', () => {
     expect(wrapper.emitted('save')?.[0]).toEqual([
       {
         name: 'テスト先生',
-        hospitalId: 'hospital-1',
+        hospitalId: 1,
         specialization: undefined,
       },
     ]);

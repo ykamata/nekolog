@@ -6,7 +6,7 @@ import type { Food } from '~/types/cat-meal';
 
 // Mock food data
 const mockFood: Food = {
-  id: 'food-1',
+  id: 1,
   name: 'プレミアムキャットフード',
   type: FoodType.DRY,
   brand: 'ロイヤルカナン',

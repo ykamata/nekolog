@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { prisma } from '~/lib/prisma';
 
 describe('Veterinary Hospitals Related Data API Logic', () => {
-  let testUserId: string;
-  let testHospitalId: string;
-  let testDoctorId: string;
+  let testUserId: number;
+  let testHospitalId: number;
+  let testDoctorId: number;
 
   beforeEach(async () => {
     // テスト用ユーザーを作成（ユニークなメールアドレス）
@@ -326,7 +326,7 @@ describe('Veterinary Hospitals Related Data API Logic', () => {
 
   describe('Error Handling', () => {
     it('存在しない病院IDの場合、適切にハンドリングされる', async () => {
-      const nonExistentId = 'non-existent-id';
+      const nonExistentId = 999999;
 
       // 病院の存在確認
       const hospital = await prisma.veterinaryHospital.findFirst({

@@ -20,7 +20,7 @@ vi.mock('~/components/DateTimePicker.vue', () => ({
 describe('ExcretionRecordForm', () => {
   const mockCats: Cat[] = [
     {
-      id: 'cat1',
+      id: 1,
       name: 'ミケ',
       weight: 4.5,
       birthdate: new Date('2020-01-01'),
@@ -28,7 +28,7 @@ describe('ExcretionRecordForm', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'cat2',
+      id: 2,
       name: 'タマ',
       weight: 3.2,
       birthdate: new Date('2021-06-15'),
@@ -176,7 +176,7 @@ describe('ExcretionRecordForm', () => {
 
       // Test with the validation schema directly
       const testData = {
-        catId: 'cat1',
+        catId: 1,
         type: ExcretionType.URINE,
         recordedAt: futureDate.toISOString(),
         notes: '',
@@ -306,7 +306,7 @@ describe('ExcretionRecordForm', () => {
   describe('Props and Initial Data', () => {
     it('initializes form with provided initial data', async () => {
       const initialData: Partial<ExcretionRecordInput> = {
-        catId: 'cat2',
+        catId: 2,
         type: ExcretionType.FECES,
         recordedAt: new Date('2024-01-15T10:30:00'),
         notes: '初期メモ',

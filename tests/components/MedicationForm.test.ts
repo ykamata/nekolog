@@ -52,7 +52,7 @@ describe('MedicationForm', () => {
   const createTestMedication = (
     overrides?: Partial<Medication>,
   ): Medication => ({
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: 'MEDICINE' as MedicationType,
     description: 'テスト用の薬です',

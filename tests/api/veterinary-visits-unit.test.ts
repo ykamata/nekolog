@@ -15,7 +15,7 @@ describe.skip('Veterinary Visits API Logic', () => {
   };
 
   const testVisitData = {
-    catId: '',
+    catId: 0,
     visitDate: new Date('2024-01-15T10:00:00Z'),
     hospitalName: 'テスト動物病院',
     doctorName: 'テスト先生',
@@ -25,11 +25,11 @@ describe.skip('Veterinary Visits API Logic', () => {
     hasBloodTest: true,
   };
 
-  let testCatId: string;
-  let testHospitalId: string;
-  let testDoctorId: string;
-  let testTreatmentIds: string[];
-  let testVisitId: string;
+  let testCatId: number;
+  let testHospitalId: number;
+  let testDoctorId: number;
+  let testTreatmentIds: number[];
+  let testVisitId: number;
 
   beforeEach(async () => {
     // Clean up existing test data
@@ -146,7 +146,7 @@ describe.skip('Veterinary Visits API Logic', () => {
 
     it('should reject invalid visit input data', () => {
       const invalidVisit = {
-        catId: '', // Empty cat ID
+        catId: 0, // Invalid cat ID
         visitDate: 'invalid-date', // Invalid date
         hospitalName: '', // Empty hospital name
         treatments: [], // Empty treatments array
@@ -705,7 +705,7 @@ describe.skip('Veterinary Visits API Logic', () => {
     it('should reject visit with invalid cat ID', () => {
       const invalidVisit = {
         ...testVisitData,
-        catId: '', // Empty cat ID should fail validation
+        catId: 0, // Invalid cat ID should fail validation
       };
 
       const result = VeterinaryVisitInputSchema.safeParse(invalidVisit);

@@ -71,7 +71,7 @@ describe('MealChart Accessibility', () => {
   beforeEach(() => {
     wrapper = mount(MealChart, {
       props: {
-        catId: 'test-cat-id',
+        catId: 1,
         height: 400,
       },
       global: {

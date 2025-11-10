@@ -17,12 +17,12 @@ describe('VeterinaryHospitalForm', () => {
   let wrapper: any;
 
   const mockHospital: VeterinaryHospital = {
-    id: '1',
+    id: 1,
     name: 'テスト動物病院',
     address: '東京都渋谷区',
     phone: '03-1234-5678',
     memo: 'テストメモ',
-    userId: 'user1',
+    userId: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

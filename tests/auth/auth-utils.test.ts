@@ -13,7 +13,7 @@ import {
 
 describe('Auth Utils', () => {
   const mockPayload = {
-    userId: 'test-user-id',
+    userId: 1,
     email: 'test@example.com',
   };
 

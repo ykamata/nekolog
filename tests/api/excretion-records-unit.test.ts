@@ -28,8 +28,8 @@ describe('Excretion Records API Logic', () => {
     notes: 'うんちの記録',
   };
 
-  let testCatId: string;
-  let createdRecordId: string;
+  let testCatId: number;
+  let createdRecordId: number;
 
   beforeEach(async () => {
     // テストデータのクリーンアップ
@@ -154,7 +154,7 @@ describe('Excretion Records API Logic', () => {
 
     it('should handle non-existent cat ID', async () => {
       const inputData = {
-        catId: 'non-existent-cat-id',
+        catId: 999999,
         ...testExcretionRecord,
       };
 
@@ -350,7 +350,7 @@ describe('Excretion Records API Logic', () => {
 
       // 更新データの準備
       const finalUpdateData: {
-        catId?: string;
+        catId?: number;
         type?: 'URINE' | 'FECES';
         recordedAt?: Date;
         notes?: string;
@@ -423,7 +423,7 @@ describe('Excretion Records API Logic', () => {
     });
 
     it('should handle non-existent record ID', async () => {
-      const nonExistentId = 'non-existent-record-id';
+      const nonExistentId = 999999;
 
       const existingRecord = await prisma.excretionRecord.findUnique({
         where: { id: nonExistentId },
@@ -478,7 +478,7 @@ describe('Excretion Records API Logic', () => {
     });
 
     it('should handle non-existent record deletion', async () => {
-      const nonExistentId = 'non-existent-record-id';
+      const nonExistentId = 999999;
 
       const existingRecord = await prisma.excretionRecord.findUnique({
         where: { id: nonExistentId },

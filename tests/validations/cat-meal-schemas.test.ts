@@ -39,7 +39,7 @@ describe('Zod Validation Schemas', () => {
 
   describe('CatSchema', () => {
     const validCat = {
-      id: 'clh1234567890abcdef123',
+      id: 1,
       name: 'ミケ',
       birthdate: new Date('2020-01-01'),
       weight: 4.5,
@@ -55,7 +55,7 @@ describe('Zod Validation Schemas', () => {
 
     it('should reject invalid cat data', () => {
       expect(() =>
-        CatSchema.parse({ ...validCat, id: 'invalid-id' }),
+        CatSchema.parse({ ...validCat, id: 0 }),
       ).toThrow();
       expect(() => CatSchema.parse({ ...validCat, name: '' })).toThrow();
       expect(() => CatSchema.parse({ ...validCat, weight: -1 })).toThrow();
@@ -67,7 +67,7 @@ describe('Zod Validation Schemas', () => {
 
     it('should handle optional fields', () => {
       const minimalCat = {
-        id: 'clh1234567890abcdef123',
+        id: 1,
         name: 'ミケ',
         createdAt: new Date('2023-01-01'),
         updatedAt: new Date('2023-01-02'),
@@ -82,7 +82,7 @@ describe('Zod Validation Schemas', () => {
 
   describe('FoodSchema', () => {
     const validFood = {
-      id: 'clh1234567890abcdef456',
+      id: 1,
       name: 'プレミアムドライフード',
       type: FoodType.DRY,
       brand: 'ロイヤルカナン',
@@ -113,7 +113,7 @@ describe('Zod Validation Schemas', () => {
 
     it('should handle optional fields', () => {
       const minimalFood = {
-        id: 'clh1234567890abcdef456',
+        id: 1,
         name: 'プレミアムドライフード',
         type: FoodType.DRY,
         caloriesPerGram: 3.5,
@@ -129,7 +129,7 @@ describe('Zod Validation Schemas', () => {
 
     it('should use default unit', () => {
       const foodWithoutUnit = {
-        id: 'clh1234567890abcdef456',
+        id: 1,
         name: 'プレミアムドライフード',
         type: FoodType.DRY,
         caloriesPerGram: 3.5,
@@ -144,9 +144,9 @@ describe('Zod Validation Schemas', () => {
 
   describe('MealRecordSchema', () => {
     const validMealRecord = {
-      id: 'clh1234567890abcdef789',
-      catId: 'clh1234567890abcdef123',
-      foodId: 'clh1234567890abcdef456',
+      id: 1,
+      catId: 1,
+      foodId: 2,
       quantity: 50,
       calories: 175,
       mealTime: new Date('2023-01-01T08:00:00.000Z'),
@@ -162,10 +162,10 @@ describe('Zod Validation Schemas', () => {
 
     it('should reject invalid meal record data', () => {
       expect(() =>
-        MealRecordSchema.parse({ ...validMealRecord, catId: 'invalid-id' }),
+        MealRecordSchema.parse({ ...validMealRecord, catId: 0 }),
       ).toThrow();
       expect(() =>
-        MealRecordSchema.parse({ ...validMealRecord, foodId: 'invalid-id' }),
+        MealRecordSchema.parse({ ...validMealRecord, foodId: 0 }),
       ).toThrow();
       expect(() =>
         MealRecordSchema.parse({ ...validMealRecord, quantity: -1 }),
@@ -244,8 +244,8 @@ describe('Zod Validation Schemas', () => {
     describe('MealRecordInputSchema', () => {
       it('should validate valid meal record input', () => {
         const validInput = {
-          catId: 'clh1234567890abcdef123',
-          foodId: 'clh1234567890abcdef456',
+          catId: 1,
+          foodId: 2,
           quantity: 50,
           calories: 175,
           mealTime: new Date('2023-01-01T08:00:00.000Z'),
@@ -258,8 +258,8 @@ describe('Zod Validation Schemas', () => {
 
       it('should handle optional calories', () => {
         const inputWithoutCalories = {
-          catId: 'clh1234567890abcdef123',
-          foodId: 'clh1234567890abcdef456',
+          catId: 1,
+          foodId: 2,
           quantity: 50,
           mealTime: new Date('2023-01-01T08:00:00.000Z'),
         };
@@ -294,7 +294,7 @@ describe('Zod Validation Schemas', () => {
     describe('MealRecordFilterSchema', () => {
       it('should validate meal record filter', () => {
         const filter = {
-          catId: 'clh1234567890abcdef123',
+          catId: 1,
           startDate: new Date('2023-01-01'),
           endDate: new Date('2023-01-31'),
           foodType: FoodType.DRY,
@@ -346,8 +346,8 @@ describe('Zod Validation Schemas', () => {
     describe('MealRecordFormSchema', () => {
       it('should validate form data with string IDs', () => {
         const formData = {
-          catId: 'cat123',
-          foodId: 'food456',
+          catId: 123,
+          foodId: 456,
           quantity: 50,
           calories: 175,
           mealTime: new Date('2023-01-01T08:00:00.000Z'),
@@ -361,8 +361,8 @@ describe('Zod Validation Schemas', () => {
       it('should reject empty string IDs', () => {
         expect(() =>
           MealRecordFormSchema.parse({
-            catId: '',
-            foodId: 'food456',
+            catId: 0,
+            foodId: 456,
             quantity: 50,
             mealTime: new Date(),
           }),
@@ -431,8 +431,8 @@ describe('Zod Validation Schemas', () => {
     it('should provide specific validation messages', () => {
       try {
         MealRecordInputSchema.parse({
-          catId: 'invalid-id',
-          foodId: 'invalid-id',
+          catId: 0,
+          foodId: 0,
           quantity: -1,
           mealTime: new Date(),
         });

@@ -34,7 +34,7 @@ describe('MedicationCalendar Integration', () => {
   // Test data
   const mockCats: Cat[] = [
     {
-      id: 'cat-1',
+      id: 1,
       name: 'みけ',
       birthdate: new Date('2020-01-01'),
       weight: 4.5,
@@ -42,7 +42,7 @@ describe('MedicationCalendar Integration', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'cat-2',
+      id: 2,
       name: 'しろ',
       birthdate: new Date('2019-06-15'),
       weight: 3.8,
@@ -53,7 +53,7 @@ describe('MedicationCalendar Integration', () => {
 
   const mockMedications: Medication[] = [
     {
-      id: 'med-1',
+      id: 1,
       name: 'テスト薬A',
       type: MedicationType.MEDICINE,
       description: 'テスト用の薬です',
@@ -62,7 +62,7 @@ describe('MedicationCalendar Integration', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'med-2',
+      id: 2,
       name: 'サプリB',
       type: MedicationType.SUPPLEMENT,
       description: 'テスト用のサプリです',
@@ -103,9 +103,9 @@ describe('MedicationCalendar Integration', () => {
     const testDate = new Date('2024-01-15T10:00:00');
     const testRecords: MedicationRecord[] = [
       {
-        id: 'record-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 1,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: testDate,
         status: MedicationStatus.ADMINISTERED,
@@ -113,9 +113,9 @@ describe('MedicationCalendar Integration', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'record-2',
-        catId: 'cat-2',
-        medicationId: 'med-2',
+        id: 2,
+        catId: 2,
+        medicationId: 2,
         quantity: 2,
         administeredAt: testDate,
         status: MedicationStatus.PENDING,
@@ -186,9 +186,9 @@ describe('MedicationCalendar Integration', () => {
 
     const testRecords: MedicationRecord[] = [
       {
-        id: 'record-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 1,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: date1,
         status: MedicationStatus.ADMINISTERED,
@@ -196,9 +196,9 @@ describe('MedicationCalendar Integration', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'record-2',
-        catId: 'cat-1',
-        medicationId: 'med-2',
+        id: 2,
+        catId: 1,
+        medicationId: 2,
         quantity: 1,
         administeredAt: date2,
         status: MedicationStatus.PENDING,
@@ -254,9 +254,9 @@ describe('MedicationCalendar Integration', () => {
     const testDate = new Date('2024-01-15T10:00:00');
     const testRecords: MedicationRecord[] = [
       {
-        id: 'record-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 1,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: testDate,
         status: MedicationStatus.ADMINISTERED,
@@ -264,9 +264,9 @@ describe('MedicationCalendar Integration', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'record-2',
-        catId: 'cat-2',
-        medicationId: 'med-2',
+        id: 2,
+        catId: 2,
+        medicationId: 2,
         quantity: 2,
         administeredAt: testDate,
         status: MedicationStatus.PENDING,
@@ -296,7 +296,7 @@ describe('MedicationCalendar Integration', () => {
     // Verify that fetchMedicationRecords was called with catId filter
     expect(medicationsStore.fetchMedicationRecords).toHaveBeenCalledWith(
       expect.objectContaining({
-        catId: 'cat-1',
+        catId: 1,
       }),
     );
   });
@@ -334,9 +334,9 @@ describe('MedicationCalendar Integration', () => {
     const testDate = new Date('2024-01-15T10:00:00');
     const testRecords: MedicationRecord[] = [
       {
-        id: 'record-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 1,
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: testDate,
         status: MedicationStatus.ADMINISTERED,
@@ -347,10 +347,10 @@ describe('MedicationCalendar Integration', () => {
 
     const testReminders: MedicationReminder[] = [
       {
-        id: 'reminder-1',
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 1,
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: testDate,
         status: ReminderStatus.PENDING,
         createdAt: new Date(),
@@ -436,10 +436,10 @@ describe('MedicationCalendar Integration', () => {
     const testDate = new Date('2024-01-16T08:00:00');
     const testReminders: MedicationReminder[] = [
       {
-        id: 'reminder-1',
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        id: 1,
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: testDate,
         status: ReminderStatus.PENDING,
         createdAt: new Date(),

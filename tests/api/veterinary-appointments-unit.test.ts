@@ -20,7 +20,7 @@ describe.skip('Veterinary Appointments API Logic', () => {
   futureDate.setDate(futureDate.getDate() + 7); // 1 week from now
 
   const testAppointmentData = {
-    catId: '',
+    catId: 0,
     appointmentDate: futureDate,
     hospitalName: 'テスト動物病院',
     doctorName: 'テスト先生',
@@ -28,10 +28,10 @@ describe.skip('Veterinary Appointments API Logic', () => {
     notes: 'テスト予約メモ',
   };
 
-  let testCatId: string;
-  let testHospitalId: string;
-  let testDoctorId: string;
-  let testAppointmentId: string;
+  let testCatId: number;
+  let testHospitalId: number;
+  let testDoctorId: number;
+  let testAppointmentId: number;
 
   beforeEach(async () => {
     // Clean up existing test data
@@ -150,7 +150,7 @@ describe.skip('Veterinary Appointments API Logic', () => {
 
     it('should reject invalid appointment input data', () => {
       const invalidAppointment = {
-        catId: '', // Empty cat ID
+        catId: 0, // Invalid cat ID
         appointmentDate: 'invalid-date', // Invalid date
         hospitalName: '', // Empty hospital name
       };
@@ -690,7 +690,7 @@ describe.skip('Veterinary Appointments API Logic', () => {
     it('should reject appointment with invalid cat ID', () => {
       const invalidAppointment = {
         ...testAppointmentData,
-        catId: 'invalid-id',
+        catId: 0,
       };
 
       const result = VeterinaryAppointmentInputSchema.safeParse(invalidAppointment);

@@ -83,7 +83,7 @@ describe('MealChart - 表示モード切り替え機能', () => {
         },
       },
       props: {
-        catId: 'test-cat-id',
+        catId: 1,
         height: 400,
       },
     });

@@ -26,7 +26,7 @@ vi.mock('~/components/ExcretionRecordCard.vue', () => ({
 describe('ExcretionRecordList', () => {
   const mockCats: Cat[] = [
     {
-      id: 'cat1',
+      id: 1,
       name: 'ミケ',
       weight: 4.5,
       birthdate: new Date('2020-01-01'),
@@ -34,7 +34,7 @@ describe('ExcretionRecordList', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'cat2',
+      id: 2,
       name: 'タマ',
       weight: 3.2,
       birthdate: new Date('2021-06-15'),
@@ -45,8 +45,8 @@ describe('ExcretionRecordList', () => {
 
   const mockRecords: ExcretionRecord[] = [
     {
-      id: 'record1',
-      catId: 'cat1',
+      id: 1,
+      catId: 1,
       type: ExcretionType.URINE,
       recordedAt: new Date('2024-01-15T10:30:00'),
       notes: 'テストメモ1',
@@ -55,8 +55,8 @@ describe('ExcretionRecordList', () => {
       cat: mockCats[0],
     },
     {
-      id: 'record2',
-      catId: 'cat2',
+      id: 2,
+      catId: 2,
       type: ExcretionType.FECES,
       recordedAt: new Date('2024-01-15T14:00:00'),
       notes: 'テストメモ2',
@@ -65,8 +65,8 @@ describe('ExcretionRecordList', () => {
       cat: mockCats[1],
     },
     {
-      id: 'record3',
-      catId: 'cat1',
+      id: 3,
+      catId: 1,
       type: ExcretionType.URINE,
       recordedAt: new Date('2024-01-16T09:00:00'),
       createdAt: new Date(),
@@ -263,7 +263,7 @@ describe('ExcretionRecordList', () => {
       const filterEvents = wrapper.emitted('filter');
       expect(filterEvents).toBeTruthy();
       expect(filterEvents![filterEvents!.length - 1][0]).toEqual({
-        catId: 'cat1',
+        catId: 1,
         type: undefined,
         startDate: undefined,
         endDate: undefined,

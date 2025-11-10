@@ -55,9 +55,9 @@ describe('useMealsStore', () => {
   });
 
   const mockMeal: MealRecord = {
-    id: '1',
-    catId: 'cat1',
-    foodId: 'food1',
+    id: 1,
+    catId: 1,
+    foodId: 1,
     quantity: 50,
     calories: 175,
     mealTime: new Date('2023-01-01T12:00:00Z'),
@@ -67,8 +67,8 @@ describe('useMealsStore', () => {
   };
 
   const mockMealInput: MealRecordInput = {
-    catId: 'cat1',
-    foodId: 'food1',
+    catId: 1,
+    foodId: 1,
     quantity: 30,
     calories: 105,
     mealTime: new Date('2023-01-02T12:00:00Z'),
@@ -104,28 +104,28 @@ describe('useMealsStore', () => {
   describe('getters', () => {
     beforeEach(() => {
       const store = useMealsStore();
-      const meal2 = { ...mockMeal, id: '2', catId: 'cat2', foodId: 'food2' };
+      const meal2 = { ...mockMeal, id: 2, catId: 2, foodId: 2 };
       store.meals = [mockMeal, meal2];
     });
 
     it('should get meal by id', () => {
       const store = useMealsStore();
 
-      expect(store.getMealById('1')).toEqual(mockMeal);
-      expect(store.getMealById('nonexistent')).toBeUndefined();
+      expect(store.getMealById(1)).toEqual(mockMeal);
+      expect(store.getMealById(999)).toBeUndefined();
     });
 
     it('should get meals by cat', () => {
       const store = useMealsStore();
 
-      expect(store.getMealsByCat('cat1')).toEqual([mockMeal]);
-      expect(store.getMealsByCat('cat2')).toHaveLength(1);
+      expect(store.getMealsByCat(1)).toEqual([mockMeal]);
+      expect(store.getMealsByCat(2)).toHaveLength(1);
     });
 
     it('should get meals by food', () => {
       const store = useMealsStore();
 
-      expect(store.getMealsByFood('food1')).toEqual([mockMeal]);
+      expect(store.getMealsByFood(1)).toEqual([mockMeal]);
     });
 
     it('should get meals by date range', () => {
@@ -143,7 +143,7 @@ describe('useMealsStore', () => {
       const store = useMealsStore();
       const todayMeal = {
         ...mockMeal,
-        id: '3',
+        id: 3,
         mealTime: new Date(),
       };
       store.meals = [mockMeal, todayMeal];
@@ -184,7 +184,7 @@ describe('useMealsStore', () => {
         expect.stringContaining('/api/meals?'),
       );
       expect(store.meals).toHaveLength(1);
-      expect(store.meals[0].id).toBe('1');
+      expect(store.meals[0].id).toBe(1);
       expect(store.pagination.totalCount).toBe(1);
       expect(store.loading).toBe(false);
       expect(result).toEqual(store.meals);
@@ -201,7 +201,7 @@ describe('useMealsStore', () => {
       mockFetch.mockResolvedValueOnce(mockApiResponse);
 
       const filter = {
-        catId: 'cat1',
+        catId: 1,
         startDate: new Date('2023-01-01'),
         endDate: new Date('2023-01-31'),
         foodType: 'DRY' as const,
@@ -209,7 +209,7 @@ describe('useMealsStore', () => {
 
       await store.fetchMeals(filter);
 
-      const expectedUrl = expect.stringContaining('catId=cat1');
+      const expectedUrl = expect.stringContaining('catId=1');
       expect(mockFetch).toHaveBeenCalledWith(expectedUrl);
     });
 
@@ -268,7 +268,7 @@ describe('useMealsStore', () => {
       mockFetch.mockResolvedValueOnce(updatedMeal);
 
       const mealUpdate: MealRecordUpdate = { quantity: 60 };
-      const result = await store.updateMeal('1', mealUpdate);
+      const result = await store.updateMeal(1, mealUpdate);
 
       expect(mockFetch).toHaveBeenCalledWith('/api/meals/1', {
         method: 'PUT',
@@ -286,7 +286,7 @@ describe('useMealsStore', () => {
       store.pagination.totalCount = 1;
       mockFetch.mockResolvedValueOnce(undefined);
 
-      await store.deleteMeal('1');
+      await store.deleteMeal(1);
 
       expect(mockFetch).toHaveBeenCalledWith('/api/meals/1', {
         method: 'DELETE',
@@ -370,7 +370,7 @@ describe('useMealsStore', () => {
   describe('filters', () => {
     it('should set filters', () => {
       const store = useMealsStore();
-      const filters = { catId: 'cat1', startDate: new Date() };
+      const filters = { catId: 1, startDate: new Date() };
 
       store.setFilters(filters);
 
@@ -380,7 +380,7 @@ describe('useMealsStore', () => {
 
     it('should clear filters', () => {
       const store = useMealsStore();
-      store.filters = { catId: 'cat1' };
+      store.filters = { catId: 1 };
 
       store.clearFilters();
 
@@ -419,16 +419,16 @@ describe('useMealsStore', () => {
   describe('bulk operations', () => {
     it('should bulk delete meals', async () => {
       const store = useMealsStore();
-      const meal2 = { ...mockMeal, id: '2' };
+      const meal2 = { ...mockMeal, id: 2 };
       store.meals = [mockMeal, meal2];
       store.pagination.totalCount = 2;
       mockFetch.mockResolvedValueOnce(undefined);
 
-      await store.bulkDeleteMeals(['1', '2']);
+      await store.bulkDeleteMeals([1, 2]);
 
       expect(mockFetch).toHaveBeenCalledWith('/api/meals/bulk-delete', {
         method: 'POST',
-        body: { ids: ['1', '2'] },
+        body: { ids: [1, 2] },
       });
       expect(store.meals).toHaveLength(0);
       expect(store.pagination.totalCount).toBe(0);
@@ -462,7 +462,7 @@ describe('useMealsStore', () => {
       store.meals = [mockMeal];
       store.pagination.totalCount = 1;
 
-      store.removeMealFromState('1');
+      store.removeMealFromState(1);
 
       expect(store.meals).toHaveLength(0);
       expect(store.pagination.totalCount).toBe(0);

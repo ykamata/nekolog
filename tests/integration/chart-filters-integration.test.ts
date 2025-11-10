@@ -19,8 +19,8 @@ const mockAnalyticsStore = {
 
 const mockCatsStore = {
   cats: ref([
-    { id: 'cat1', name: 'ミケ' },
-    { id: 'cat2', name: 'タマ' },
+    { id: 1, name: 'ミケ' },
+    { id: 2, name: 'タマ' },
   ]),
   fetchCats: vi.fn(),
   loading: ref(false),
@@ -79,8 +79,8 @@ describe('Chart Filters Integration', () => {
 
   it('fetches and displays cats for selection', async () => {
     mockCatsStore.fetchCats.mockResolvedValue([
-      { id: 'cat1', name: 'ミケ' },
-      { id: 'cat2', name: 'タマ' },
+      { id: 1, name: 'ミケ' },
+      { id: 2, name: 'タマ' },
     ]);
 
     const wrapper = mount(ChartFilters, {
@@ -132,7 +132,7 @@ describe('Chart Filters Integration', () => {
       await nextTick();
       expect(mockAnalyticsStore.fetchAnalytics).toHaveBeenCalledWith(
         expect.objectContaining({
-          catId: 'cat1',
+          catId: 1,
         }),
       );
     }
@@ -281,7 +281,7 @@ describe('Chart Filters Integration', () => {
     expect(mockRouter.push).toHaveBeenCalledWith(
       expect.objectContaining({
         query: expect.objectContaining({
-          catId: 'cat1',
+          catId: 1,
           chartType: 'bar',
         }),
       }),
@@ -291,7 +291,7 @@ describe('Chart Filters Integration', () => {
   it('restores filter state from URL parameters', async () => {
     // Set URL parameters
     mockRouter.currentRoute.value.query = {
-      catId: 'cat1',
+      catId: 1,
       chartType: 'bar',
       startDate: '2024-01-01',
       endDate: '2024-01-31',

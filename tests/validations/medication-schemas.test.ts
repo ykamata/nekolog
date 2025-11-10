@@ -136,8 +136,8 @@ describe('Medication Validation Schemas', () => {
   describe('MedicationRecordInputSchema', () => {
     it('should validate valid medication record input', () => {
       const validInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 2,
         administeredAt: new Date('2024-01-01T08:00:00Z'),
         status: MedicationStatus.ADMINISTERED,
@@ -150,22 +150,22 @@ describe('Medication Validation Schemas', () => {
 
     it('should validate medication record with minimal required fields', () => {
       const minimalInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date('2024-01-01T08:00:00Z'),
       };
 
       const result = MedicationRecordInputSchema.parse(minimalInput);
       expect(result.catId).toBe('cat-1');
-      expect(result.medicationId).toBe('med-1');
+      expect(result.medicationId).toBe(1);
       expect(result.quantity).toBe(1);
     });
 
     it('should reject empty catId', () => {
       const invalidInput = {
-        catId: '',
-        medicationId: 'med-1',
+        catId: 0,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date(),
       };
@@ -177,7 +177,7 @@ describe('Medication Validation Schemas', () => {
 
     it('should reject empty medicationId', () => {
       const invalidInput = {
-        catId: 'cat-1',
+        catId: 1,
         medicationId: '',
         quantity: 1,
         administeredAt: new Date(),
@@ -190,8 +190,8 @@ describe('Medication Validation Schemas', () => {
 
     it('should reject quantity less than 1', () => {
       const invalidInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 0,
         administeredAt: new Date(),
       };
@@ -203,8 +203,8 @@ describe('Medication Validation Schemas', () => {
 
     it('should reject quantity greater than 100', () => {
       const invalidInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 101,
         administeredAt: new Date(),
       };
@@ -216,8 +216,8 @@ describe('Medication Validation Schemas', () => {
 
     it('should reject non-integer quantity', () => {
       const invalidInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1.5,
         administeredAt: new Date(),
       };
@@ -229,8 +229,8 @@ describe('Medication Validation Schemas', () => {
 
     it('should reject invalid date', () => {
       const invalidInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: 'invalid-date',
       };
@@ -242,8 +242,8 @@ describe('Medication Validation Schemas', () => {
 
     it('should reject notes longer than 500 characters', () => {
       const invalidInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date(),
         notes: 'a'.repeat(501),
@@ -258,8 +258,8 @@ describe('Medication Validation Schemas', () => {
   describe('MedicationScheduleInputSchema', () => {
     it('should validate valid medication schedule input', () => {
       const validInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         frequency: 'daily',
         times: ['08:00', '20:00'],
         startDate: new Date('2024-01-01'),
@@ -272,8 +272,8 @@ describe('Medication Validation Schemas', () => {
 
     it('should validate schedule without end date', () => {
       const validInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         frequency: 'twice_daily',
         times: ['08:00', '20:00'],
         startDate: new Date('2024-01-01'),
@@ -285,8 +285,8 @@ describe('Medication Validation Schemas', () => {
 
     it('should reject invalid frequency', () => {
       const invalidInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         frequency: 'invalid_frequency',
         times: JSON.stringify(['08:00']),
         startDate: new Date('2024-01-01'),
@@ -299,8 +299,8 @@ describe('Medication Validation Schemas', () => {
 
     it('should reject invalid time format', () => {
       const invalidInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         frequency: 'daily',
         times: JSON.stringify(['25:00']), // Invalid hour
         startDate: new Date('2024-01-01'),
@@ -313,8 +313,8 @@ describe('Medication Validation Schemas', () => {
 
     it('should reject empty times array', () => {
       const invalidInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         frequency: 'daily',
         times: JSON.stringify([]),
         startDate: new Date('2024-01-01'),
@@ -327,8 +327,8 @@ describe('Medication Validation Schemas', () => {
 
     it('should reject more than 10 times', () => {
       const invalidInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         frequency: 'daily',
         times: Array(11).fill('08:00'),
         startDate: new Date('2024-01-01'),
@@ -341,8 +341,8 @@ describe('Medication Validation Schemas', () => {
 
     it('should reject end date before start date', () => {
       const invalidInput = {
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         frequency: 'daily',
         times: JSON.stringify(['08:00']),
         startDate: new Date('2024-12-31'),
@@ -358,9 +358,9 @@ describe('Medication Validation Schemas', () => {
   describe('MedicationReminderInputSchema', () => {
     it('should validate valid medication reminder input', () => {
       const validInput = {
-        scheduleId: 'schedule-1',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        scheduleId: 1,
+        catId: 1,
+        medicationId: 1,
         scheduledAt: new Date('2024-01-01T08:00:00Z'),
       };
 
@@ -371,8 +371,8 @@ describe('Medication Validation Schemas', () => {
     it('should reject empty scheduleId', () => {
       const invalidInput = {
         scheduleId: '',
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         scheduledAt: new Date(),
       };
 
@@ -427,7 +427,7 @@ describe('Medication Validation Schemas', () => {
     describe('MedicationRecordFilterSchema', () => {
       it('should validate valid filter with date range', () => {
         const validFilter = {
-          catId: 'cat-1',
+          catId: 1,
           startDate: new Date('2024-01-01'),
           endDate: new Date('2024-01-31'),
           status: MedicationStatus.ADMINISTERED,
@@ -485,15 +485,15 @@ describe('Medication Validation Schemas', () => {
     describe('validateMedicationRecordInput', () => {
       it('should validate and return parsed medication record input', () => {
         const input = {
-          catId: 'cat-1',
-          medicationId: 'med-1',
+          catId: 1,
+          medicationId: 1,
           quantity: 1,
           administeredAt: new Date(),
         };
 
         const result = validateMedicationRecordInput(input);
         expect(result.catId).toBe('cat-1');
-        expect(result.medicationId).toBe('med-1');
+        expect(result.medicationId).toBe(1);
         expect(result.quantity).toBe(1);
       });
     });
@@ -501,8 +501,8 @@ describe('Medication Validation Schemas', () => {
     describe('validateMedicationScheduleInput', () => {
       it('should validate and return parsed medication schedule input', () => {
         const input = {
-          catId: 'cat-1',
-          medicationId: 'med-1',
+          catId: 1,
+          medicationId: 1,
           frequency: 'daily',
           times: ['08:00'],
           startDate: new Date(),
@@ -517,9 +517,9 @@ describe('Medication Validation Schemas', () => {
     describe('validateMedicationReminderInput', () => {
       it('should validate and return parsed medication reminder input', () => {
         const input = {
-          scheduleId: 'schedule-1',
-          catId: 'cat-1',
-          medicationId: 'med-1',
+          scheduleId: 1,
+          catId: 1,
+          medicationId: 1,
           scheduledAt: new Date(),
         };
 

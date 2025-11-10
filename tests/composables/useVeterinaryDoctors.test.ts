@@ -24,17 +24,17 @@ describe('useVeterinaryDoctors', () => {
   it('先生一覧を正常に取得できる', async () => {
     const mockDoctors: VeterinaryDoctor[] = [
       {
-        id: '1',
+        id: 1,
         name: 'テスト先生',
-        hospitalId: 'hospital1',
+        hospitalId: 1,
         specialization: '内科',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
         hospital: {
-          id: 'hospital1',
+          id: 1,
           name: 'テスト病院',
-          userId: 'user1',
+          userId: 1,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -61,30 +61,30 @@ describe('useVeterinaryDoctors', () => {
 
     const { fetchDoctors } = useVeterinaryDoctors();
 
-    await fetchDoctors('hospital1', 'テスト');
+    await fetchDoctors(1, 'テスト');
 
     expect(mockFetch).toHaveBeenCalledWith('/api/veterinary-doctors', {
-      query: { hospitalId: 'hospital1', name: 'テスト' },
+      query: { hospitalId: 1, name: 'テスト' },
     });
   });
 
   it('先生を正常に作成できる', async () => {
     const doctorInput: VeterinaryDoctorInput = {
       name: '新しい先生',
-      hospitalId: 'hospital1',
+      hospitalId: 1,
       specialization: '外科',
     };
 
     const mockCreatedDoctor: VeterinaryDoctor = {
-      id: '2',
+      id: 2,
       ...doctorInput,
-      userId: 'user1',
+      userId: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
       hospital: {
-        id: 'hospital1',
+        id: 1,
         name: 'テスト病院',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -108,20 +108,20 @@ describe('useVeterinaryDoctors', () => {
   it('先生情報を正常に更新できる', async () => {
     const doctorInput: VeterinaryDoctorInput = {
       name: '更新された先生',
-      hospitalId: 'hospital2',
+      hospitalId: 2,
       specialization: '皮膚科',
     };
 
     const mockUpdatedDoctor: VeterinaryDoctor = {
-      id: '1',
+      id: 1,
       ...doctorInput,
-      userId: 'user1',
+      userId: 1,
       createdAt: new Date(),
       updatedAt: new Date(),
       hospital: {
-        id: 'hospital2',
+        id: 2,
         name: '新しい病院',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -131,9 +131,9 @@ describe('useVeterinaryDoctors', () => {
     const { doctors, updateDoctor } = useVeterinaryDoctors();
     doctors.value = [
       {
-        id: '1',
+        id: 1,
         name: '元の先生名',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -157,16 +157,16 @@ describe('useVeterinaryDoctors', () => {
     const { doctors, deleteDoctor } = useVeterinaryDoctors();
     doctors.value = [
       {
-        id: '1',
+        id: 1,
         name: '削除対象先生',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
-        id: '2',
+        id: 2,
         name: '残る先生',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -187,9 +187,9 @@ describe('useVeterinaryDoctors', () => {
   it('先生検索を正常に実行できる', async () => {
     const mockSearchResults: VeterinaryDoctor[] = [
       {
-        id: '1',
+        id: 1,
         name: 'テスト先生',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -199,10 +199,10 @@ describe('useVeterinaryDoctors', () => {
 
     const { searchDoctors } = useVeterinaryDoctors();
 
-    const results = await searchDoctors('テスト', 'hospital1');
+    const results = await searchDoctors('テスト', 1);
 
     expect(mockFetch).toHaveBeenCalledWith('/api/veterinary-doctors/search', {
-      query: { name: 'テスト', hospitalId: 'hospital1' },
+      query: { name: 'テスト', hospitalId: 1 },
     });
     expect(results).toEqual(mockSearchResults);
   });
@@ -211,32 +211,32 @@ describe('useVeterinaryDoctors', () => {
     const { doctors, getDoctorsByHospitalId } = useVeterinaryDoctors();
     doctors.value = [
       {
-        id: '1',
+        id: 1,
         name: '先生1',
-        hospitalId: 'hospital1',
-        userId: 'user1',
+        hospitalId: 1,
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
-        id: '2',
+        id: 2,
         name: '先生2',
-        hospitalId: 'hospital2',
-        userId: 'user1',
+        hospitalId: 2,
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
         id: '3',
         name: '先生3',
-        hospitalId: 'hospital1',
-        userId: 'user1',
+        hospitalId: 1,
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
     ];
 
-    const filteredDoctors = getDoctorsByHospitalId('hospital1');
+    const filteredDoctors = getDoctorsByHospitalId(1);
 
     expect(filteredDoctors).toHaveLength(2);
     expect(filteredDoctors[0].id).toBe('1');
@@ -247,9 +247,9 @@ describe('useVeterinaryDoctors', () => {
     const { doctors, checkDuplicateName } = useVeterinaryDoctors();
     doctors.value = [
       {
-        id: '1',
+        id: 1,
         name: '既存の先生',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },

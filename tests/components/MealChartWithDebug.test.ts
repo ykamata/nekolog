@@ -151,7 +151,7 @@ describe('MealChartWithDebug', () => {
 
   it('passes props correctly to MealChart component', () => {
     const props = {
-      catId: 'test-cat-id',
+      catId: 1,
       height: 400,
     };
 

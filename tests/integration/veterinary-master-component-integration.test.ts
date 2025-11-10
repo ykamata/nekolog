@@ -288,10 +288,10 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
 
     it('病院の編集フローが正しく動作する', async () => {
       const existingHospital: VeterinaryHospital = {
-        id: 'existing-hospital-id',
+        id: 1,
         name: '既存病院',
         address: '大阪府大阪市',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -342,7 +342,7 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
         id: '1',
         name: 'テスト動物病院A',
         address: '東京都渋谷区',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -350,7 +350,7 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
         id: '2',
         name: 'テストペットクリニックB',
         address: '大阪府大阪市',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -358,7 +358,7 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
         id: '3',
         name: '横浜動物医療センター',
         address: '神奈川県横浜市',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -469,16 +469,16 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
   describe('先生フォームコンポーネント統合', () => {
     const mockHospitals: VeterinaryHospital[] = [
       {
-        id: 'hospital1',
+        id: 1,
         name: 'テスト病院A',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
-        id: 'hospital2',
+        id: 2,
         name: 'テスト病院B',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -494,7 +494,7 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
 
       // フォーム入力
       await wrapper.find('input[placeholder="先生名"]').setValue('新規テスト先生');
-      await wrapper.find('.form-select').setValue('hospital1');
+      await wrapper.find('.form-select').setValue(1);
       await wrapper.find('input[placeholder="専門分野"]').setValue('内科・外科');
 
       // フォーム送信
@@ -503,7 +503,7 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
       expect(wrapper.emitted('save')).toBeTruthy();
       expect(wrapper.emitted('save')![0][0]).toEqual({
         name: '新規テスト先生',
-        hospitalId: 'hospital1',
+        hospitalId: 1,
         specialty: '内科・外科',
       });
     });
@@ -526,11 +526,11 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
 
     it('先生の編集フローが正しく動作する', async () => {
       const existingDoctor: VeterinaryDoctor = {
-        id: 'existing-doctor-id',
+        id: 1,
         name: '既存先生',
-        hospitalId: 'hospital1',
+        hospitalId: 1,
         specialty: '皮膚科',
-        userId: 'user1',
+        userId: 1,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -545,7 +545,7 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
 
       // 既存データが表示されることを確認
       expect(wrapper.find('input[placeholder="先生名"]').element.value).toBe('既存先生');
-      expect(wrapper.find('.form-select').element.value).toBe('hospital1');
+      expect(wrapper.find('.form-select').element.value).toBe(1);
       expect(wrapper.find('input[placeholder="専門分野"]').element.value).toBe('皮膚科');
 
       // データを更新
@@ -557,7 +557,7 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
       expect(wrapper.emitted('save')).toBeTruthy();
       expect(wrapper.emitted('save')![0][0]).toEqual({
         name: '更新された先生',
-        hospitalId: 'hospital1',
+        hospitalId: 1,
         specialty: '皮膚科',
       });
     });
@@ -570,7 +570,7 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
         const newHospital = {
           id: 'new-id',
           ...data,
-          userId: 'user1',
+          userId: 1,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
@@ -642,7 +642,7 @@ describe('病院・先生管理 コンポーネント統合テスト', () => {
           id: '1',
           name: 'モバイルテスト病院',
           address: '東京都渋谷区',
-          userId: 'user1',
+          userId: 1,
           createdAt: new Date(),
           updatedAt: new Date(),
         },

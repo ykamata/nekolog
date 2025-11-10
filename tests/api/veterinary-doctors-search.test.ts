@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { prisma } from '~/lib/prisma';
 
 describe('Veterinary Doctors Search API Logic', () => {
-  let testUserId: string;
-  let testHospital1Id: string;
-  let testHospital2Id: string;
+  let testUserId: number;
+  let testHospital1Id: number;
+  let testHospital2Id: number;
 
   beforeEach(async () => {
     // テスト用ユーザーを作成（ユニークなメールアドレス）

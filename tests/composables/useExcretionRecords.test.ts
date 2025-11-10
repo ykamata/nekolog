@@ -16,15 +16,15 @@ vi.mock('~/utils/performance-monitor', () => ({
 
 describe('useExcretionRecords', () => {
   const mockRecord: ExcretionRecord = {
-    id: 'record1',
-    catId: 'cat1',
+    id: 1,
+    catId: 1,
     type: ExcretionType.URINE,
     recordedAt: new Date('2024-01-15T10:30:00'),
     notes: 'テストメモ',
     createdAt: new Date(),
     updatedAt: new Date(),
     cat: {
-      id: 'cat1',
+      id: 1,
       name: 'ミケ',
       weight: 4.5,
       birthdate: new Date('2020-01-01'),
@@ -90,7 +90,7 @@ describe('useExcretionRecords', () => {
 
       const { createRecord, records, total } = useExcretionRecords();
       const newRecordInput = {
-        catId: 'cat1',
+        catId: 1,
         type: ExcretionType.URINE,
         recordedAt: new Date('2024-01-15T10:30:00'),
         notes: 'テストメモ',
@@ -161,7 +161,7 @@ describe('useExcretionRecords', () => {
       await fetchRecordsByCat('cat1');
 
       expect(mockFetch).toHaveBeenCalledWith('/api/excretion-records', {
-        query: { catId: 'cat1' },
+        query: { catId: 1 },
       });
     });
 
@@ -181,7 +181,7 @@ describe('useExcretionRecords', () => {
 
       // Initial fetch
       mockFetch.mockResolvedValueOnce(mockRecordsResponse);
-      await fetchRecords({ catId: 'cat1' });
+      await fetchRecords({ catId: 1 });
 
       mockFetch.mockClear();
       mockFetch.mockResolvedValueOnce(mockRecordsResponse);
@@ -190,7 +190,7 @@ describe('useExcretionRecords', () => {
       await refresh();
 
       expect(mockFetch).toHaveBeenCalledWith('/api/excretion-records', {
-        query: { catId: 'cat1' },
+        query: { catId: 1 },
       });
     });
   });

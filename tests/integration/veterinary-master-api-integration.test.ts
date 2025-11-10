@@ -26,7 +26,7 @@ interface VeterinaryDoctor {
 
 // モックユーザー情報
 const mockUser = {
-  id: 'test-user-id',
+  id: 1,
   email: 'test@example.com',
   name: 'テストユーザー',
 };
@@ -206,7 +206,7 @@ describe('病院・先生管理 API統合テスト', () => {
     });
 
     it('存在しないリソースへのアクセスで適切なエラーが返される', async () => {
-      const nonExistentId = 'non-existent-id';
+      const nonExistentId = 999999;
 
       // 存在しない病院へのアクセスエラー
       mockFetch.mockRejectedValueOnce(new Error('Not found'));

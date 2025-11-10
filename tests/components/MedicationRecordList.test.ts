@@ -24,7 +24,7 @@ global.$fetch = vi.fn();
 
 describe('MedicationRecordList', () => {
   const createTestCat = (overrides?: Partial<Cat>): Cat => ({
-    id: 'cat-1',
+    id: 1,
     name: 'テスト猫',
     birthdate: new Date('2020-01-01'),
     weight: 4.5,
@@ -37,7 +37,7 @@ describe('MedicationRecordList', () => {
   const createTestMedication = (
     overrides?: Partial<Medication>,
   ): Medication => ({
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: 'MEDICINE' as MedicationType,
     description: 'テスト用の薬です',
@@ -50,9 +50,9 @@ describe('MedicationRecordList', () => {
   const createTestMedicationRecord = (
     overrides?: Partial<MedicationRecord>,
   ): MedicationRecord => ({
-    id: 'record-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     quantity: 1,
     administeredAt: new Date('2024-01-01T10:00:00'),
     status: 'ADMINISTERED' as MedicationStatus,
@@ -66,12 +66,12 @@ describe('MedicationRecordList', () => {
 
   const defaultProps = {
     cats: [
-      createTestCat({ id: 'cat-1', name: 'みけ' }),
-      createTestCat({ id: 'cat-2', name: 'しろ' }),
+      createTestCat({ id: 1, name: 'みけ' }),
+      createTestCat({ id: 2, name: 'しろ' }),
     ],
     medications: [
-      createTestMedication({ id: 'med-1', name: '血圧薬', type: 'MEDICINE' }),
-      createTestMedication({ id: 'med-2', name: 'ビタミンC', type: 'VITAMIN' }),
+      createTestMedication({ id: 1, name: '血圧薬', type: 'MEDICINE' }),
+      createTestMedication({ id: 2, name: 'ビタミンC', type: 'VITAMIN' }),
     ],
   };
 
@@ -103,7 +103,7 @@ describe('MedicationRecordList', () => {
       const wrapper = mount(MedicationRecordList, {
         props: {
           ...defaultProps,
-          selectedCatId: 'cat-1',
+          selectedCatId: 1,
         },
       });
 
@@ -227,7 +227,7 @@ describe('MedicationRecordList', () => {
     beforeEach(() => {
       const mockRecords = [
         createTestMedicationRecord({
-          id: 'record-1',
+          id: 1,
           cat: createTestCat({ name: 'みけ' }),
           medication: createTestMedication({
             name: '血圧薬',
@@ -285,7 +285,7 @@ describe('MedicationRecordList', () => {
       const wrapper = mount(MedicationRecordList, {
         props: {
           ...defaultProps,
-          selectedCatId: 'cat-1',
+          selectedCatId: 1,
         },
       });
 
@@ -303,7 +303,7 @@ describe('MedicationRecordList', () => {
       expect(catFilter.value).toBe('');
 
       // Change selectedCatId prop
-      await wrapper.setProps({ selectedCatId: 'cat-2' });
+      await wrapper.setProps({ selectedCatId: 2 });
 
       catFilter = wrapper.find('#cat-filter').element as HTMLSelectElement;
       expect(catFilter.value).toBe('cat-2');
@@ -313,7 +313,7 @@ describe('MedicationRecordList', () => {
       mount(MedicationRecordList, {
         props: {
           ...defaultProps,
-          selectedCatId: 'cat-1',
+          selectedCatId: 1,
         },
       });
 
@@ -355,7 +355,7 @@ describe('MedicationRecordList', () => {
         props: defaultProps,
       });
 
-      await wrapper.find('#medication-filter').setValue('med-1');
+      await wrapper.find('#medication-filter').setValue(1);
       await wrapper.find('#medication-filter').trigger('change');
 
       expect(global.$fetch).toHaveBeenCalledWith(

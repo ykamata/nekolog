@@ -41,7 +41,7 @@ describe('病院・先生管理 データベース統合テスト', () => {
     vi.clearAllMocks();
 
     // テスト用IDを設定
-    testUserId = 'test-user-id';
+    testUserId = 1;
     testHospitalId = 'test-hospital-id';
     testDoctorId = 'test-doctor-id';
   });
@@ -416,7 +416,7 @@ describe('病院・先生管理 データベース統合テスト', () => {
     it('病院に所属する先生の一覧取得が正しく動作する', async () => {
       const mockDoctors: VeterinaryDoctor[] = [
         {
-          id: 'doctor1',
+          id: 1,
           name: '関連先生1',
           hospitalId: testHospitalId,
           userId: testUserId,
@@ -424,7 +424,7 @@ describe('病院・先生管理 データベース統合テスト', () => {
           updatedAt: new Date(),
         },
         {
-          id: 'doctor2',
+          id: 2,
           name: '関連先生2',
           hospitalId: testHospitalId,
           userId: testUserId,
@@ -470,7 +470,7 @@ describe('病院・先生管理 データベース統合テスト', () => {
     it('先生の病院フィルタリングが正しく動作する', async () => {
       const mockDoctors: VeterinaryDoctor[] = [
         {
-          id: 'doctor1',
+          id: 1,
           name: 'A病院先生1',
           hospitalId: testHospitalId,
           userId: testUserId,
@@ -485,7 +485,7 @@ describe('病院・先生管理 データベース統合テスト', () => {
           },
         },
         {
-          id: 'doctor2',
+          id: 2,
           name: 'A病院先生2',
           hospitalId: testHospitalId,
           userId: testUserId,
@@ -525,7 +525,7 @@ describe('病院・先生管理 データベース統合テスト', () => {
   describe('データ整合性とトランザクション', () => {
     it('トランザクション内での複数操作が正しく動作する', async () => {
       const hospital = {
-        id: 'transaction-hospital-id',
+        id: 1,
         name: 'トランザクション病院',
         userId: testUserId,
         createdAt: new Date(),
@@ -533,7 +533,7 @@ describe('病院・先生管理 データベース統合テスト', () => {
       };
 
       const doctor = {
-        id: 'transaction-doctor-id',
+        id: 1,
         name: 'トランザクション先生',
         hospitalId: hospital.id,
         userId: testUserId,

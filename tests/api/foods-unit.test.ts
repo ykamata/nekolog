@@ -29,7 +29,7 @@ describe('Food Management API Logic', () => {
     caloriesPerGram: 4.0,
   };
 
-  let createdFoodId: string;
+  let createdFoodId: number;
 
   beforeEach(async () => {
     // Clean up any existing test data

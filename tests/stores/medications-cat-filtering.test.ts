@@ -18,7 +18,7 @@ describe('Medications Store - Cat Filtering', () => {
   const createTestMedication = (
     overrides?: Partial<Medication>,
   ): Medication => ({
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: 'MEDICINE' as MedicationType,
     description: 'テスト用の薬です',
@@ -31,9 +31,9 @@ describe('Medications Store - Cat Filtering', () => {
   const createTestMedicationRecord = (
     overrides?: Partial<MedicationRecord>,
   ): MedicationRecord => ({
-    id: 'record-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     quantity: 1,
     administeredAt: new Date(),
     status: 'ADMINISTERED' as MedicationStatus,
@@ -46,10 +46,10 @@ describe('Medications Store - Cat Filtering', () => {
   const createTestMedicationReminder = (
     overrides?: Partial<MedicationReminder>,
   ): MedicationReminder => ({
-    id: 'reminder-1',
-    scheduleId: 'schedule-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    scheduleId: 1,
+    catId: 1,
+    medicationId: 1,
     scheduledAt: new Date(),
     status: 'PENDING' as ReminderStatus,
     createdAt: new Date(),
@@ -62,14 +62,14 @@ describe('Medications Store - Cat Filtering', () => {
       const store = useMedicationsStore();
 
       const records = [
-        createTestMedicationRecord({ id: 'record-1', catId: 'cat-1', medicationId: 'med-1' }),
-        createTestMedicationRecord({ id: 'record-2', catId: 'cat-1', medicationId: 'med-2' }),
-        createTestMedicationRecord({ id: 'record-3', catId: 'cat-2', medicationId: 'med-1' }),
+        createTestMedicationRecord({ id: 1, catId: 1, medicationId: 1 }),
+        createTestMedicationRecord({ id: 2, catId: 1, medicationId: 2 }),
+        createTestMedicationRecord({ id: 3, catId: 2, medicationId: 1 }),
       ];
 
       store.medicationRecords = records;
 
-      const result = store.getMedicationRecordsByCatAndMedication('cat-1', 'med-1');
+      const result = store.getMedicationRecordsByCatAndMedication('cat-1', 1);
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('record-1');
     });
@@ -78,9 +78,9 @@ describe('Medications Store - Cat Filtering', () => {
       const store = useMedicationsStore();
 
       const records = [
-        createTestMedicationRecord({ id: 'record-1', catId: 'cat-1', status: 'ADMINISTERED' }),
-        createTestMedicationRecord({ id: 'record-2', catId: 'cat-1', status: 'PENDING' }),
-        createTestMedicationRecord({ id: 'record-3', catId: 'cat-2', status: 'ADMINISTERED' }),
+        createTestMedicationRecord({ id: 1, catId: 1, status: 'ADMINISTERED' }),
+        createTestMedicationRecord({ id: 2, catId: 1, status: 'PENDING' }),
+        createTestMedicationRecord({ id: 3, catId: 2, status: 'ADMINISTERED' }),
       ];
 
       store.medicationRecords = records;
@@ -99,18 +99,18 @@ describe('Medications Store - Cat Filtering', () => {
 
       const records = [
         createTestMedicationRecord({
-          id: 'record-1',
-          catId: 'cat-1',
+          id: 1,
+          catId: 1,
           administeredAt: today,
         }),
         createTestMedicationRecord({
-          id: 'record-2',
-          catId: 'cat-1',
+          id: 2,
+          catId: 1,
           administeredAt: tomorrow,
         }),
         createTestMedicationRecord({
-          id: 'record-3',
-          catId: 'cat-2',
+          id: 3,
+          catId: 2,
           administeredAt: today,
         }),
       ];
@@ -133,30 +133,30 @@ describe('Medications Store - Cat Filtering', () => {
 
       const records = [
         createTestMedicationRecord({
-          id: 'record-1',
-          catId: 'cat-1',
-          medicationId: 'med-1',
+          id: 1,
+          catId: 1,
+          medicationId: 1,
           status: 'ADMINISTERED',
           administeredAt: now,
         }),
         createTestMedicationRecord({
-          id: 'record-2',
-          catId: 'cat-1',
-          medicationId: 'med-2',
+          id: 2,
+          catId: 1,
+          medicationId: 2,
           status: 'PENDING',
           administeredAt: earlier,
         }),
         createTestMedicationRecord({
-          id: 'record-3',
-          catId: 'cat-1',
-          medicationId: 'med-1',
+          id: 3,
+          catId: 1,
+          medicationId: 1,
           status: 'ADMINISTERED',
           administeredAt: earlier,
         }),
         createTestMedicationRecord({
-          id: 'record-4',
-          catId: 'cat-2',
-          medicationId: 'med-1',
+          id: 4,
+          catId: 2,
+          medicationId: 1,
           status: 'ADMINISTERED',
           administeredAt: now,
         }),
@@ -164,13 +164,13 @@ describe('Medications Store - Cat Filtering', () => {
 
       const reminders = [
         createTestMedicationReminder({
-          id: 'reminder-1',
-          catId: 'cat-1',
+          id: 1,
+          catId: 1,
           status: 'PENDING',
         }),
         createTestMedicationReminder({
-          id: 'reminder-2',
-          catId: 'cat-1',
+          id: 2,
+          catId: 1,
           status: 'ACKNOWLEDGED',
         }),
       ];
@@ -205,16 +205,16 @@ describe('Medications Store - Cat Filtering', () => {
       const store = useMedicationsStore();
 
       const reminders = [
-        createTestMedicationReminder({ id: 'reminder-1', catId: 'cat-1', status: 'PENDING' }),
-        createTestMedicationReminder({ id: 'reminder-2', catId: 'cat-1', status: 'ACKNOWLEDGED' }),
-        createTestMedicationReminder({ id: 'reminder-3', catId: 'cat-2', status: 'PENDING' }),
+        createTestMedicationReminder({ id: 1, catId: 1, status: 'PENDING' }),
+        createTestMedicationReminder({ id: 2, catId: 1, status: 'ACKNOWLEDGED' }),
+        createTestMedicationReminder({ id: 3, catId: 2, status: 'PENDING' }),
       ];
 
       store.medicationReminders = reminders;
 
       const result = store.getPendingRemindersByCat('cat-1');
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('reminder-1');
+      expect(result[0].id).toBe(1);
     });
 
     it('should get today\'s reminders by cat', () => {
@@ -226,23 +226,23 @@ describe('Medications Store - Cat Filtering', () => {
 
       const reminders = [
         createTestMedicationReminder({
-          id: 'reminder-1',
-          catId: 'cat-1',
+          id: 1,
+          catId: 1,
           scheduledAt: today,
         }),
         createTestMedicationReminder({
-          id: 'reminder-2',
-          catId: 'cat-1',
+          id: 2,
+          catId: 1,
           scheduledAt: yesterday,
         }),
         createTestMedicationReminder({
-          id: 'reminder-3',
-          catId: 'cat-1',
+          id: 3,
+          catId: 1,
           scheduledAt: tomorrow,
         }),
         createTestMedicationReminder({
-          id: 'reminder-4',
-          catId: 'cat-2',
+          id: 4,
+          catId: 2,
           scheduledAt: today,
         }),
       ];
@@ -251,7 +251,7 @@ describe('Medications Store - Cat Filtering', () => {
 
       const result = store.getTodaysRemindersByCat('cat-1');
       expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('reminder-1');
+      expect(result[0].id).toBe(1);
     });
 
     it('should get upcoming reminders by cat', () => {
@@ -264,32 +264,32 @@ describe('Medications Store - Cat Filtering', () => {
 
       const reminders = [
         createTestMedicationReminder({
-          id: 'reminder-1',
-          catId: 'cat-1',
+          id: 1,
+          catId: 1,
           scheduledAt: inThirtyMinutes,
           status: 'PENDING',
         }),
         createTestMedicationReminder({
-          id: 'reminder-2',
-          catId: 'cat-1',
+          id: 2,
+          catId: 1,
           scheduledAt: inTwoHours,
           status: 'PENDING',
         }),
         createTestMedicationReminder({
-          id: 'reminder-3',
-          catId: 'cat-1',
+          id: 3,
+          catId: 1,
           scheduledAt: past,
           status: 'PENDING',
         }),
         createTestMedicationReminder({
-          id: 'reminder-4',
-          catId: 'cat-1',
+          id: 4,
+          catId: 1,
           scheduledAt: inThirtyMinutes,
           status: 'ACKNOWLEDGED',
         }),
         createTestMedicationReminder({
-          id: 'reminder-5',
-          catId: 'cat-2',
+          id: 5,
+          catId: 2,
           scheduledAt: inThirtyMinutes,
           status: 'PENDING',
         }),
@@ -300,12 +300,12 @@ describe('Medications Store - Cat Filtering', () => {
       // Test with default 24 hours - should include both upcoming reminders
       const result = store.getUpcomingRemindersByCat('cat-1');
       expect(result).toHaveLength(2);
-      expect(result.map(r => r.id)).toEqual(['reminder-1', 'reminder-2']);
+      expect(result.map(r => r.id)).toEqual([1, 'reminder-2']);
 
       // Test with 1 hour - should only include the first reminder
       const resultOneHour = store.getUpcomingRemindersByCat('cat-1', 1);
       expect(resultOneHour).toHaveLength(1);
-      expect(resultOneHour[0].id).toBe('reminder-1');
+      expect(resultOneHour[0].id).toBe(1);
     });
   });
 
@@ -314,9 +314,9 @@ describe('Medications Store - Cat Filtering', () => {
       const store = useMedicationsStore();
 
       const records = [
-        createTestMedicationRecord({ id: 'record-1', catId: 'cat-1' }),
-        createTestMedicationRecord({ id: 'record-2', catId: 'cat-2' }),
-        createTestMedicationRecord({ id: 'record-3', catId: 'cat-1' }),
+        createTestMedicationRecord({ id: 1, catId: 1 }),
+        createTestMedicationRecord({ id: 2, catId: 2 }),
+        createTestMedicationRecord({ id: 3, catId: 1 }),
       ];
 
       store.medicationRecords = records;
@@ -330,16 +330,16 @@ describe('Medications Store - Cat Filtering', () => {
       const store = useMedicationsStore();
 
       const reminders = [
-        createTestMedicationReminder({ id: 'reminder-1', catId: 'cat-1' }),
-        createTestMedicationReminder({ id: 'reminder-2', catId: 'cat-2' }),
-        createTestMedicationReminder({ id: 'reminder-3', catId: 'cat-1' }),
+        createTestMedicationReminder({ id: 1, catId: 1 }),
+        createTestMedicationReminder({ id: 2, catId: 2 }),
+        createTestMedicationReminder({ id: 3, catId: 1 }),
       ];
 
       store.medicationReminders = reminders;
 
       const result = store.getMedicationRemindersByCat('cat-1');
       expect(result).toHaveLength(2);
-      expect(result.map(r => r.id)).toEqual(['reminder-1', 'reminder-3']);
+      expect(result.map(r => r.id)).toEqual([1, 'reminder-3']);
     });
   });
 });

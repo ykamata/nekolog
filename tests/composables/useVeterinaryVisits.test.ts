@@ -9,39 +9,39 @@ global.$fetch = mockFetch;
 describe('useVeterinaryVisits', () => {
   const mockVisits: VeterinaryVisitWithRelations[] = [
     {
-      id: 'visit1',
-      catId: 'cat1',
+      id: 1,
+      catId: 1,
       visitDate: new Date('2024-01-15T10:00:00Z'),
-      hospitalId: 'hospital1',
-      doctorId: 'doctor1',
+      hospitalId: 1,
+      doctorId: 1,
       cost: 5000,
       notes: 'テストメモ1',
       hasBloodTest: true,
       createdAt: new Date(),
       updatedAt: new Date(),
-      cat: { id: 'cat1', name: 'テスト猫1', birthdate: new Date(), weight: 4.5, photoUrl: null, createdAt: new Date(), updatedAt: new Date() },
-      hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-      doctor: { id: 'doctor1', name: 'テスト先生', hospitalId: 'hospital1', specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+      cat: { id: 1, name: 'テスト猫1', birthdate: new Date(), weight: 4.5, photoUrl: null, createdAt: new Date(), updatedAt: new Date() },
+      hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+      doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
       treatments: [
-        { id: 'treatment1', name: '健康診断', category: '診察', description: '', createdAt: new Date(), updatedAt: new Date() },
+        { id: 1, name: '健康診断', category: '診察', description: '', createdAt: new Date(), updatedAt: new Date() },
       ],
     },
     {
-      id: 'visit2',
-      catId: 'cat2',
+      id: 2,
+      catId: 2,
       visitDate: new Date('2024-01-20T14:00:00Z'),
-      hospitalId: 'hospital1',
+      hospitalId: 1,
       doctorId: null,
       cost: 3000,
       notes: 'テストメモ2',
       hasBloodTest: false,
       createdAt: new Date(),
       updatedAt: new Date(),
-      cat: { id: 'cat2', name: 'テスト猫2', birthdate: new Date(), weight: 3.2, photoUrl: null, createdAt: new Date(), updatedAt: new Date() },
-      hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+      cat: { id: 2, name: 'テスト猫2', birthdate: new Date(), weight: 3.2, photoUrl: null, createdAt: new Date(), updatedAt: new Date() },
+      hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
       doctor: null,
       treatments: [
-        { id: 'treatment2', name: 'ワクチン接種', category: '予防', description: '', createdAt: new Date(), updatedAt: new Date() },
+        { id: 2, name: 'ワクチン接種', category: '予防', description: '', createdAt: new Date(), updatedAt: new Date() },
       ],
     },
   ];
@@ -97,7 +97,7 @@ describe('useVeterinaryVisits', () => {
       const { fetchVisits } = useVeterinaryVisits();
 
       const params = {
-        catId: 'cat1',
+        catId: 1,
         startDate: new Date('2024-01-01'),
         endDate: new Date('2024-01-31'),
         hasBloodTest: true,
@@ -137,7 +137,7 @@ describe('useVeterinaryVisits', () => {
       const additionalVisits = [
         {
           ...mockVisits[0],
-          id: 'visit3',
+          id: 3,
           notes: 'テストメモ3',
         },
       ];
@@ -179,7 +179,7 @@ describe('useVeterinaryVisits', () => {
       const { visits, createVisit } = useVeterinaryVisits();
 
       const newVisitData = {
-        catId: 'cat1',
+        catId: 1,
         visitDate: new Date('2024-01-25T10:00:00Z'),
         hospitalName: 'テスト動物病院',
         doctorName: 'テスト先生',
@@ -191,7 +191,7 @@ describe('useVeterinaryVisits', () => {
 
       const createdVisit = {
         ...mockVisits[0],
-        id: 'visit3',
+        id: 3,
         cost: 4000,
         notes: '新しいメモ',
         hasBloodTest: false,
@@ -214,7 +214,7 @@ describe('useVeterinaryVisits', () => {
       const { createVisit } = useVeterinaryVisits();
 
       const newVisitData = {
-        catId: 'cat1',
+        catId: 1,
         visitDate: new Date(),
         hospitalName: 'テスト病院',
         doctorName: '',
@@ -258,7 +258,7 @@ describe('useVeterinaryVisits', () => {
       await fetchVisits();
 
       const updateData = {
-        id: 'visit1',
+        id: 1,
         cost: 6000,
         notes: '更新されたメモ',
         hasBloodTest: true,
@@ -344,7 +344,7 @@ describe('useVeterinaryVisits', () => {
       // 追加データ
       const additionalVisit = {
         ...mockVisits[0],
-        id: 'visit3',
+        id: 3,
         notes: '追加記録',
       };
 
@@ -426,7 +426,7 @@ describe('useVeterinaryVisits', () => {
     it('現在のパラメータで記録を再取得できる', async () => {
       const { refresh, fetchVisits } = useVeterinaryVisits();
 
-      const params = { catId: 'cat1', limit: 10 };
+      const params = { catId: 1, limit: 10 };
       await fetchVisits(params);
 
       // 新しいデータでモックを更新
@@ -553,10 +553,10 @@ describe('useVeterinaryVisits', () => {
 
       // createVisitを使用してデータを追加
       const newVisitData = {
-        catId: 'cat1',
+        catId: 1,
         visitDate: new Date('2024-01-25T10:00:00Z'),
-        hospitalId: 'hospital1',
-        doctorId: 'doctor1',
+        hospitalId: 1,
+        doctorId: 1,
         cost: 4000,
         notes: '新しいメモ',
         hasBloodTest: false,
@@ -564,7 +564,7 @@ describe('useVeterinaryVisits', () => {
 
       const createdVisit = {
         ...mockVisits[0],
-        id: 'visit3',
+        id: 3,
         ...newVisitData,
       };
 

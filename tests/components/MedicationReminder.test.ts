@@ -5,23 +5,23 @@ import type { MedicationReminder as MedicationReminderType, ReminderStatus } fro
 
 // Mock data
 const createMockReminder = (overrides: Partial<MedicationReminderType> = {}): MedicationReminderType => ({
-  id: 'reminder-1',
-  scheduleId: 'schedule-1',
-  catId: 'cat-1',
-  medicationId: 'med-1',
+  id: 1,
+  scheduleId: 1,
+  catId: 1,
+  medicationId: 1,
   scheduledAt: new Date('2024-01-15T08:00:00Z'),
   status: 'PENDING' as ReminderStatus,
   createdAt: new Date('2024-01-14T10:00:00Z'),
   updatedAt: new Date('2024-01-14T10:00:00Z'),
   medication: {
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: 'MEDICINE' as any,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
   cat: {
-    id: 'cat-1',
+    id: 1,
     name: 'テスト猫',
     breed: 'テスト品種',
     birthDate: new Date('2020-01-01'),
@@ -34,27 +34,27 @@ const createMockReminder = (overrides: Partial<MedicationReminderType> = {}): Me
 
 const mockReminders: MedicationReminderType[] = [
   createMockReminder({
-    id: 'reminder-1',
+    id: 1,
     status: 'PENDING',
     scheduledAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago (overdue)
   }),
   createMockReminder({
-    id: 'reminder-2',
+    id: 2,
     status: 'PENDING',
     scheduledAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes from now (upcoming)
   }),
   createMockReminder({
-    id: 'reminder-3',
+    id: 3,
     status: 'SNOOZED',
     scheduledAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes from now
   }),
   createMockReminder({
-    id: 'reminder-4',
+    id: 4,
     status: 'ACKNOWLEDGED',
     scheduledAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
   }),
   createMockReminder({
-    id: 'reminder-5',
+    id: 5,
     status: 'DISMISSED',
     scheduledAt: new Date(Date.now() - 45 * 60 * 1000), // 45 minutes ago
   }),

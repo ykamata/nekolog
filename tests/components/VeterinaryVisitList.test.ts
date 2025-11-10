@@ -7,7 +7,7 @@ import type { VeterinaryVisitWithRelations } from '~/types/veterinary-visit';
 describe('VeterinaryVisitList', () => {
   const mockCats: Cat[] = [
     {
-      id: 'cat1',
+      id: 1,
       name: 'テスト猫1',
       birthdate: new Date('2020-01-01'),
       weight: 4.5,
@@ -16,7 +16,7 @@ describe('VeterinaryVisitList', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'cat2',
+      id: 2,
       name: 'テスト猫2',
       birthdate: new Date('2021-06-15'),
       weight: 3.2,
@@ -28,29 +28,29 @@ describe('VeterinaryVisitList', () => {
 
   const mockVisits: VeterinaryVisitWithRelations[] = [
     {
-      id: 'visit1',
-      catId: 'cat1',
+      id: 1,
+      catId: 1,
       visitDate: new Date('2024-01-15T10:00:00Z'),
-      hospitalId: 'hospital1',
-      doctorId: 'doctor1',
+      hospitalId: 1,
+      doctorId: 1,
       cost: 5000,
       notes: 'テストメモ1',
       hasBloodTest: true,
       createdAt: new Date(),
       updatedAt: new Date(),
       cat: mockCats[0],
-      hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-      doctor: { id: 'doctor1', name: 'テスト先生', hospitalId: 'hospital1', specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+      hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+      doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
       treatments: [
-        { id: 'treatment1', name: '健康診断', category: '診察', description: '', createdAt: new Date(), updatedAt: new Date() },
-        { id: 'treatment2', name: 'ワクチン接種', category: '予防', description: '', createdAt: new Date(), updatedAt: new Date() },
+        { id: 1, name: '健康診断', category: '診察', description: '', createdAt: new Date(), updatedAt: new Date() },
+        { id: 2, name: 'ワクチン接種', category: '予防', description: '', createdAt: new Date(), updatedAt: new Date() },
       ],
     },
     {
-      id: 'visit2',
-      catId: 'cat2',
+      id: 2,
+      catId: 2,
       visitDate: new Date('2024-01-20T14:00:00Z'),
-      hospitalId: 'hospital1',
+      hospitalId: 1,
       doctorId: null,
       cost: 3000,
       notes: 'テストメモ2',
@@ -58,10 +58,10 @@ describe('VeterinaryVisitList', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       cat: mockCats[1],
-      hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+      hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
       doctor: null,
       treatments: [
-        { id: 'treatment3', name: '爪切り', category: 'ケア', description: '', createdAt: new Date(), updatedAt: new Date() },
+        { id: 3, name: '爪切り', category: 'ケア', description: '', createdAt: new Date(), updatedAt: new Date() },
       ],
     },
   ];

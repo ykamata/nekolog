@@ -8,16 +8,16 @@ import type { Cat } from '~/types/cat-meal';
 // Mock the stores
 const mockCatsStore = {
   sortedCats: [
-    { id: 'cat-1', name: 'ミケ' },
-    { id: 'cat-2', name: 'タマ' },
+    { id: 1, name: 'ミケ' },
+    { id: 2, name: 'タマ' },
   ] as Cat[],
   fetchCats: vi.fn().mockResolvedValue([]),
 };
 
 const mockMedicationsStore = {
   sortedMedications: [
-    { id: 'med-1', name: '薬A', type: 'MEDICINE' },
-    { id: 'med-2', name: 'サプリB', type: 'SUPPLEMENT' },
+    { id: 1, name: '薬A', type: 'MEDICINE' },
+    { id: 2, name: 'サプリB', type: 'SUPPLEMENT' },
   ] as Medication[],
   fetchMedications: vi.fn().mockResolvedValue([]),
 };
@@ -43,9 +43,9 @@ describe('MedicationScheduleForm', () => {
   };
 
   const mockSchedule: MedicationSchedule = {
-    id: 'schedule-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     frequency: 'daily',
     times: JSON.stringify(['08:00']),
     startDate: new Date('2024-01-01'),
@@ -149,7 +149,7 @@ describe('MedicationScheduleForm', () => {
       wrapper = createWrapper({ schedule: mockSchedule });
 
       expect(wrapper.vm.formData.catId).toBe('cat-1');
-      expect(wrapper.vm.formData.medicationId).toBe('med-1');
+      expect(wrapper.vm.formData.medicationId).toBe(1);
       expect(wrapper.vm.formData.frequency).toBe('daily');
       expect(wrapper.vm.formData.times).toEqual(['08:00']);
       expect(wrapper.vm.formData.startDate).toEqual(new Date('2024-01-01'));
@@ -241,7 +241,7 @@ describe('MedicationScheduleForm', () => {
 
     it('validates time format', async () => {
       wrapper.vm.formData.catId = 'cat-1';
-      wrapper.vm.formData.medicationId = 'med-1';
+      wrapper.vm.formData.medicationId = 1;
       wrapper.vm.formData.times = ['invalid-time'];
 
       const form = wrapper.find('.schedule-form');
@@ -252,7 +252,7 @@ describe('MedicationScheduleForm', () => {
 
     it('validates end date is after start date', async () => {
       wrapper.vm.formData.catId = 'cat-1';
-      wrapper.vm.formData.medicationId = 'med-1';
+      wrapper.vm.formData.medicationId = 1;
       wrapper.vm.formData.startDate = new Date('2024-01-02');
       wrapper.vm.formData.endDate = new Date('2024-01-01');
 
@@ -270,7 +270,7 @@ describe('MedicationScheduleForm', () => {
 
     it('emits save event with valid data', async () => {
       wrapper.vm.formData.catId = 'cat-1';
-      wrapper.vm.formData.medicationId = 'med-1';
+      wrapper.vm.formData.medicationId = 1;
       wrapper.vm.formData.frequency = 'daily';
       wrapper.vm.formData.times = ['08:00'];
       wrapper.vm.formData.startDate = new Date('2024-01-01');
@@ -281,7 +281,7 @@ describe('MedicationScheduleForm', () => {
       expect(wrapper.emitted('save')).toBeTruthy();
       const saveEvent = wrapper.emitted('save')[0][0];
       expect(saveEvent.catId).toBe('cat-1');
-      expect(saveEvent.medicationId).toBe('med-1');
+      expect(saveEvent.medicationId).toBe(1);
       expect(saveEvent.frequency).toBe('daily');
       expect(saveEvent.times).toEqual(['08:00']);
     });

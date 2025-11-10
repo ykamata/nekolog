@@ -22,7 +22,7 @@ describe('MedicationRecordForm - Multiple Doses', () => {
   // Test data
   const mockCats: Cat[] = [
     {
-      id: 'cat-1',
+      id: 1,
       name: 'みけ',
       birthdate: new Date('2020-01-01'),
       weight: 4.5,
@@ -33,7 +33,7 @@ describe('MedicationRecordForm - Multiple Doses', () => {
 
   const mockMedications: Medication[] = [
     {
-      id: 'med-1',
+      id: 1,
       name: 'テスト薬A',
       type: MedicationType.MEDICINE,
       description: 'テスト用の薬です',
@@ -165,7 +165,7 @@ describe('MedicationRecordForm - Multiple Doses', () => {
 
     // Fill in required fields
     await wrapper.find('#cat-select').setValue('cat-1');
-    await wrapper.find('#medication-select').setValue('med-1');
+    await wrapper.find('#medication-select').setValue(1);
 
     // Enable multiple doses
     const multipleDosesCheckbox = wrapper.find('input[type="checkbox"]');
@@ -199,14 +199,14 @@ describe('MedicationRecordForm - Multiple Doses', () => {
     // Check morning record
     const morningRecord = saveEvents![0][0] as any;
     expect(morningRecord.catId).toBe('cat-1');
-    expect(morningRecord.medicationId).toBe('med-1');
+    expect(morningRecord.medicationId).toBe(1);
     expect(morningRecord.quantity).toBe(1);
     expect(new Date(morningRecord.administeredAt).getHours()).toBe(8);
 
     // Check evening record
     const eveningRecord = saveEvents![1][0] as any;
     expect(eveningRecord.catId).toBe('cat-1');
-    expect(eveningRecord.medicationId).toBe('med-1');
+    expect(eveningRecord.medicationId).toBe(1);
     expect(eveningRecord.quantity).toBe(2);
     expect(new Date(eveningRecord.administeredAt).getHours()).toBe(20);
   });
@@ -225,7 +225,7 @@ describe('MedicationRecordForm - Multiple Doses', () => {
 
     // Fill in required fields
     await wrapper.find('#cat-select').setValue('cat-1');
-    await wrapper.find('#medication-select').setValue('med-1');
+    await wrapper.find('#medication-select').setValue(1);
     await wrapper.find('#quantity-input').setValue(3);
 
     // Submit form (multiple doses is disabled by default)
@@ -238,7 +238,7 @@ describe('MedicationRecordForm - Multiple Doses', () => {
 
     const record = saveEvents![0][0] as any;
     expect(record.catId).toBe('cat-1');
-    expect(record.medicationId).toBe('med-1');
+    expect(record.medicationId).toBe(1);
     expect(record.quantity).toBe(3);
   });
 
@@ -256,7 +256,7 @@ describe('MedicationRecordForm - Multiple Doses', () => {
 
     // Fill in required fields
     await wrapper.find('#cat-select').setValue('cat-1');
-    await wrapper.find('#medication-select').setValue('med-1');
+    await wrapper.find('#medication-select').setValue(1);
 
     // Enable multiple doses but don't enable any time periods
     const multipleDosesCheckbox = wrapper.find('input[type="checkbox"]');

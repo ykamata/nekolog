@@ -26,7 +26,7 @@ describe('Medication Data Synchronization', () => {
   let offlineStorage: OfflineStorage;
 
   const mockMedication: Medication = {
-    id: 'med-1',
+    id: 1,
     name: 'テスト薬',
     type: 'MEDICINE' as MedicationType,
     description: 'テスト用の薬です',
@@ -36,9 +36,9 @@ describe('Medication Data Synchronization', () => {
   };
 
   const mockMedicationRecord: MedicationRecord = {
-    id: 'record-1',
-    catId: 'cat-1',
-    medicationId: 'med-1',
+    id: 1,
+    catId: 1,
+    medicationId: 1,
     quantity: 1,
     administeredAt: new Date(),
     status: 'ADMINISTERED' as MedicationStatus,
@@ -149,8 +149,8 @@ describe('Medication Data Synchronization', () => {
       });
 
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date(),
         status: 'ADMINISTERED' as MedicationStatus,
@@ -181,8 +181,8 @@ describe('Medication Data Synchronization', () => {
         type: 'MEDICINE' as MedicationType,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date(),
         status: 'ADMINISTERED' as MedicationStatus,
@@ -220,15 +220,15 @@ describe('Medication Data Synchronization', () => {
   describe('Data Filtering and Querying', () => {
     it('should filter medication records by cat', () => {
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: new Date(),
         status: 'ADMINISTERED' as MedicationStatus,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-2',
-        medicationId: 'med-1',
+        catId: 2,
+        medicationId: 1,
         quantity: 2,
         administeredAt: new Date(),
         status: 'PENDING' as MedicationStatus,
@@ -250,22 +250,22 @@ describe('Medication Data Synchronization', () => {
 
       // Add in random order
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: date2,
         status: 'ADMINISTERED' as MedicationStatus,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: date1,
         status: 'ADMINISTERED' as MedicationStatus,
       });
       offlineStorage.addMedicationRecordOffline({
-        catId: 'cat-1',
-        medicationId: 'med-1',
+        catId: 1,
+        medicationId: 1,
         quantity: 1,
         administeredAt: date3,
         status: 'ADMINISTERED' as MedicationStatus,

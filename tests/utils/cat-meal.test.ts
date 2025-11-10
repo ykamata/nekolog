@@ -37,7 +37,7 @@ describe('Data Transformation Functions', () => {
   describe('transformPrismaCat', () => {
     it('should transform Prisma cat model correctly', () => {
       const prismaCat = {
-        id: 'cat123',
+        id: 123,
         name: 'ミケ',
         birthdate: '2020-01-01T00:00:00.000Z',
         weight: 4.5,
@@ -49,7 +49,7 @@ describe('Data Transformation Functions', () => {
       const result = transformPrismaCat(prismaCat);
 
       expect(result).toEqual({
-        id: 'cat123',
+        id: 123,
         name: 'ミケ',
         birthdate: new Date('2020-01-01T00:00:00.000Z'),
         weight: 4.5,
@@ -61,7 +61,7 @@ describe('Data Transformation Functions', () => {
 
     it('should handle null optional fields', () => {
       const prismaCat = {
-        id: 'cat123',
+        id: 123,
         name: 'ミケ',
         birthdate: null,
         weight: null,
@@ -81,7 +81,7 @@ describe('Data Transformation Functions', () => {
   describe('transformPrismaFood', () => {
     it('should transform Prisma food model correctly', () => {
       const prismaFood = {
-        id: 'food123',
+        id: 123,
         name: 'プレミアムドライフード',
         type: 'DRY',
         brand: 'ロイヤルカナン',
@@ -95,7 +95,7 @@ describe('Data Transformation Functions', () => {
       const result = transformPrismaFood(prismaFood);
 
       expect(result).toEqual({
-        id: 'food123',
+        id: 123,
         name: 'プレミアムドライフード',
         type: FoodType.DRY,
         brand: 'ロイヤルカナン',
@@ -111,9 +111,9 @@ describe('Data Transformation Functions', () => {
   describe('transformPrismaMealRecord', () => {
     it('should transform Prisma meal record model correctly', () => {
       const prismaMealRecord = {
-        id: 'meal123',
-        catId: 'cat123',
-        foodId: 'food123',
+        id: 123,
+        catId: 123,
+        foodId: 123,
         quantity: 50,
         calories: 175,
         mealTime: '2023-01-01T08:00:00.000Z',
@@ -125,9 +125,9 @@ describe('Data Transformation Functions', () => {
       const result = transformPrismaMealRecord(prismaMealRecord);
 
       expect(result).toEqual({
-        id: 'meal123',
-        catId: 'cat123',
-        foodId: 'food123',
+        id: 123,
+        catId: 123,
+        foodId: 123,
         quantity: 50,
         calories: 175,
         mealTime: new Date('2023-01-01T08:00:00.000Z'),
@@ -359,9 +359,9 @@ describe('Date Utility Functions', () => {
 describe('Analytics Functions', () => {
   const mockMealRecords: MealRecord[] = [
     {
-      id: 'meal1',
-      catId: 'cat1',
-      foodId: 'food1',
+      id: 1,
+      catId: 1,
+      foodId: 1,
       quantity: 50,
       calories: 175,
       mealTime: new Date('2023-01-01T08:00:00.000Z'),
@@ -369,7 +369,7 @@ describe('Analytics Functions', () => {
       createdAt: new Date('2023-01-01T08:00:00.000Z'),
       updatedAt: new Date('2023-01-01T08:00:00.000Z'),
       food: {
-        id: 'food1',
+        id: 1,
         name: 'ドライフード',
         type: FoodType.DRY,
         caloriesPerGram: 3.5,
@@ -379,9 +379,9 @@ describe('Analytics Functions', () => {
       },
     },
     {
-      id: 'meal2',
-      catId: 'cat1',
-      foodId: 'food2',
+      id: 2,
+      catId: 1,
+      foodId: 2,
       quantity: 30,
       calories: 90,
       mealTime: new Date('2023-01-01T12:00:00.000Z'),
@@ -389,7 +389,7 @@ describe('Analytics Functions', () => {
       createdAt: new Date('2023-01-01T12:00:00.000Z'),
       updatedAt: new Date('2023-01-01T12:00:00.000Z'),
       food: {
-        id: 'food2',
+        id: 2,
         name: 'ウェットフード',
         type: FoodType.WET,
         caloriesPerGram: 3.0,

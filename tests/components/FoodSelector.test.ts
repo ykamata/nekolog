@@ -7,7 +7,7 @@ import type { Food } from '~/types/cat-meal';
 // Mock food data
 const mockFoods: Food[] = [
   {
-    id: 'food-1',
+    id: 1,
     name: 'プレミアムキャットフード',
     type: FoodType.DRY,
     brand: 'ロイヤルカナン',
@@ -18,7 +18,7 @@ const mockFoods: Food[] = [
     updatedAt: new Date('2024-01-01'),
   },
   {
-    id: 'food-2',
+    id: 2,
     name: 'ウェットフード缶詰',
     type: FoodType.WET,
     brand: 'ヒルズ',
@@ -29,7 +29,7 @@ const mockFoods: Food[] = [
     updatedAt: new Date('2024-01-01'),
   },
   {
-    id: 'food-3',
+    id: 3,
     name: 'シニア用ドライフード',
     type: FoodType.DRY,
     brand: 'ピュリナ',
@@ -152,7 +152,7 @@ describe('FoodSelector', () => {
       wrapper = mount(FoodSelector, {
         props: {
           foods: mockFoods,
-          selectedFoodId: 'food-1',
+          selectedFoodId: 1,
         },
       });
 
@@ -167,7 +167,7 @@ describe('FoodSelector', () => {
       wrapper = mount(FoodSelector, {
         props: {
           foods: mockFoods,
-          selectedFoodId: 'food-1',
+          selectedFoodId: 1,
         },
       });
 
@@ -361,7 +361,7 @@ describe('FoodSelector', () => {
     });
 
     it('should show selected badge for currently selected food', async () => {
-      await wrapper.setProps({ selectedFoodId: 'food-1' });
+      await wrapper.setProps({ selectedFoodId: 1 });
       await wrapper.find('.selected-food').trigger('click');
 
       const selectedItem = wrapper
@@ -394,7 +394,7 @@ describe('FoodSelector', () => {
     it('should show recent section when there are recent selections', async () => {
       // Mock localStorage to return recent selections
       vi.mocked(localStorage.getItem).mockReturnValue(
-        JSON.stringify(['food-1']),
+        JSON.stringify([1]),
       );
 
       wrapper = mount(FoodSelector, {

@@ -7,30 +7,30 @@ describe('VeterinaryHospitalDetail', () => {
   let wrapper: any;
 
   const mockHospital: VeterinaryHospital = {
-    id: 'hospital-1',
+    id: 1,
     name: 'テスト動物病院',
     address: '東京都渋谷区テスト1-2-3',
     phone: '03-1234-5678',
     memo: 'テスト用の病院です。\n複数行のメモです。',
-    userId: 'user-1',
+    userId: 1,
     createdAt: new Date('2024-01-15T10:30:00Z'),
     updatedAt: new Date('2024-01-20T15:45:00Z'),
     doctors: [
       {
-        id: 'doctor-1',
+        id: 1,
         name: '田中先生',
         specialty: '内科',
-        hospitalId: 'hospital-1',
-        userId: 'user-1',
+        hospitalId: 1,
+        userId: 1,
         createdAt: new Date('2024-01-16T09:00:00Z'),
         updatedAt: new Date('2024-01-16T09:00:00Z'),
       },
       {
-        id: 'doctor-2',
+        id: 2,
         name: '佐藤先生',
         specialty: '外科',
-        hospitalId: 'hospital-1',
-        userId: 'user-1',
+        hospitalId: 1,
+        userId: 1,
         createdAt: new Date('2024-01-17T14:30:00Z'),
         updatedAt: new Date('2024-01-17T14:30:00Z'),
       },
@@ -38,12 +38,12 @@ describe('VeterinaryHospitalDetail', () => {
   };
 
   const mockHospitalWithoutOptionalFields: VeterinaryHospital = {
-    id: 'hospital-2',
+    id: 2,
     name: 'シンプル病院',
     address: null,
     phone: null,
     memo: null,
-    userId: 'user-1',
+    userId: 1,
     createdAt: new Date('2024-01-15T10:30:00Z'),
     updatedAt: new Date('2024-01-20T15:45:00Z'),
     doctors: [],
@@ -263,11 +263,11 @@ describe('VeterinaryHospitalDetail', () => {
         ...mockHospital,
         doctors: [
           {
-            id: 'doctor-3',
+            id: 3,
             name: '山田先生',
             specialty: null,
-            hospitalId: 'hospital-1',
-            userId: 'user-1',
+            hospitalId: 1,
+            userId: 1,
             createdAt: new Date(),
             updatedAt: new Date(),
           },

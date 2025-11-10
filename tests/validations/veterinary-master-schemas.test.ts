@@ -103,7 +103,7 @@ describe('veterinary-master validation schemas', () => {
     it('正常な先生データを受け入れる', () => {
       const validData = {
         name: '田中先生',
-        hospitalId: 'hospital-id-123',
+        hospitalId: 123,
         specialty: '内科',
         memo: 'テストメモ',
       };
@@ -115,7 +115,7 @@ describe('veterinary-master validation schemas', () => {
     it('必須項目の先生名が空の場合はエラーになる', () => {
       const invalidData = {
         name: '',
-        hospitalId: 'hospital-id-123',
+        hospitalId: 123,
       };
 
       const result = veterinaryDoctorSchema.safeParse(invalidData);
@@ -166,7 +166,7 @@ describe('veterinary-master validation schemas', () => {
   describe('veterinaryHospitalUpdateSchema', () => {
     it('IDを含む更新データを受け入れる', () => {
       const validData = {
-        id: 'hospital-id-123',
+        id: 123,
         name: 'テスト動物病院',
         address: '東京都渋谷区1-1-1',
       };
@@ -194,7 +194,7 @@ describe('veterinary-master validation schemas', () => {
       const validData = {
         id: 'doctor-id-123',
         name: '田中先生',
-        hospitalId: 'hospital-id-123',
+        hospitalId: 123,
       };
 
       const result = veterinaryDoctorUpdateSchema.safeParse(validData);
@@ -219,7 +219,7 @@ describe('veterinary-master validation schemas', () => {
     it('正常な検索パラメータを受け入れる', () => {
       const validData = {
         query: 'テスト',
-        hospitalId: 'hospital-id-123',
+        hospitalId: 123,
         limit: 20,
         offset: 10,
       };
@@ -261,7 +261,7 @@ describe('veterinary-master validation schemas', () => {
   describe('veterinaryIdSchema', () => {
     it('正常なIDを受け入れる', () => {
       const validData = {
-        id: 'valid-id-123',
+        id: 123,
       };
 
       const result = veterinaryIdSchema.safeParse(validData);

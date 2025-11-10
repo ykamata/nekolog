@@ -7,7 +7,7 @@ import type { VeterinaryVisitWithRelations, VeterinaryAppointmentWithRelations }
 describe('VeterinaryVisitCalendar', () => {
   const mockCats: Cat[] = [
     {
-      id: 'cat1',
+      id: 1,
       name: 'テスト猫1',
       birthdate: new Date('2020-01-01'),
       weight: 4.5,
@@ -16,7 +16,7 @@ describe('VeterinaryVisitCalendar', () => {
       updatedAt: new Date(),
     },
     {
-      id: 'cat2',
+      id: 2,
       name: 'テスト猫2',
       birthdate: new Date('2021-06-15'),
       weight: 3.2,
@@ -28,28 +28,28 @@ describe('VeterinaryVisitCalendar', () => {
 
   const mockVisits: VeterinaryVisitWithRelations[] = [
     {
-      id: 'visit1',
-      catId: 'cat1',
+      id: 1,
+      catId: 1,
       visitDate: new Date(2024, 0, 15, 10, 0, 0),
-      hospitalId: 'hospital1',
-      doctorId: 'doctor1',
+      hospitalId: 1,
+      doctorId: 1,
       cost: 5000,
       notes: 'テストメモ1',
       hasBloodTest: true,
       createdAt: new Date(),
       updatedAt: new Date(),
       cat: mockCats[0],
-      hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-      doctor: { id: 'doctor1', name: 'テスト先生', hospitalId: 'hospital1', specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+      hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+      doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
       treatments: [
-        { id: 'treatment1', name: '健康診断', category: '診察', description: '', createdAt: new Date(), updatedAt: new Date() },
+        { id: 1, name: '健康診断', category: '診察', description: '', createdAt: new Date(), updatedAt: new Date() },
       ],
     },
     {
-      id: 'visit2',
-      catId: 'cat2',
+      id: 2,
+      catId: 2,
       visitDate: new Date(2024, 0, 20, 14, 0, 0),
-      hospitalId: 'hospital1',
+      hospitalId: 1,
       doctorId: null,
       cost: 3000,
       notes: 'テストメモ2',
@@ -57,29 +57,29 @@ describe('VeterinaryVisitCalendar', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       cat: mockCats[1],
-      hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+      hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
       doctor: null,
       treatments: [
-        { id: 'treatment2', name: 'ワクチン接種', category: '予防', description: '', createdAt: new Date(), updatedAt: new Date() },
+        { id: 2, name: 'ワクチン接種', category: '予防', description: '', createdAt: new Date(), updatedAt: new Date() },
       ],
     },
   ];
 
   const mockAppointments: VeterinaryAppointmentWithRelations[] = [
     {
-      id: 'appointment1',
-      catId: 'cat1',
+      id: 1,
+      catId: 1,
       appointmentDate: new Date(2024, 1, 1, 10, 0, 0),
-      hospitalId: 'hospital1',
-      doctorId: 'doctor1',
+      hospitalId: 1,
+      doctorId: 1,
       plannedTreatments: '定期検診予定',
       notes: '予約メモ',
       status: 'SCHEDULED',
       createdAt: new Date(),
       updatedAt: new Date(),
       cat: mockCats[0],
-      hospital: { id: 'hospital1', name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-      doctor: { id: 'doctor1', name: 'テスト先生', hospitalId: 'hospital1', specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+      hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
+      doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
     },
   ];
 
@@ -150,8 +150,8 @@ describe('VeterinaryVisitCalendar', () => {
         ...mockVisits,
         {
           ...mockVisits[0],
-          id: 'visit3',
-          catId: 'cat2',
+          id: 3,
+          catId: 2,
           cat: mockCats[1],
         },
       ];
@@ -174,7 +174,7 @@ describe('VeterinaryVisitCalendar', () => {
       const wrapper = mount(VeterinaryVisitCalendar, {
         props: {
           ...defaultProps,
-          selectedCatId: 'cat1',
+          selectedCatId: 1,
         },
       });
 
@@ -320,7 +320,7 @@ describe('VeterinaryVisitCalendar', () => {
 
       expect(wrapper.emitted('notesUpdated')).toBeTruthy();
       expect(wrapper.emitted('notesUpdated')[0]).toEqual([{
-        eventId: 'visit1',
+        eventId: 1,
         eventType: 'visit',
         notes: '更新されたメモ',
       }]);
@@ -361,8 +361,8 @@ describe('VeterinaryVisitCalendar', () => {
         ...mockVisits,
         {
           ...mockVisits[0],
-          id: 'visit3',
-          catId: 'cat2',
+          id: 3,
+          catId: 2,
           cat: mockCats[1],
           visitDate: new Date(2024, 0, 15, 14, 0, 0),
         },
