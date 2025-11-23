@@ -62,11 +62,6 @@
   // Keep container running for debugging
   "shutdownAction": "stopCompose",
 
-  // Mount the parent folder when opened in a container
-  "mounts": [
-    "source=${localWorkspaceFolder}/.env,target=/app/.env,type=bind,consistency=cached"
-  ],
-
   // Features to add to the dev container
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
