@@ -48,7 +48,6 @@ services:
       # Mount source code for hot reload in development
       - .:/app
       - /app/node_modules
-      - /app/.nuxt
     depends_on:
       mysql:
         condition: service_healthy
