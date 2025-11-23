@@ -31,6 +31,9 @@ RUN npx prisma generate --schema=prisma/schema.mysql.prisma
 # Copy application source
 COPY . .
 
+# Change ownership to node user for devcontainer compatibility
+RUN chown -R node:node /app
+
 # Expose port
 EXPOSE 3000
 
