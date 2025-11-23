@@ -32,8 +32,11 @@ RUN npx prisma generate --schema=prisma/schema.mysql.prisma
 # Copy application source
 COPY . .
 
-# Change ownership to node user for devcontainer compatibility
-RUN chown -R node:node /app
+# Create .nuxt directory with proper permissions
+RUN mkdir -p .nuxt && chown -R node:node /app
+
+# Switch to node user
+USER node
 
 # Expose port
 EXPOSE 3000
