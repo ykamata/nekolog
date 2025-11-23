@@ -1,25 +1,30 @@
 # Node.js Dockerfile for Nekolog
-FROM node:22-alpine
+FROM node:22-bookworm-slim
 
 # Set working directory
 WORKDIR /app
 
 # Install dependencies for native modules (required for Prisma and other native dependencies)
-RUN apk add --no-cache \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
-    libc6-compat \
+    ca-certificates \
     python3 \
     make \
-    g++
+    g++ \
+    default-mysql-client \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
-
-# Copy Prisma schema
+# Copy Prisma schema (needed before npm ci for postinstall)
 COPY prisma ./prisma/
+
+# Install dependencies (skip postinstall to avoid schema.prisma lookup)
+RUN npm ci --ignore-scripts
+
+# Run nuxt prepare manually
+RUN npx nuxt prepare
 
 # Generate Prisma Client for MySQL
 RUN npx prisma generate --schema=prisma/schema.mysql.prisma
