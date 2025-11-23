@@ -1,0 +1,75 @@
+{
+  "name": "Nekolog Development",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/app",
+
+  // Configure tool-specific properties
+  "customizations": {
+    "vscode": {
+      // VS Code extensions to install
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "Vue.volar",
+        "Vue.vscode-typescript-vue-plugin",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "Prisma.prisma",
+        "ms-azuretools.vscode-docker"
+      ],
+      // VS Code settings
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        "[vue]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[javascript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      }
+    }
+  },
+
+  // Forward ports
+  "forwardPorts": [3000, 3306],
+  "portsAttributes": {
+    "3000": {
+      "label": "Application",
+      "onAutoForward": "notify"
+    },
+    "3306": {
+      "label": "MySQL",
+      "onAutoForward": "silent"
+    }
+  },
+
+  // Use 'postCreateCommand' to run commands after the container is created
+  "postCreateCommand": "npm install && npm run db:generate:mysql",
+
+  // Use 'postStartCommand' to run commands after the container starts
+  "postStartCommand": "echo '🐱 Nekolog development environment is ready!'",
+
+  // Comment out to connect as root instead
+  "remoteUser": "node",
+
+  // Keep container running for debugging
+  "shutdownAction": "stopCompose",
+
+  // Mount the parent folder when opened in a container
+  "mounts": [
+    "source=${localWorkspaceFolder}/.env,target=/app/.env,type=bind,consistency=cached"
+  ],
+
+  // Features to add to the dev container
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  }
+}
