@@ -51,7 +51,8 @@
   },
 
   // Use 'postCreateCommand' to run commands after the container is created
-  "postCreateCommand": "npm install && npm run db:generate:mysql",
+  // Note: npm install is already done in Dockerfile, so only generate Prisma client
+  "postCreateCommand": "npm run db:generate:mysql",
 
   // Use 'postStartCommand' to run commands after the container starts
   "postStartCommand": "echo '🐱 Nekolog development environment is ready!'",
