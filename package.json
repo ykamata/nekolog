@@ -34,7 +34,7 @@
     "db:studio": "prisma studio",
     "db:studio:mysql": "prisma studio --schema=prisma/schema.mysql.prisma",
     "db:seed": "tsx prisma/seed.ts",
-    "db:seed:mysql": "DATABASE_URL=mysql://ykamata:ykamata@localhost:3306/nekolog tsx prisma/seed.ts",
+    "db:seed:mysql": "DATABASE_URL=mysql://ykamata:ykamata@mysql:3306/nekolog tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
