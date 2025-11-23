@@ -6,6 +6,7 @@ WORKDIR /app
 
 # Install dependencies for native modules (required for Prisma and other native dependencies)
 RUN apk add --no-cache \
+    bash \
     openssl \
     libc6-compat \
     python3 \
