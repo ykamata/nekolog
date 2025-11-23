@@ -15,11 +15,14 @@ RUN apk add --no-cache \
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
-
-# Copy Prisma schema
+# Copy Prisma schema (needed before npm ci for postinstall)
 COPY prisma ./prisma/
+
+# Install dependencies (skip postinstall to avoid schema.prisma lookup)
+RUN npm ci --ignore-scripts
+
+# Run nuxt prepare manually
+RUN npx nuxt prepare
 
 # Generate Prisma Client for MySQL
 RUN npx prisma generate --schema=prisma/schema.mysql.prisma
