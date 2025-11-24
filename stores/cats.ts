@@ -100,56 +100,33 @@ export const useCatsStore = defineStore('cats', () => {
   };
 
   const createCat = async (catInput: CatInput): Promise<Cat> => {
-    const { syncStatus, offlineOperations } = useSync();
+    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      if (syncStatus.value.isOnline) {
-        // Online: Create on server
-        const data = await $fetch<Cat>('/api/cats', {
-          method: 'POST',
-          body: catInput,
-        });
-
-        const newCat = {
-          ...data,
-          birthdate: data.birthdate ? new Date(data.birthdate) : undefined,
-          createdAt: new Date(data.createdAt),
-          updatedAt: new Date(data.updatedAt),
-        };
-
-        cats.value.push(newCat);
-        // キャッシュを無効化して次回確実に最新データを取得
-        invalidateCache();
-        return newCat;
+      // オフライン時は登録不可
+      if (!syncStatus.value.isOnline) {
+        throw new Error('オフライン時はデータの登録ができません');
       }
-      else {
-        // Offline: Create locally with temporary ID
-        const localId = offlineOperations.addCat({
-          name: catInput.name,
-          birthdate: catInput.birthdate
-            ? new Date(catInput.birthdate)
-            : undefined,
-          weight: catInput.weight,
-          photoUrl: catInput.photoUrl,
-        });
 
-        const newCat: Cat = {
-          id: localId,
-          name: catInput.name,
-          birthdate: catInput.birthdate
-            ? new Date(catInput.birthdate)
-            : undefined,
-          weight: catInput.weight,
-          photoUrl: catInput.photoUrl,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+      // Online: Create on server
+      const data = await $fetch<Cat>('/api/cats', {
+        method: 'POST',
+        body: catInput,
+      });
 
-        cats.value.push(newCat);
-        return newCat;
-      }
+      const newCat = {
+        ...data,
+        birthdate: data.birthdate ? new Date(data.birthdate) : undefined,
+        createdAt: new Date(data.createdAt),
+        updatedAt: new Date(data.updatedAt),
+      };
+
+      cats.value.push(newCat);
+      // キャッシュを無効化して次回確実に最新データを取得
+      invalidateCache();
+      return newCat;
     }
     catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to create cat';
@@ -161,59 +138,38 @@ export const useCatsStore = defineStore('cats', () => {
   };
 
   const updateCat = async (id: string, catUpdate: CatUpdate): Promise<Cat> => {
-    const { syncStatus, offlineOperations } = useSync();
+    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      if (syncStatus.value.isOnline) {
-        // Online: Update on server
-        console.log('🐱 catsStore.updateCat - Sending data:', JSON.stringify(catUpdate, null, 2));
-        const response = await $fetch<{ cat: Cat; message: string }>(`/api/cats/${id}`, {
-          method: 'PUT',
-          body: catUpdate,
-        });
-
-        const updatedCat = {
-          ...response.cat,
-          birthdate: response.cat.birthdate ? new Date(response.cat.birthdate) : undefined,
-          createdAt: new Date(response.cat.createdAt),
-          updatedAt: new Date(response.cat.updatedAt),
-        };
-
-        const index = cats.value.findIndex(cat => cat.id === id);
-        if (index !== -1) {
-          cats.value[index] = updatedCat;
-        }
-
-        // キャッシュを無効化して次回確実に最新データを取得
-        invalidateCache();
-        return updatedCat;
+      // オフライン時は更新不可
+      if (!syncStatus.value.isOnline) {
+        throw new Error('オフライン時はデータの更新ができません');
       }
-      else {
-        // Offline: Update locally
-        offlineOperations.updateCat(id, catUpdate);
 
-        const index = cats.value.findIndex(cat => cat.id === id);
-        if (index !== -1) {
-          const updatedCat = {
-            ...cats.value[index],
-            ...catUpdate,
-            birthdate: catUpdate.birthdate
-              ? new Date(catUpdate.birthdate)
-              : cats.value[index]?.birthdate,
-            updatedAt: new Date(),
-          };
-          const validatedCat = {
-            ...updatedCat,
-            id: updatedCat.id || cats.value[index]?.id || '',
-          };
-          cats.value[index] = validatedCat as Cat;
-          return validatedCat as Cat;
-        }
+      // Online: Update on server
+      console.log('🐱 catsStore.updateCat - Sending data:', JSON.stringify(catUpdate, null, 2));
+      const response = await $fetch<{ cat: Cat; message: string }>(`/api/cats/${id}`, {
+        method: 'PUT',
+        body: catUpdate,
+      });
 
-        throw new Error('Cat not found');
+      const updatedCat = {
+        ...response.cat,
+        birthdate: response.cat.birthdate ? new Date(response.cat.birthdate) : undefined,
+        createdAt: new Date(response.cat.createdAt),
+        updatedAt: new Date(response.cat.updatedAt),
+      };
+
+      const index = cats.value.findIndex(cat => cat.id === id);
+      if (index !== -1) {
+        cats.value[index] = updatedCat;
       }
+
+      // キャッシュを無効化して次回確実に最新データを取得
+      invalidateCache();
+      return updatedCat;
     }
     catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update cat';
@@ -225,21 +181,20 @@ export const useCatsStore = defineStore('cats', () => {
   };
 
   const deleteCat = async (id: string): Promise<void> => {
-    const { syncStatus, offlineOperations } = useSync();
+    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      if (syncStatus.value.isOnline) {
-        // Online: Delete on server
-        await $fetch(`/api/cats/${id}`, {
-          method: 'DELETE',
-        });
+      // オフライン時は削除不可
+      if (!syncStatus.value.isOnline) {
+        throw new Error('オフライン時はデータの削除ができません');
       }
-      else {
-        // Offline: Mark for deletion
-        offlineOperations.deleteCat(id);
-      }
+
+      // Online: Delete on server
+      await $fetch(`/api/cats/${id}`, {
+        method: 'DELETE',
+      });
 
       cats.value = cats.value.filter(cat => cat.id !== id);
       // キャッシュを無効化して次回確実に最新データを取得
