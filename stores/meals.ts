@@ -223,69 +223,43 @@ export const useMealsStore = defineStore('meals', () => {
   };
 
   const createMeal = async (mealInput: MealRecordInput): Promise<MealRecord> => {
-    const { syncStatus, offlineOperations } = useSync();
+    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      if (syncStatus.value.isOnline) {
-        // Online: Create on server
-        const data = await $fetch<MealRecord>('/api/meals', {
-          method: 'POST',
-          body: mealInput,
-        });
-
-        const newMeal = {
-          ...data,
-          mealTime: new Date(data.mealTime),
-          createdAt: new Date(data.createdAt),
-          updatedAt: new Date(data.updatedAt),
-        };
-
-        // Add to beginning of meals array (most recent first)
-        meals.value.unshift(newMeal);
-        pagination.value.totalCount += 1;
-        lastUpdate.value = new Date();
-
-        // Invalidate related cache
-        invalidateRelatedCache('meals');
-
-        // Trigger real-time update if enabled
-        if (realTimeEnabled.value) {
-          invalidateCache();
-        }
-
-        return newMeal;
+      // オフライン時は登録不可
+      if (!syncStatus.value.isOnline) {
+        throw new Error('オフライン時はデータの登録ができません');
       }
-      else {
-        // Offline: Create locally with temporary ID
-        const localId = offlineOperations.addMeal({
-          catId: mealInput.catId,
-          foodId: mealInput.foodId,
-          quantity: mealInput.quantity,
-          calories: mealInput.calories || 0,
-          mealTime: new Date(mealInput.mealTime),
-          notes: mealInput.notes,
-        });
 
-        const newMeal: MealRecord = {
-          id: localId,
-          catId: mealInput.catId,
-          foodId: mealInput.foodId,
-          quantity: mealInput.quantity,
-          calories: mealInput.calories || 0,
-          mealTime: new Date(mealInput.mealTime),
-          notes: mealInput.notes,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+      // Online: Create on server
+      const data = await $fetch<MealRecord>('/api/meals', {
+        method: 'POST',
+        body: mealInput,
+      });
 
-        meals.value.unshift(newMeal);
-        pagination.value.totalCount += 1;
-        lastUpdate.value = new Date();
+      const newMeal = {
+        ...data,
+        mealTime: new Date(data.mealTime),
+        createdAt: new Date(data.createdAt),
+        updatedAt: new Date(data.updatedAt),
+      };
 
-        return newMeal;
+      // Add to beginning of meals array (most recent first)
+      meals.value.unshift(newMeal);
+      pagination.value.totalCount += 1;
+      lastUpdate.value = new Date();
+
+      // Invalidate related cache
+      invalidateRelatedCache('meals');
+
+      // Trigger real-time update if enabled
+      if (realTimeEnabled.value) {
+        invalidateCache();
       }
+
+      return newMeal;
     }
     catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create meal';
@@ -301,64 +275,42 @@ export const useMealsStore = defineStore('meals', () => {
     id: string,
     mealUpdate: MealRecordUpdate,
   ): Promise<MealRecord> => {
-    const { syncStatus, offlineOperations } = useSync();
+    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      if (syncStatus.value.isOnline) {
-        // Online: Update on server
-        const data = await $fetch<MealRecord>(`/api/meals/${id}`, {
-          method: 'PUT',
-          body: mealUpdate,
-        });
-
-        const updatedMeal = {
-          ...data,
-          mealTime: new Date(data.mealTime),
-          createdAt: new Date(data.createdAt),
-          updatedAt: new Date(data.updatedAt),
-        };
-
-        const index = meals.value.findIndex(meal => meal.id === id);
-        if (index !== -1) {
-          meals.value[index] = updatedMeal;
-        }
-
-        lastUpdate.value = new Date();
-
-        // Trigger real-time update if enabled
-        if (realTimeEnabled.value) {
-          invalidateCache();
-        }
-
-        return updatedMeal;
+      // オフライン時は更新不可
+      if (!syncStatus.value.isOnline) {
+        throw new Error('オフライン時はデータの更新ができません');
       }
-      else {
-        // Offline: Update locally
-        offlineOperations.updateMeal(id, mealUpdate);
 
-        const index = meals.value.findIndex(meal => meal.id === id);
-        if (index !== -1) {
-          const updatedMeal = {
-            ...meals.value[index],
-            ...mealUpdate,
-            mealTime: mealUpdate.mealTime
-              ? new Date(mealUpdate.mealTime)
-              : meals.value[index]?.mealTime,
-            updatedAt: new Date(),
-          };
-          const validatedMeal = {
-            ...updatedMeal,
-            id: updatedMeal.id || meals.value[index]?.id || '',
-          };
-          meals.value[index] = validatedMeal as MealRecord;
-          lastUpdate.value = new Date();
-          return validatedMeal as MealRecord;
-        }
+      // Online: Update on server
+      const data = await $fetch<MealRecord>(`/api/meals/${id}`, {
+        method: 'PUT',
+        body: mealUpdate,
+      });
 
-        throw new Error('Meal not found');
+      const updatedMeal = {
+        ...data,
+        mealTime: new Date(data.mealTime),
+        createdAt: new Date(data.createdAt),
+        updatedAt: new Date(data.updatedAt),
+      };
+
+      const index = meals.value.findIndex(meal => meal.id === id);
+      if (index !== -1) {
+        meals.value[index] = updatedMeal;
       }
+
+      lastUpdate.value = new Date();
+
+      // Trigger real-time update if enabled
+      if (realTimeEnabled.value) {
+        invalidateCache();
+      }
+
+      return updatedMeal;
     }
     catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update meal';
@@ -370,21 +322,20 @@ export const useMealsStore = defineStore('meals', () => {
   };
 
   const deleteMeal = async (id: string): Promise<void> => {
-    const { syncStatus, offlineOperations } = useSync();
+    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      if (syncStatus.value.isOnline) {
-        // Online: Delete on server
-        await $fetch(`/api/meals/${id}`, {
-          method: 'DELETE',
-        } as any);
+      // オフライン時は削除不可
+      if (!syncStatus.value.isOnline) {
+        throw new Error('オフライン時はデータの削除ができません');
       }
-      else {
-        // Offline: Mark for deletion
-        offlineOperations.deleteMeal(id);
-      }
+
+      // Online: Delete on server
+      await $fetch(`/api/meals/${id}`, {
+        method: 'DELETE',
+      } as any);
 
       meals.value = meals.value.filter(meal => meal.id !== id);
       pagination.value.totalCount = Math.max(
@@ -501,21 +452,20 @@ export const useMealsStore = defineStore('meals', () => {
 
   // Bulk operations
   const bulkDeleteMeals = async (ids: string[]): Promise<void> => {
-    const { syncStatus, offlineOperations } = useSync();
+    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      if (syncStatus.value.isOnline) {
-        await $fetch('/api/meals/bulk-delete', {
-          method: 'POST',
-          body: { ids },
-        } as any);
+      // オフライン時は削除不可
+      if (!syncStatus.value.isOnline) {
+        throw new Error('オフライン時はデータの削除ができません');
       }
-      else {
-        // Offline: Mark all for deletion
-        ids.forEach(id => offlineOperations.deleteMeal(id));
-      }
+
+      await $fetch('/api/meals/bulk-delete', {
+        method: 'POST',
+        body: { ids },
+      } as any);
 
       meals.value = meals.value.filter(meal => !ids.includes(meal.id));
       pagination.value.totalCount = Math.max(
