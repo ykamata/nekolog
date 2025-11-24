@@ -180,7 +180,7 @@ const fetchAppointmentStats = async () => {
 };
 
 // Handle filter changes
-const handleCatFilterChange = async (catId: string) => {
+const handleCatFilterChange = async (catId: number | null) => {
   selectedCatId.value = catId;
   await fetchAppointments();
   await fetchAppointmentStats();
@@ -203,7 +203,7 @@ const handleEdit = (appointment: VeterinaryAppointmentWithRelations) => {
 };
 
 // Handle delete appointment
-const handleDelete = (appointmentId: string) => {
+const handleDelete = (appointmentId: number) => {
   const appointment = appointments.value.find(a => a.id === appointmentId);
   if (appointment) {
     appointmentToDelete.value = appointment;
@@ -212,7 +212,7 @@ const handleDelete = (appointmentId: string) => {
 };
 
 // Handle convert to visit
-const handleConvertToVisit = (appointmentId: string) => {
+const handleConvertToVisit = (appointmentId: number) => {
   const appointment = appointments.value.find(a => a.id === appointmentId);
   if (appointment) {
     convertingAppointment.value = appointment;
@@ -348,7 +348,7 @@ const handleConvertSubmit = async () => {
 };
 
 // Handle status update
-const handleStatusUpdate = async (appointmentId: string, status: AppointmentStatus) => {
+const handleStatusUpdate = async (appointmentId: number, status: AppointmentStatus) => {
   try {
     const response = await $fetch<{ appointment: VeterinaryAppointmentWithRelations; message: string }>(`/api/veterinary-appointments/${appointmentId}`, {
       method: 'PUT' as any,

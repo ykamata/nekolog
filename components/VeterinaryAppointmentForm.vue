@@ -124,7 +124,7 @@ const initializeForm = () => {
   errors.value = {};
   submitError.value = '';
   retryCount.value = 0;
-  selectedHospitalId.value = '';
+  selectedHospitalId.value = null;
 
   if (props.appointment) {
     // Edit mode - populate with existing data
@@ -266,7 +266,7 @@ const handleDoctorCreate = async (name: string) => {
 };
 
 // 病院選択ハンドラー
-const handleHospitalSelect = (item: { id: string; name: string }) => {
+const handleHospitalSelect = (item: { id: number; name: string }) => {
   selectedHospitalId.value = item.id;
   formData.hospitalName = item.name;
 

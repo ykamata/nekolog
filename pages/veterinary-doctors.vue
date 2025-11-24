@@ -324,8 +324,8 @@ const showDetail = ref(false);
 const formMode = ref<'create' | 'edit'>('create');
 const selectedDoctor = ref<VeterinaryDoctor | null>(null);
 const searchQuery = ref('');
-const hospitalFilter = ref<number | null>(null);
-const preselectedHospitalId = ref<string | undefined>(undefined);
+const hospitalFilter = ref<number | undefined>(undefined);
+const preselectedHospitalId = ref<number | undefined>(undefined);
 
 // ユーティリティ関数
 const formatDate = (date: Date | string) => {
@@ -421,7 +421,7 @@ const handleSearch = (query: string) => {
   fetchDoctors(hospitalFilter.value, query);
 };
 
-const handleHospitalFilter = (hospitalId: number | null) => {
+const handleHospitalFilter = (hospitalId: number | undefined) => {
   hospitalFilter.value = hospitalId;
   fetchDoctors(hospitalId, searchQuery.value);
 };

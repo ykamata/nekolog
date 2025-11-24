@@ -188,7 +188,7 @@ interface Emits {
   (e: 'close'): void;
   (e: 'recordAdded', record: ExcretionRecord): void;
   (e: 'recordUpdated', record: ExcretionRecord): void;
-  (e: 'recordDeleted', recordId: string): void;
+  (e: 'recordDeleted', recordId: number): void;
   (e: 'refresh'): void;
 }
 
@@ -204,9 +204,9 @@ const { success: showSuccessToast, error: showErrorToast } = useToast();
 
 // State
 const showAddForm = ref(false);
-const editingRecordId = ref<string | null>(null);
+const editingRecordId = ref<number | null>(null);
 const showDeleteConfirmation = ref(false);
-const recordToDelete = ref<string | null>(null);
+const recordToDelete = ref<number | null>(null);
 
 // Computed
 const formattedDate = computed(() => {
@@ -259,7 +259,7 @@ const handleAddRecord = async (data: ExcretionRecordInput) => {
   }
 };
 
-const startEdit = (recordId: string) => {
+const startEdit = (recordId: number) => {
   editingRecordId.value = recordId;
   showAddForm.value = false;
 };
@@ -283,7 +283,7 @@ const handleUpdateRecord = async (data: ExcretionRecordInput) => {
   }
 };
 
-const handleDeleteRecord = (recordId: string) => {
+const handleDeleteRecord = (recordId: number) => {
   recordToDelete.value = recordId;
   showDeleteConfirmation.value = true;
 };

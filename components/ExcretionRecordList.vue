@@ -362,7 +362,7 @@ const applyQuickFilter = (quickFilter: { startDate: Date; endDate: Date }) => {
           猫: {{ selectedCat.name }}
           <button
             class="filter-tag-remove"
-            @click="handleCatFilter('')"
+            @click="handleCatFilter(undefined)"
           >
             ×
           </button>

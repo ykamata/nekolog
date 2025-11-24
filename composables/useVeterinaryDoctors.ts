@@ -59,14 +59,14 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
   /**
    * 先生一覧を取得（ページネーション対応）
    */
-  const fetchDoctors = async (hospitalId?: string, searchQuery?: string, page: number = 1, limit: number = 20): Promise<void> => {
+  const fetchDoctors = async (hospitalId?: number, searchQuery?: string, page: number = 1, limit: number = 20): Promise<void> => {
     setLoading(true, 'fetch');
     clearError();
 
     try {
       const params = new URLSearchParams();
-      if (hospitalId?.trim()) {
-        params.append('hospitalId', hospitalId.trim());
+      if (hospitalId) {
+        params.append('hospitalId', String(hospitalId));
       }
       if (searchQuery?.trim()) {
         params.append('name', searchQuery.trim());
@@ -214,7 +214,7 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
   /**
    * 先生を検索（API を使用）
    */
-  const searchDoctors = async (query: string, hospitalId?: string): Promise<VeterinaryDoctor[]> => {
+  const searchDoctors = async (query: string, hospitalId?: number): Promise<VeterinaryDoctor[]> => {
     if (!query.trim()) {
       return doctors.value;
     }
@@ -222,8 +222,8 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
     try {
       const params = new URLSearchParams();
       params.append('name', query.trim());
-      if (hospitalId?.trim()) {
-        params.append('hospitalId', hospitalId.trim());
+      if (hospitalId) {
+        params.append('hospitalId', String(hospitalId));
       }
 
       const response = await $fetch<{ doctors: VeterinaryDoctor[] }>('/api/veterinary-doctors/search', {

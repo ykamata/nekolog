@@ -261,10 +261,10 @@ const props = withDefaults(defineProps<Props>(), {
 // Emits
 interface Emits {
   edit: [hospital: VeterinaryHospital];
-  delete: [hospitalId: string];
-  addDoctor: [hospitalId: string];
+  delete: [hospitalId: number];
+  addDoctor: [hospitalId: number];
   editDoctor: [doctor: VeterinaryDoctor];
-  deleteDoctor: [doctorId: string];
+  deleteDoctor: [doctorId: number];
 }
 
 const emit = defineEmits<Emits>();
@@ -301,7 +301,7 @@ const handleEditDoctor = (doctor: VeterinaryDoctor) => {
   emit('editDoctor', doctor);
 };
 
-const handleDeleteDoctor = (doctorId: string) => {
+const handleDeleteDoctor = (doctorId: number) => {
   emit('deleteDoctor', doctorId);
 };
 </script>

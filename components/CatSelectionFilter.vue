@@ -44,12 +44,12 @@
 
 <script setup lang="ts">
 interface Props {
-  modelValue?: string;
+  modelValue?: number;
 }
 
 interface Emits {
-  (e: 'update:modelValue', value: string): void;
-  (e: 'change', value: string): void;
+  (e: 'update:modelValue', value: number | undefined): void;
+  (e: 'change', value: number | undefined): void;
 }
 
 const props = defineProps<Props>();
@@ -63,8 +63,8 @@ const { sortedCats, isLoading, hasError } = storeToRefs(catsStore);
 const router = useRouter();
 const route = useRoute();
 
-// 選択された猫ID
-const selectedCatId = ref<string>(props.modelValue || '');
+// 選択された猫ID (HTML select用に文字列として管理)
+const selectedCatId = ref<string>(props.modelValue ? String(props.modelValue) : '');
 
 // URLパラメータから初期値を設定
 onMounted(async () => {
@@ -86,15 +86,19 @@ onMounted(async () => {
 // propsの変更を監視
 watch(() => props.modelValue, (newValue) => {
   if (newValue !== undefined) {
-    selectedCatId.value = newValue;
+    selectedCatId.value = String(newValue);
+  }
+  else {
+    selectedCatId.value = '';
   }
 });
 
 // 猫選択の変更処理
 const handleCatChange = () => {
-  // 親コンポーネントに変更を通知
-  emit('update:modelValue', selectedCatId.value);
-  emit('change', selectedCatId.value);
+  // 文字列から数値に変換してemit
+  const numericValue = selectedCatId.value ? Number(selectedCatId.value) : undefined;
+  emit('update:modelValue', numericValue);
+  emit('change', numericValue);
 
   // URLパラメータを更新
   updateUrlParams();

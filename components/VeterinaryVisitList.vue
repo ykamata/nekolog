@@ -17,7 +17,7 @@ interface Props {
 interface Emits {
   (e: 'select' | 'edit' | 'delete' | 'view', visit: VeterinaryVisitWithRelations): void;
   (e: 'add'): void;
-  (e: 'catFilterChanged', catId: string): void;
+  (e: 'catFilterChanged', catId: number | undefined): void;
   (e: 'bloodTestFilterChanged', hasBloodTest: boolean | string): void;
   (e: 'search', query: string): void;
   (e: 'sortChanged', field: string, order: string): void;
@@ -37,8 +37,8 @@ const visitToDelete = ref<VeterinaryVisitWithRelations | null>(null);
 
 // State for filtering and sorting
 const searchQuery = ref('');
-const selectedCatId = ref<string>('');
-const selectedHospitalId = ref<string>('');
+const selectedCatId = ref<number | undefined>(undefined);
+const selectedHospitalId = ref<number | undefined>(undefined);
 const hasBloodTestFilter = ref<boolean | ''>('');
 const sortBy = ref<'visitDate' | 'hospitalName' | 'cost' | 'createdAt'>('visitDate');
 const sortOrder = ref<'asc' | 'desc'>('desc');
@@ -73,7 +73,7 @@ const hospitalOptions = computed(() => {
     return [{ value: '', label: 'すべての病院' }];
   }
 
-  const hospitals = new Map<string, VeterinaryHospital>();
+  const hospitals = new Map<number, VeterinaryHospital>();
 
   props.visits.forEach((visit) => {
     if (visit?.hospital?.id && visit.hospital.name) {
@@ -82,7 +82,7 @@ const hospitalOptions = computed(() => {
   });
 
   return [
-    { value: '', label: 'すべての病院' },
+    { value: 0, label: 'すべての病院' },
     ...Array.from(hospitals.values())
       .filter(hospital => hospital && hospital.id && hospital.name)
       .map(hospital => ({
@@ -133,12 +133,12 @@ const filteredAndSortedVisits = computed(() => {
   }
 
   // Filter by cat with validation
-  if (selectedCatId.value && typeof selectedCatId.value === 'string') {
+  if (selectedCatId.value && typeof selectedCatId.value === 'number') {
     filtered = filtered.filter(visit => visit?.catId === selectedCatId.value);
   }
 
   // Filter by hospital with validation
-  if (selectedHospitalId.value && typeof selectedHospitalId.value === 'string') {
+  if (selectedHospitalId.value && typeof selectedHospitalId.value === 'number') {
     filtered = filtered.filter(visit => visit?.hospitalId === selectedHospitalId.value);
   }
 
@@ -265,17 +265,17 @@ const handleDeleteVisit = (visit: VeterinaryVisitWithRelations) => {
 const handleCatFilterChange = () => {
   try {
     const value = selectedCatId.value;
-    if (typeof value === 'string' || value === '') {
+    if (typeof value === 'number' || value === undefined) {
       emit('catFilterChanged', value);
     }
     else {
       console.warn('Invalid cat filter value:', value);
-      emit('catFilterChanged', '');
+      emit('catFilterChanged', undefined);
     }
   }
   catch (error) {
     console.warn('Error handling cat filter change:', error);
-    emit('catFilterChanged', '');
+    emit('catFilterChanged', undefined);
   }
 };
 
@@ -374,9 +374,9 @@ const formatCurrency = (amount: number): string => {
   }
 };
 
-const getCatName = (catId: string): string => {
+const getCatName = (catId: number): string => {
   // Input validation
-  if (!catId || typeof catId !== 'string') {
+  if (!catId || typeof catId !== 'number') {
     return '不明';
   }
 
@@ -443,8 +443,8 @@ const handleSearchInput = () => {
 
 const clearFilters = () => {
   searchQuery.value = '';
-  selectedCatId.value = '';
-  selectedHospitalId.value = '';
+  selectedCatId.value = undefined;
+  selectedHospitalId.value = undefined;
   hasBloodTestFilter.value = '';
   currentPage.value = 1;
 };

@@ -499,7 +499,7 @@ const props = withDefaults(defineProps<Props>(), {
 // Emits
 interface Emits {
   edit: [hospital: VeterinaryHospital];
-  delete: [hospitalId: string];
+  delete: [hospitalId: number];
   view: [hospital: VeterinaryHospital];
   search: [query: string];
 }
@@ -510,7 +510,7 @@ const emit = defineEmits<Emits>();
 const searchQuery = ref(props.searchQuery);
 const showDeleteConfirmation = ref(false);
 const hospitalToDelete = ref<VeterinaryHospital | null>(null);
-const activeMobileMenu = ref<string | null>(null);
+const activeMobileMenu = ref<number | null>(null);
 
 // ページネーション機能
 const {
@@ -629,7 +629,7 @@ const cancelDelete = () => {
   hospitalToDelete.value = null;
 };
 
-const toggleMobileMenu = (hospitalId: string) => {
+const toggleMobileMenu = (hospitalId: number) => {
   activeMobileMenu.value = activeMobileMenu.value === hospitalId ? null : hospitalId;
 };
 

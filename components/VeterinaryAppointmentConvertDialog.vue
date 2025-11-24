@@ -26,7 +26,7 @@ const emit = defineEmits<Emits>();
 
 // Form state
 const formData = reactive<ConvertAppointmentToVisitInput>({
-  appointmentId: '',
+  appointmentId: 0,
   actualVisitDate: undefined,
   actualCost: undefined,
   actualTreatments: [],

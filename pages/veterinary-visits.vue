@@ -27,7 +27,7 @@ const error = ref<string | null>(null);
 const viewMode = ref<'calendar' | 'list'>('calendar');
 
 // Filter state
-const selectedCatId = ref<string>('');
+const selectedCatId = ref<number | undefined>(undefined);
 
 // Modal states
 const showAddModal = ref(false);
@@ -157,7 +157,7 @@ const handleViewModeChange = (mode: 'calendar' | 'list') => {
 };
 
 // Handle cat filter change
-const handleCatFilterChange = async (catId: string) => {
+const handleCatFilterChange = async (catId: number | undefined) => {
   selectedCatId.value = catId;
   await fetchVisits();
   await fetchVisitStats();

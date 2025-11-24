@@ -205,7 +205,7 @@ import { VeterinaryDoctorInputSchema } from '~/lib/validations/veterinary-visit'
 interface Props {
   doctor?: VeterinaryDoctor;
   mode: 'create' | 'edit';
-  preselectedHospitalId?: string;
+  preselectedHospitalId?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -226,7 +226,7 @@ const { hospitals, fetchHospitals } = useVeterinaryHospitals();
 // リアクティブデータ
 const formData = ref<VeterinaryDoctorInput>({
   name: '',
-  hospitalId: '',
+  hospitalId: undefined,
   specialty: '',
 });
 
@@ -247,14 +247,14 @@ const initializeForm = () => {
   if (props.doctor && isEditMode.value) {
     formData.value = {
       name: props.doctor.name,
-      hospitalId: props.doctor.hospitalId || '',
+      hospitalId: props.doctor.hospitalId || undefined,
       specialty: props.doctor.specialty || '',
     };
   }
   else {
     formData.value = {
       name: '',
-      hospitalId: props.preselectedHospitalId || '',
+      hospitalId: props.preselectedHospitalId || undefined,
       specialty: '',
     };
   }
@@ -267,7 +267,7 @@ const validateField = (field: keyof VeterinaryDoctorInput) => {
   try {
     // 特定のフィールドのみバリデーション
     const value = formData.value[field];
-    if (field === 'name' && (!value || value.trim().length === 0)) {
+    if (field === 'name' && (!value || (typeof value === 'string' && value.trim().length === 0))) {
       errors.value[field] = '先生名は必須です';
       return;
     }
@@ -310,10 +310,10 @@ const handleSubmit = async () => {
   submitError.value = null;
 
   try {
-    // 空文字をundefinedに変換
+    // データを整形
     const cleanedData: VeterinaryDoctorInput = {
       name: formData.value.name.trim(),
-      hospitalId: formData.value.hospitalId?.trim() || undefined,
+      hospitalId: formData.value.hospitalId || undefined,
       specialty: formData.value.specialty?.trim() || undefined,
     };
 

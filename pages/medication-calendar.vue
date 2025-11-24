@@ -26,7 +26,7 @@ const error = ref<string | null>(null);
 // Modal states
 const showAddModal = ref(false);
 const selectedDate = ref<string | null>(null);
-const selectedCatId = ref<string>('');
+const selectedCatId = ref<number | undefined>(undefined);
 
 // Calendar stats
 const calendarStats = ref({
@@ -115,7 +115,7 @@ const handleRecordCreate = (date: string) => {
 };
 
 // Handle cat filter change
-const handleCatFilterChange = (catId: string) => {
+const handleCatFilterChange = (catId: number | undefined) => {
   selectedCatId.value = catId;
   fetchCalendarStats();
 };

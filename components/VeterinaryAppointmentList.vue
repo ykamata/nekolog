@@ -11,14 +11,14 @@ interface Props {
   cats: Cat[];
   loading?: boolean;
   showActions?: boolean;
-  selectedCatId?: string;
+  selectedCatId?: number;
 }
 
 interface Emits {
   (e: 'edit', appointment: VeterinaryAppointmentWithRelations): void;
-  (e: 'delete', appointmentId: string): void;
-  (e: 'convertToVisit', appointmentId: string): void;
-  (e: 'updateStatus', appointmentId: string, status: AppointmentStatus): void;
+  (e: 'delete', appointmentId: number): void;
+  (e: 'convertToVisit', appointmentId: number): void;
+  (e: 'updateStatus', appointmentId: number, status: AppointmentStatus): void;
   (e: 'refresh'): void;
 }
 
@@ -32,7 +32,7 @@ const emit = defineEmits<Emits>();
 // State
 const selectedAppointment = ref<VeterinaryAppointmentWithRelations | null>(null);
 const showDeleteConfirm = ref(false);
-const showStatusMenu = ref<string | null>(null);
+const showStatusMenu = ref<number | null>(null);
 
 // Toast
 const toast = useToast();
@@ -114,7 +114,7 @@ const getStatusLabel = (status: AppointmentStatus) => {
   return option?.label || status;
 };
 
-const getCatName = (catId: string) => {
+const getCatName = (catId: number) => {
   const cat = props.cats.find(c => c.id === catId);
   return cat?.name || '不明';
 };
@@ -154,12 +154,12 @@ const handleConvertToVisit = (appointment: VeterinaryAppointmentWithRelations) =
   emit('convertToVisit', appointment.id);
 };
 
-const handleStatusChange = (appointmentId: string, status: AppointmentStatus) => {
+const handleStatusChange = (appointmentId: number, status: AppointmentStatus) => {
   emit('updateStatus', appointmentId, status);
   showStatusMenu.value = null;
 };
 
-const toggleStatusMenu = (appointmentId: string) => {
+const toggleStatusMenu = (appointmentId: number) => {
   showStatusMenu.value = showStatusMenu.value === appointmentId ? null : appointmentId;
 };
 

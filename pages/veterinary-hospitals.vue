@@ -283,7 +283,7 @@ const handleDeleteFromDetail = async (hospitalId: number) => {
   }
 };
 
-const handleAddDoctorFromDetail = (hospitalId: string) => {
+const handleAddDoctorFromDetail = (hospitalId: number) => {
   // 先生管理ページに遷移（病院IDを指定）
   navigateTo(`/veterinary-doctors?hospitalId=${hospitalId}`);
 };

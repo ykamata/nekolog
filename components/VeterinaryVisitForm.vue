@@ -31,7 +31,7 @@ const emit = defineEmits<Emits>();
 
 // Form state
 const formData = reactive<CreateVeterinaryVisitInput>({
-  catId: '',
+  catId: 0,
   visitDate: new Date(),
   hospitalName: '',
   doctorName: '',
@@ -100,7 +100,7 @@ watch(
     }
     else {
       // Reset form for new visit
-      formData.catId = props.initialData?.catId || '';
+      formData.catId = props.initialData?.catId || 0;
       formData.visitDate = props.initialData?.visitDate || new Date();
       formData.hospitalName = props.initialData?.hospitalName || '';
       formData.doctorName = props.initialData?.doctorName || '';
@@ -448,7 +448,7 @@ const handleReset = () => {
     formData.hasBloodTest = props.visit.hasBloodTest;
   }
   else {
-    formData.catId = props.initialData?.catId || '';
+    formData.catId = props.initialData?.catId || 0;
     formData.visitDate = props.initialData?.visitDate || new Date();
     formData.hospitalName = props.initialData?.hospitalName || '';
     formData.doctorName = props.initialData?.doctorName || '';

@@ -54,7 +54,7 @@ const showDetailModal = ref(false);
 const selectedDateEvents = ref<CalendarEventData[]>([]);
 
 // Filter state
-const internalCatFilter = ref(props.selectedCatId);
+const internalCatFilter = ref<number | undefined>(props.selectedCatId);
 const internalViewMode = ref(props.viewMode);
 const bloodTestFilter = ref<'all' | 'bloodTest' | 'noBloodTest'>('all');
 const appointmentFilter = ref(props.showAppointments);
@@ -312,8 +312,8 @@ const getEventTypeLabel = (event: CalendarEventData): string => {
 };
 
 // フィルター機能のメソッド
-const handleCatFilterChange = (catId: string) => {
-  internalCatFilter.value = catId;
+const handleCatFilterChange = (catId: number | null) => {
+  internalCatFilter.value = catId ?? undefined;
   emit('catFilterChanged', catId);
 };
 
@@ -370,7 +370,7 @@ const getEventDots = (day: CalendarDay) => {
   const dots: EventDot[] = [];
 
   // 猫別にグループ化
-  const catGroups = new Map<string, CalendarEventData[]>();
+  const catGroups = new Map<number, CalendarEventData[]>();
   day.events.forEach((event) => {
     if (!catGroups.has(event.catId)) {
       catGroups.set(event.catId, []);
@@ -399,15 +399,15 @@ const getEventDots = (day: CalendarDay) => {
 };
 
 // 通院記録IDを取得するヘルパー関数
-const getVisitId = (day: CalendarDay): string => {
+const getVisitId = (day: CalendarDay): number => {
   const visitEvent = day.events.find(e => e.type === 'visit');
-  return visitEvent ? visitEvent.id : '';
+  return visitEvent ? visitEvent.id : 0;
 };
 
 // 予約IDを取得するヘルパー関数
-const getAppointmentId = (day: CalendarDay): string => {
+const getAppointmentId = (day: CalendarDay): number => {
   const appointmentEvent = day.events.find(e => e.type === 'appointment');
-  return appointmentEvent ? appointmentEvent.id : '';
+  return appointmentEvent ? appointmentEvent.id : 0;
 };
 
 // カレンダーコンテナのCSSクラスを取得
@@ -463,7 +463,7 @@ interface CalendarDay {
 }
 
 interface EventDot {
-  catId: string;
+  catId: number;
   catName: string;
   hasVisit: boolean;
   hasAppointment: boolean;
@@ -491,7 +491,7 @@ watch(
 watch(
   () => props.selectedCatId,
   (newCatId) => {
-    internalCatFilter.value = newCatId || '';
+    internalCatFilter.value = newCatId || undefined;
   },
 );
 
@@ -642,7 +642,7 @@ watch(screenSize, (newSize) => {
           class="filter-select"
           data-testid="cat-filter"
           aria-describedby="cat-filter-description"
-          @change="handleCatFilterChange(($event.target as HTMLSelectElement).value)"
+          @change="handleCatFilterChange(($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : null)"
         >
           <option value="">
             すべての猫

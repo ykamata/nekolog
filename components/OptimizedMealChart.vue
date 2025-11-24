@@ -276,7 +276,7 @@ import { useChartLoading } from '~/composables/useChartLoading';
 import type { ChartFilters } from '~/utils/chart-cache';
 
 interface Props {
-  catId?: string;
+  catId?: number;
   height?: number;
   periodDays?: number;
 }

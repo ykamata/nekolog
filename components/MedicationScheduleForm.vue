@@ -27,8 +27,8 @@ const medicationsStore = useMedicationsStore();
 
 // Form state
 const formData = reactive<MedicationScheduleInput>({
-  catId: '',
-  medicationId: '',
+  catId: 0,
+  medicationId: 0,
   frequency: 'daily',
   times: ['08:00'],
   startDate: new Date(),
@@ -79,8 +79,8 @@ watch(
     }
     else {
       // Reset form for new schedule
-      formData.catId = '';
-      formData.medicationId = '';
+      formData.catId = 0;
+      formData.medicationId = 0;
       formData.frequency = 'daily';
       formData.times = ['08:00'];
       formData.startDate = new Date();
@@ -159,8 +159,8 @@ const handleReset = () => {
     formData.endDate = props.schedule.endDate ? new Date(props.schedule.endDate) : undefined;
   }
   else {
-    formData.catId = '';
-    formData.medicationId = '';
+    formData.catId = 0;
+    formData.medicationId = 0;
     formData.frequency = 'daily';
     formData.times = ['08:00'];
     formData.startDate = new Date();

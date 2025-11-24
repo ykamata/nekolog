@@ -66,7 +66,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     return {
-      userId: payload.userId as string,
+      userId: payload.userId as number,
       email: payload.email as string,
       iat: payload.iat,
       exp: payload.exp,

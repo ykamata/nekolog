@@ -176,7 +176,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>();
 
 // State
-const selectedCatId = ref('');
+const selectedCatId = ref<number | undefined>(undefined);
 const statusFilter = ref<'pending' | 'overdue' | 'all'>('pending');
 
 // Store
@@ -253,12 +253,12 @@ const getOverdueText = (record: MedicationRecord): string => {
   }
 };
 
-const getCatName = (catId: string): string => {
+const getCatName = (catId: number): string => {
   const cat = props.cats.find(c => c.id === catId);
   return cat?.name || '不明な猫';
 };
 
-const getMedicationName = (medicationId: string): string => {
+const getMedicationName = (medicationId: number): string => {
   const medication = props.medications.find(m => m.id === medicationId);
   return medication?.name || '不明な薬';
 };

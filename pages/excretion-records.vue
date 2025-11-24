@@ -235,7 +235,7 @@ const { measure, measureComponentRender } = usePerformanceMonitor();
 // State
 const currentView = ref<'list' | 'calendar'>('list');
 const cats = ref<Cat[]>([]);
-const selectedCatId = ref('');
+const selectedCatId = ref<number | undefined>(undefined);
 
 // Modal states
 const showAddModal = ref(false);
@@ -382,7 +382,7 @@ const handleMonthChanged = (_year: number, _month: number) => {
   // Implementation will be added when needed
 };
 
-const handleCatChanged = (catId: string) => {
+const handleCatChanged = (catId: number) => {
   selectedCatId.value = catId;
 };
 

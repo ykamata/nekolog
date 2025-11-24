@@ -256,6 +256,21 @@ describe('Zod Validation Schemas', () => {
         expect(result).toEqual(validInput);
       });
 
+      it('should accept string date for mealTime', () => {
+        const inputWithStringDate = {
+          catId: 1,
+          foodId: 2,
+          quantity: 50,
+          calories: 175,
+          mealTime: '2023-01-01T08:00:00.000Z',
+          notes: '朝食',
+        };
+
+        const result = MealRecordInputSchema.parse(inputWithStringDate);
+        expect(result.mealTime).toBeInstanceOf(Date);
+        expect(result.mealTime.toISOString()).toBe('2023-01-01T08:00:00.000Z');
+      });
+
       it('should handle optional calories', () => {
         const inputWithoutCalories = {
           catId: 1,

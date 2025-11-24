@@ -49,7 +49,7 @@ export function useChartData(): UseChartDataReturn {
     // クエリパラメータを構築
     const params = new URLSearchParams();
     if (catId) {
-      params.append('catId', catId);
+      params.append('catId', String(catId));
     }
     params.append('startDate', dateRange.start.toISOString().split('T')[0]!);
     params.append('endDate', dateRange.end.toISOString().split('T')[0]!);

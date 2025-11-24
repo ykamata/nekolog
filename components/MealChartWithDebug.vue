@@ -23,7 +23,7 @@
 
 <script setup lang="ts">
 interface Props {
-  catId?: string;
+  catId?: number;
   height?: number;
   periodDays?: number;
 }

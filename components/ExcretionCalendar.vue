@@ -244,17 +244,17 @@ import type { ExcretionRecord, ExcretionCalendarDay, ExcretionRecordFilter, Excr
 
 interface Props {
   cats: Cat[];
-  catId?: string;
+  catId?: number;
 }
 
 interface Emits {
   (e: 'dateSelected', date: string, records: ExcretionRecord[]): void;
   (e: 'monthChanged', year: number, month: number): void;
-  (e: 'catChanged', catId: string): void;
+  (e: 'catChanged', catId: number): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  catId: '',
+  catId: undefined,
 });
 
 const emit = defineEmits<Emits>();
@@ -480,7 +480,9 @@ const handleRecordDeleted = () => {
 };
 
 const onCatChange = () => {
-  emit('catChanged', selectedCatId.value);
+  if (selectedCatId.value) {
+    emit('catChanged', selectedCatId.value);
+  }
   loadCalendarData();
 };
 
@@ -578,7 +580,7 @@ watch(currentDate, () => {
 });
 
 watch(() => props.catId, (newCatId) => {
-  selectedCatId.value = newCatId || '';
+  selectedCatId.value = newCatId;
   loadCalendarData();
 });
 

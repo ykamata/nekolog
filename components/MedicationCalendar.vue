@@ -584,7 +584,7 @@ watch(currentDate, () => {
 });
 
 watch(() => props.catId, (newCatId) => {
-  selectedCatId.value = newCatId || '';
+  selectedCatId.value = newCatId || undefined;
   loadCalendarData();
 });
 

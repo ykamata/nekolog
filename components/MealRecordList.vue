@@ -292,7 +292,7 @@ watch(
             type="button"
             class="filter-button"
             :class="{ 'filter-button--active': !filter.catId }"
-            @click="handleCatFilter('')"
+            @click="handleCatFilter(undefined)"
           >
             すべて
           </button>

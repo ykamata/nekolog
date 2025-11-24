@@ -200,7 +200,7 @@ export const MealRecordInputSchema = z.object({
     .positive('カロリーは正の数値で入力してください')
     .max(5000, 'カロリーは5000以下で入力してください')
     .optional(),
-  mealTime: z.date(),
+  mealTime: z.coerce.date(),
   notes: z
     .string()
     .max(500, 'メモは500文字以内で入力してください')

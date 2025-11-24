@@ -26,7 +26,7 @@ const emit = defineEmits<Emits>();
 
 // Form state
 const formData = ref({
-  catId: props.initialData?.catId || '',
+  catId: props.initialData?.catId || 0,
   type: props.initialData?.type || ExcretionType.URINE,
   recordedAt: props.initialData?.recordedAt || new Date(),
   notes: props.initialData?.notes || '',
@@ -139,7 +139,7 @@ const handleCancel = () => {
 
 const resetForm = () => {
   formData.value = {
-    catId: '',
+    catId: 0,
     type: ExcretionType.URINE,
     recordedAt: new Date(),
     notes: '',
@@ -153,7 +153,7 @@ watch(
   (newData) => {
     if (newData) {
       formData.value = {
-        catId: newData.catId || '',
+        catId: newData.catId || 0,
         type: newData.type || ExcretionType.URINE,
         recordedAt: newData.recordedAt || new Date(),
         notes: newData.notes || '',

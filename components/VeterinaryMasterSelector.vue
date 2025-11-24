@@ -2,9 +2,9 @@
 ;
 
 interface MasterItem {
-  id: string;
+  id: number;
   name: string;
-  hospitalId?: string; // 先生の場合の所属病院ID
+  hospitalId?: number; // 先生の場合の所属病院ID
 }
 
 interface Props {
@@ -17,7 +17,7 @@ interface Props {
   placeholder?: string;
   id?: string;
   required?: boolean;
-  selectedHospitalId?: string; // 先生選択時の病院フィルタ用
+  selectedHospitalId?: number | null; // 先生選択時の病院フィルタ用
   allowFreeInput?: boolean;
   showCreateDialog?: boolean;
 }

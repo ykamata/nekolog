@@ -495,7 +495,7 @@ interface Props {
   loading?: boolean;
   error?: string | null;
   searchQuery?: string;
-  hospitalFilter?: string;
+  hospitalFilter?: number;
   showHospitalName?: boolean;
 }
 
@@ -503,16 +503,15 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   error: null,
   searchQuery: '',
-  hospitalFilter: '',
   showHospitalName: true,
 });
 
 // Emits
 interface Emits {
   edit: [doctor: VeterinaryDoctor];
-  delete: [doctorId: string];
+  delete: [doctorId: number];
   search: [query: string];
-  hospitalFilter: [hospitalId: string];
+  hospitalFilter: [hospitalId: number | undefined];
   view: [doctor: VeterinaryDoctor];
 }
 
@@ -526,7 +525,7 @@ const searchQuery = ref(props.searchQuery);
 const hospitalFilter = ref(props.hospitalFilter);
 const showDeleteConfirmation = ref(false);
 const doctorToDelete = ref<VeterinaryDoctor | null>(null);
-const activeMobileMenu = ref<string | null>(null);
+const activeMobileMenu = ref<number | null>(null);
 
 // ページネーション機能
 const {
@@ -648,7 +647,7 @@ const cancelDelete = () => {
   doctorToDelete.value = null;
 };
 
-const toggleMobileMenu = (doctorId: string) => {
+const toggleMobileMenu = (doctorId: number) => {
   activeMobileMenu.value = activeMobileMenu.value === doctorId ? null : doctorId;
 };
 

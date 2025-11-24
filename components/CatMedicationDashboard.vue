@@ -17,7 +17,7 @@ interface Props {
 interface Emits {
   (e: 'record-created', record: MedicationRecord): void;
   (e: 'record-updated', record: MedicationRecord): void;
-  (e: 'record-deleted', recordId: string): void;
+  (e: 'record-deleted', recordId: number): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -27,7 +27,7 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>();
 
 // State
-const selectedCatId = ref<string>('all');
+const selectedCatId = ref<number | 'all'>('all');
 const showCombinedView = computed(() => selectedCatId.value === 'all');
 
 // Get selected cat
@@ -37,7 +37,7 @@ const selectedCat = computed(() => {
 });
 
 // Methods
-const handleCatChange = (catId: string) => {
+const handleCatChange = (catId: number | 'all') => {
   selectedCatId.value = catId;
 };
 
@@ -49,7 +49,7 @@ const handleRecordUpdated = (record: MedicationRecord) => {
   emit('record-updated', record);
 };
 
-const handleRecordDeleted = (recordId: string) => {
+const handleRecordDeleted = (recordId: number) => {
   emit('record-deleted', recordId);
 };
 

@@ -145,7 +145,7 @@ interface DateRange {
 }
 
 interface ChartFilters {
-  catId?: string;
+  catId?: number;
   dateRange: DateRange;
   chartType: ChartType;
 }
@@ -180,7 +180,7 @@ const chartType = ref<ChartType>('line');
 // 初期化
 onMounted(() => {
   if (props.modelValue) {
-    selectedCatId.value = props.modelValue.catId || '';
+    selectedCatId.value = props.modelValue.catId || undefined;
     dateRange.value = props.modelValue.dateRange;
     chartType.value = props.modelValue.chartType;
   }
@@ -189,7 +189,7 @@ onMounted(() => {
 // propsの変更を監視
 watch(() => props.modelValue, (newValue) => {
   if (newValue) {
-    selectedCatId.value = newValue.catId || '';
+    selectedCatId.value = newValue.catId || undefined;
     dateRange.value = newValue.dateRange;
     chartType.value = newValue.chartType;
   }
@@ -228,7 +228,7 @@ const toggleMobileFilters = () => {
   showMobileFilters.value = !showMobileFilters.value;
 };
 
-const handleCatChange = (catId: string) => {
+const handleCatChange = (catId: number | undefined) => {
   selectedCatId.value = catId;
   emitChange();
 };
@@ -244,12 +244,12 @@ const handleChartTypeChange = (type: ChartType) => {
 };
 
 const clearCatFilter = () => {
-  selectedCatId.value = '';
+  selectedCatId.value = undefined;
   emitChange();
 };
 
 const resetFilters = () => {
-  selectedCatId.value = '';
+  selectedCatId.value = undefined;
   dateRange.value = {
     start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     end: new Date(),
