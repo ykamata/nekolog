@@ -179,7 +179,7 @@ export class OfflineStorage {
   /**
    * 薬投与記録を取得（フィルタリング可能）
    */
-  getMedicationRecords(catId?: string, medicationId?: string, startDate?: Date, endDate?: Date): MedicationRecord[] {
+  getMedicationRecords(catId?: number, medicationId?: number, startDate?: Date, endDate?: Date): MedicationRecord[] {
     let records = [...this.data.medicationRecords];
 
     if (catId) {
@@ -206,7 +206,7 @@ export class OfflineStorage {
   /**
    * 薬スケジュールを取得（フィルタリング可能）
    */
-  getMedicationSchedules(catId?: string, medicationId?: string, isActive?: boolean): MedicationSchedule[] {
+  getMedicationSchedules(catId?: number, medicationId?: number, isActive?: boolean): MedicationSchedule[] {
     let schedules = [...this.data.medicationSchedules];
 
     if (catId) {
@@ -229,7 +229,7 @@ export class OfflineStorage {
   /**
    * 薬リマインダーを取得（フィルタリング可能）
    */
-  getMedicationReminders(catId?: string, medicationId?: string, scheduleId?: string, startDate?: Date, endDate?: Date): MedicationReminder[] {
+  getMedicationReminders(catId?: number, medicationId?: number, scheduleId?: number, startDate?: Date, endDate?: Date): MedicationReminder[] {
     let reminders = [...this.data.medicationReminders];
 
     if (catId) {
@@ -260,7 +260,7 @@ export class OfflineStorage {
   /**
    * 食事記録を取得（フィルタリング可能）
    */
-  getMeals(catId?: string, startDate?: Date, endDate?: Date): MealRecord[] {
+  getMeals(catId?: number, startDate?: Date, endDate?: Date): MealRecord[] {
     let meals = [...this.data.meals];
 
     if (catId) {
@@ -279,7 +279,6 @@ export class OfflineStorage {
       (a, b) => new Date(b.mealTime).getTime() - new Date(a.mealTime).getTime(),
     );
   }
-
 
   /**
    * ストレージをクリア

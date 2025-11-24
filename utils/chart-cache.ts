@@ -4,7 +4,7 @@
  */
 
 export interface ChartFilters {
-  catId?: string;
+  catId?: number;
   dateRange: {
     start: Date;
     end: Date;
@@ -121,7 +121,7 @@ export class ChartDataCache {
   /**
    * 特定の猫のキャッシュを無効化
    */
-  invalidateCat(catId: string): void {
+  invalidateCat(catId: number): void {
     this.invalidate(`_${catId}_`);
   }
 

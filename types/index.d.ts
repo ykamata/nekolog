@@ -4,7 +4,7 @@
 import type { Chart } from 'chart.js';
 
 export interface Cat {
-  id: string;
+  id: number;
   name: string;
   weight?: number;
   birthdate?: Date;
@@ -14,7 +14,7 @@ export interface Cat {
 }
 
 export interface User {
-  id: string;
+  id: number;
   email: string;
   name?: string;
   createdAt: Date;

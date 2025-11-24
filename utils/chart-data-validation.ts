@@ -40,7 +40,7 @@ export type NoDataReason =
 export function analyzeChartData(
   data: any[],
   options: {
-    catId?: string | null;
+    catId?: number | null;
     dateRange?: {
       start: Date;
       end: Date;
@@ -147,10 +147,10 @@ export function analyzeChartData(
  * no-dataの理由を判定
  */
 function determineNoDataReason(
-  catId?: string | null,
+  catId?: number | null,
   dateRange?: { start: Date; end: Date },
 ): NoDataReason {
-  const hasCatFilter = catId && catId !== '';
+  const hasCatFilter = catId && catId !== null;
   const hasDateFilter = dateRange !== undefined;
 
   if (hasCatFilter && hasDateFilter) {
@@ -173,7 +173,7 @@ function determineNoDataReason(
 function generateSuggestions(
   reason: NoDataReason,
   options: {
-    catId?: string | null;
+    catId?: number | null;
     dateRange?: { start: Date; end: Date };
     selectedDays?: number;
   },
