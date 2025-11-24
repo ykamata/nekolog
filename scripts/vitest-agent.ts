@@ -81,7 +81,8 @@ class VitestAgent {
 
     if (categoryName) {
       await this.runCategory(categoryName);
-    } else {
+    }
+    else {
       await this.runAllCategories();
     }
   }
@@ -95,7 +96,7 @@ class VitestAgent {
     if (!category) {
       console.error(`❌ Unknown category: ${categoryName}`);
       console.log('\n📋 Available categories:');
-      TEST_CATEGORIES.forEach(c => {
+      TEST_CATEGORIES.forEach((c) => {
         console.log(`  - ${c.name}: ${c.description}`);
       });
       process.exit(1);
@@ -235,8 +236,9 @@ class VitestAgent {
     const baseDir = join(this.projectRoot, dirMatch[1]);
 
     try {
-      await this.walkDirectory(baseDir, files, (file) => file.endsWith('.test.ts'));
-    } catch (error) {
+      await this.walkDirectory(baseDir, files, file => file.endsWith('.test.ts'));
+    }
+    catch (error) {
       // Directory doesn't exist or can't be read
       return files;
     }
@@ -250,7 +252,7 @@ class VitestAgent {
   private async walkDirectory(
     dir: string,
     files: string[],
-    filter: (file: string) => boolean
+    filter: (file: string) => boolean,
   ): Promise<void> {
     try {
       const entries = await readdir(dir);
@@ -261,11 +263,13 @@ class VitestAgent {
 
         if (stats.isDirectory()) {
           await this.walkDirectory(fullPath, files, filter);
-        } else if (stats.isFile() && filter(entry)) {
+        }
+        else if (stats.isFile() && filter(entry)) {
           files.push(relative(this.projectRoot, fullPath));
         }
       }
-    } catch (error) {
+    }
+    catch (error) {
       // Skip directories we can't read
     }
   }
@@ -312,7 +316,7 @@ class VitestAgent {
     console.log('📊 TEST SUMMARY');
     console.log('='.repeat(80) + '\n');
 
-    results.categories.forEach(cat => {
+    results.categories.forEach((cat) => {
       const status = cat.failed === 0 ? '✅' : '❌';
       const duration = (cat.duration / 1000).toFixed(2);
 
@@ -334,7 +338,8 @@ class VitestAgent {
 
     if (totalFailed === 0) {
       console.log('🎉 All tests passed!\n');
-    } else {
+    }
+    else {
       console.log(`⚠️  ${totalFailed} test suite(s) failed\n`);
     }
   }
@@ -390,7 +395,7 @@ const category = args.find(arg => !arg.startsWith('--') && !arg.startsWith('-'))
 
 // Run the agent
 const agent = new VitestAgent(options);
-agent.run(category).catch(error => {
+agent.run(category).catch((error) => {
   console.error('❌ Fatal error:', error);
   process.exit(1);
 });

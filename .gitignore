@@ -16,6 +16,9 @@ dist
 *.db-journal
 /generated/prisma
 
+# Uploaded files
+/public/uploads
+
 # Logs
 logs
 *.log

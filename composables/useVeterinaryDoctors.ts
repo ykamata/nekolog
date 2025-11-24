@@ -81,10 +81,11 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
       // ページが1の場合は新しいデータで置き換え、それ以外は追加（無限スクロール対応）
       if (page === 1) {
         doctors.value = response.doctors || [];
-      } else {
+      }
+      else {
         doctors.value.push(...(response.doctors || []));
       }
-      
+
       pagination.value = response.pagination;
     }
     catch (err: any) {
@@ -303,4 +304,4 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
     clearError,
     checkDoctorRelatedData,
   };
-};; ;
+}; ; ;

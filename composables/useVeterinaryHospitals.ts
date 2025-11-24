@@ -78,10 +78,11 @@ export const useVeterinaryHospitals = (): UseVeterinaryHospitalsReturn => {
       // ページが1の場合は新しいデータで置き換え、それ以外は追加（無限スクロール対応）
       if (page === 1) {
         hospitals.value = response.hospitals;
-      } else {
+      }
+      else {
         hospitals.value.push(...response.hospitals);
       }
-      
+
       pagination.value = response.pagination;
     }
     catch (err: any) {
@@ -286,4 +287,4 @@ export const useVeterinaryHospitals = (): UseVeterinaryHospitalsReturn => {
     clearError,
     checkHospitalRelatedData,
   };
-};; ;
+}; ; ;

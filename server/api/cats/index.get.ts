@@ -66,7 +66,8 @@ export default defineEventHandler(async (event) => {
       setHeader(event, 'Cache-Control', 'no-cache, no-store, must-revalidate');
       setHeader(event, 'Pragma', 'no-cache');
       setHeader(event, 'Expires', '0');
-    } else {
+    }
+    else {
       // 通常時は短いキャッシュ（30秒）
       setHeader(event, 'Cache-Control', 'public, max-age=30, s-maxage=30');
     }
@@ -76,7 +77,7 @@ export default defineEventHandler(async (event) => {
   }
   catch (error) {
     console.error('❌ API: 猫データ取得エラー', error);
-    
+
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({

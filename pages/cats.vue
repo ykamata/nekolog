@@ -313,69 +313,20 @@ onMounted(() => {
     </div>
 
     <!-- Add Cat Modal -->
-    <div
-      v-if="showAddModal"
-      class="modal-overlay"
-      @click="handleAddCancel"
-    >
-      <div
-        class="modal-content"
-        @click.stop
-      >
-        <div class="modal-header">
-          <h2 class="modal-title">
-            新しい猫を追加
-          </h2>
-          <button
-            type="button"
-            class="modal-close"
-            @click="handleAddCancel"
-          >
-            ✕
-          </button>
-        </div>
-        <div class="modal-body">
-          <CatManagementForm
-            :is-open="showAddModal"
-            @close="handleAddCancel"
-            @save="handleAddSubmit"
-          />
-        </div>
-      </div>
-    </div>
+    <CatManagementForm
+      :is-open="showAddModal"
+      @close="handleAddCancel"
+      @save="handleAddSubmit"
+    />
 
     <!-- Edit Cat Modal -->
-    <div
-      v-if="showEditModal && editingCat"
-      class="modal-overlay"
-      @click="handleEditCancel"
-    >
-      <div
-        class="modal-content"
-        @click.stop
-      >
-        <div class="modal-header">
-          <h2 class="modal-title">
-            {{ editingCat.name }}を編集
-          </h2>
-          <button
-            type="button"
-            class="modal-close"
-            @click="handleEditCancel"
-          >
-            ✕
-          </button>
-        </div>
-        <div class="modal-body">
-          <CatManagementForm
-            :cat="editingCat"
-            :is-open="showEditModal"
-            @close="handleEditCancel"
-            @save="handleEditSubmit"
-          />
-        </div>
-      </div>
-    </div>
+    <CatManagementForm
+      v-if="editingCat"
+      :cat="editingCat"
+      :is-open="showEditModal"
+      @close="handleEditCancel"
+      @save="handleEditSubmit"
+    />
 
     <!-- Delete Confirmation Dialog -->
     <ConfirmationDialog
@@ -766,70 +717,6 @@ onMounted(() => {
   text-align: center;
 }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.modal-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.modal-close {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #f8f9fa;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  font-size: 1.2rem;
-  transition: all 0.2s ease;
-}
-
-.modal-close:hover {
-  background: #e2e8f0;
-  color: #333;
-}
-
-.modal-body {
-  padding: 0;
-}
-
 /* Tablet Responsive */
 @media (max-width: 1024px) {
   .page-header {
@@ -932,22 +819,6 @@ onMounted(() => {
     font-size: 1.5rem;
   }
 
-  .modal-overlay {
-    padding: 0.5rem;
-  }
-
-  .modal-content {
-    max-height: 95vh;
-  }
-
-  .modal-header {
-    padding: 1rem;
-  }
-
-  .modal-title {
-    font-size: 1.2rem;
-  }
-
   /* Force list view on mobile for better UX */
   .cat-list--grid :deep(.cat-list__grid) {
     display: flex;
@@ -1016,16 +887,6 @@ onMounted(() => {
   .action-text {
     font-size: 0.8rem;
   }
-
-  .modal-overlay {
-    padding: 0;
-  }
-
-  .modal-content {
-    border-radius: 0;
-    max-height: 100vh;
-    height: 100vh;
-  }
 }
 
 /* High contrast mode support */
@@ -1034,8 +895,7 @@ onMounted(() => {
   .cats-container,
   .quick-actions,
   .stat-card,
-  .action-button,
-  .modal-content {
+  .action-button {
     border: 2px solid #333;
   }
 

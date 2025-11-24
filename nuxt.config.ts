@@ -4,27 +4,27 @@ export default defineNuxtConfig({
 
   // Modules
   modules: [
-    "@pinia/nuxt",
-    "@unocss/nuxt",
-    "@vueuse/nuxt",
-    "@nuxtjs/tailwindcss",
-    "@nuxt/eslint",
+    '@pinia/nuxt',
+    '@unocss/nuxt',
+    '@vueuse/nuxt',
+    '@nuxtjs/tailwindcss',
+    '@nuxt/eslint',
   ],
 
   // Auto-imports for Vue Composition API
   imports: {
-    dirs: ["composables", "utils", "stores"],
+    dirs: ['composables', 'utils', 'stores'],
   },
 
   // App configuration
   app: {
     head: {
       htmlAttrs: {
-        lang: "ja",
+        lang: 'ja',
       },
       meta: [
-        { charset: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { charset: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
       ],
     },
   },
@@ -37,48 +37,47 @@ export default defineNuxtConfig({
   // Runtime configuration
   runtimeConfig: {
     public: {
-      apiBase: "",
+      apiBase: '',
     },
   },
 
   // Keep source directory at root (Nuxt 4 defaults to 'app/')
-  srcDir: ".",
+  srcDir: '.',
 
   // Development server configuration
   devServer: {
-    host: "0.0.0.0", // Listen on all interfaces (required for Docker)
+    host: '0.0.0.0', // Listen on all interfaces (required for Docker)
     port: 3000,
   },
-  compatibilityDate: "2025-11-16",
+  compatibilityDate: '2025-11-16',
 
   // Nitro configuration for routing
   nitro: {
     routeRules: {
       // Add redirect from /index to /
-      "/index": { redirect: "/" },
+      '/index': { redirect: '/' },
     },
   },
 
   // Vite configuration
   vite: {
     define: {
-      global: "globalThis",
+      global: 'globalThis',
     },
     optimizeDeps: {
-      include: ["@prisma/client"],
+      include: ['@prisma/client'],
     },
     build: {
       rollupOptions: {
-        external: ["@prisma/client"],
+        external: ['@prisma/client'],
       },
     },
     server: {
-      host: "0.0.0.0",
-      port: 3000,
+      host: '0.0.0.0',
       hmr: {
-        protocol: "ws",
-        host: "localhost",
-        port: 24679,
+        protocol: 'ws',
+        host: 'localhost',
+        port: 24678,
       },
     },
   },
@@ -95,7 +94,7 @@ export default defineNuxtConfig({
     config: {
       stylistic: {
         indent: 2,
-        quotes: "single",
+        quotes: 'single',
         semi: true,
       },
     },
@@ -105,7 +104,7 @@ export default defineNuxtConfig({
   tailwindcss: {
     exposeConfig: true,
     viewer: true,
-    configPath: "tailwind.config.ts",
+    configPath: 'tailwind.config.ts',
   },
 
   // UnoCSS configuration

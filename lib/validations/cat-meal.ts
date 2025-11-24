@@ -22,7 +22,19 @@ export const CatSchema = z.object({
     .max(20, '体重は20kg以下で入力してください')
     .optional()
     .nullable(),
-  photoUrl: z.string().url('有効なURLを入力してください').optional().nullable(),
+  photoUrl: z
+    .string()
+    .refine(
+      (val) => {
+        if (!val) return true;
+        return val.startsWith('/') || val.startsWith('http://') || val.startsWith('https://');
+      },
+      {
+        message: '有効なURLまたはパスを入力してください',
+      },
+    )
+    .optional()
+    .nullable(),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
@@ -116,7 +128,7 @@ export const CatInputSchema = z.object({
     .nullable(),
   photoUrl: z
     .union([
-      z.string().url('有効なURLを入力してください'),
+      z.string().min(1),
       z.literal(''),
       z.null(),
       z.undefined(),
@@ -126,7 +138,17 @@ export const CatInputSchema = z.object({
     .transform((val) => {
       if (!val || val === '') return null;
       return val;
-    }),
+    })
+    .refine(
+      (val) => {
+        if (!val) return true; // null or undefined is valid
+        // Allow relative paths (starting with /) or full URLs
+        return val.startsWith('/') || val.startsWith('http://') || val.startsWith('https://');
+      },
+      {
+        message: '有効なURLまたはパスを入力してください（例: /uploads/cats/image.jpg または https://example.com/image.jpg）',
+      },
+    ),
 });
 
 export const FoodInputSchema = z.object({

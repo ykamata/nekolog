@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 
 const paramsSchema = z.object({
-  id: z.string().min(1, 'Invalid cat ID format'),
+  id: z.coerce.number().int().positive('Invalid cat ID format'),
 });
 
 export default defineEventHandler(async (event) => {

@@ -2,7 +2,6 @@
 import { z } from 'zod';
 import type { Cat, CatInput } from '~/types/cat-meal';
 import { CatInputSchema } from '~/lib/validations/cat-meal';
-import { createUnifiedErrorHandler } from '~/utils/error-handling';
 
 interface Props {
   cat?: Cat;
@@ -27,13 +26,9 @@ const formData = reactive<CatInput>({
 
 const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
-
-// 統一エラーハンドラーの初期化
-const errorHandler = createUnifiedErrorHandler('CatManagementForm', {
-  maxRetries: 3,
-  baseDelay: 1000,
-  maxDelay: 5000,
-});
+const isUploading = ref(false);
+const selectedFile = ref<File | null>(null);
+const previewUrl = ref<string | null>(null);
 
 // Initialize form data when cat prop changes
 watch(
@@ -43,7 +38,8 @@ watch(
       formData.name = cat.name;
       formData.birthdate = cat.birthdate;
       formData.weight = cat.weight;
-      formData.photoUrl = cat.photoUrl;
+      formData.photoUrl = cat.photoUrl || null;
+      previewUrl.value = cat.photoUrl || null;
     }
     else {
       // Reset form for new cat
@@ -51,8 +47,10 @@ watch(
       formData.birthdate = null;
       formData.weight = null;
       formData.photoUrl = null;
+      previewUrl.value = null;
     }
     errors.value = {};
+    selectedFile.value = null;
   },
   { immediate: true },
 );
@@ -91,14 +89,29 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
 
   try {
+    // 選択されたファイルがある場合はアップロード
+    let photoUrl = formData.photoUrl?.trim() || null;
+
+    if (selectedFile.value) {
+      const uploadedUrl = await uploadImage();
+      if (uploadedUrl) {
+        photoUrl = uploadedUrl;
+      }
+      else {
+        // アップロードに失敗した場合は処理を中断
+        return;
+      }
+    }
+
     // Ensure proper data formatting before emitting
     const submitData: CatInput = {
       name: formData.name.trim(),
       birthdate: formData.birthdate,
       weight: formData.weight,
-      photoUrl: formData.photoUrl?.trim() || null,
+      photoUrl,
     };
 
+    // eslint-disable-next-line no-console
     console.log('🐱 CatManagementForm - Submit data:', JSON.stringify(submitData, null, 2));
     emit('save', submitData);
   }
@@ -116,15 +129,24 @@ const handleReset = () => {
     formData.name = props.cat.name;
     formData.birthdate = props.cat.birthdate;
     formData.weight = props.cat.weight;
-    formData.photoUrl = props.cat.photoUrl;
+    formData.photoUrl = props.cat.photoUrl || null;
+    previewUrl.value = props.cat.photoUrl || null;
   }
   else {
     formData.name = '';
     formData.birthdate = null;
     formData.weight = null;
     formData.photoUrl = null;
+    previewUrl.value = null;
   }
   errors.value = {};
+  selectedFile.value = null;
+
+  // file inputをクリア
+  const fileInput = document.getElementById('cat-photo-file') as HTMLInputElement;
+  if (fileInput) {
+    fileInput.value = '';
+  }
 };
 
 // Format date for input
@@ -145,6 +167,88 @@ const birthdateInput = computed({
     formData.birthdate = parseDateFromInput(value);
   },
 });
+
+// ファイル選択時の処理
+const handleFileSelect = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+
+  if (!file) {
+    selectedFile.value = null;
+    previewUrl.value = formData.photoUrl || null;
+    return;
+  }
+
+  // ファイルタイプの検証
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    errors.value.photoUrl = 'JPEG、PNG、GIF、WebP形式のみ対応しています';
+    return;
+  }
+
+  // ファイルサイズの検証 (5MB)
+  const maxSize = 5 * 1024 * 1024;
+  if (file.size > maxSize) {
+    errors.value.photoUrl = 'ファイルサイズは5MB以下にしてください';
+    return;
+  }
+
+  selectedFile.value = file;
+  errors.value.photoUrl = '';
+
+  // プレビュー画像の生成
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    previewUrl.value = e.target?.result as string;
+  };
+  reader.readAsDataURL(file);
+};
+
+// 画像のアップロード
+const uploadImage = async (): Promise<string | null> => {
+  if (!selectedFile.value) {
+    return null;
+  }
+
+  isUploading.value = true;
+
+  try {
+    const formData = new FormData();
+    formData.append('image', selectedFile.value);
+
+    const response = await $fetch<{ url: string }>('/api/images/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    // eslint-disable-next-line no-console
+    console.log('📸 画像アップロード成功:', response.url);
+    return response.url;
+  }
+  catch (error) {
+    // eslint-disable-next-line no-console
+    console.error('画像アップロードエラー:', error);
+    errors.value.photoUrl = '画像のアップロードに失敗しました';
+    return null;
+  }
+  finally {
+    isUploading.value = false;
+  }
+};
+
+// 画像をクリア
+const clearImage = () => {
+  selectedFile.value = null;
+  previewUrl.value = null;
+  formData.photoUrl = null;
+  errors.value.photoUrl = '';
+
+  // file inputをクリア
+  const fileInput = document.getElementById('cat-photo-file') as HTMLInputElement;
+  if (fileInput) {
+    fileInput.value = '';
+  }
+};
 </script>
 
 <template>
@@ -237,24 +341,69 @@ const birthdateInput = computed({
         </div>
 
         <div class="form-group">
-          <label
-            for="cat-photo"
-            class="form-label"
-          >写真URL</label>
-          <input
-            id="cat-photo"
-            v-model="formData.photoUrl"
-            type="url"
-            class="form-input"
-            :class="{ 'form-input--error': errors.photoUrl }"
-            placeholder="https://example.com/cat-photo.jpg"
+          <label class="form-label">写真</label>
+
+          <!-- 画像プレビュー -->
+          <div
+            v-if="previewUrl"
+            class="image-preview"
           >
+            <img
+              :src="previewUrl"
+              alt="猫の写真プレビュー"
+              class="preview-image"
+            >
+            <button
+              type="button"
+              class="preview-clear-btn"
+              @click="clearImage"
+            >
+              ✕
+            </button>
+          </div>
+
+          <!-- ファイルアップロード -->
+          <div class="upload-section">
+            <label
+              for="cat-photo-file"
+              class="upload-label"
+            >
+              <span class="upload-icon">📷</span>
+              <span class="upload-text">{{ selectedFile ? selectedFile.name : '画像ファイルを選択' }}</span>
+            </label>
+            <input
+              id="cat-photo-file"
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              class="file-input"
+              @change="handleFileSelect"
+            >
+          </div>
+
+          <!-- URL入力（オプション） -->
+          <div class="url-section">
+            <label
+              for="cat-photo-url"
+              class="form-label-small"
+            >または画像URLを入力</label>
+            <input
+              id="cat-photo-url"
+              v-model="formData.photoUrl"
+              type="text"
+              class="form-input"
+              :class="{ 'form-input--error': errors.photoUrl }"
+              placeholder="https://example.com/cat-photo.jpg または /uploads/cats/image.jpg"
+            >
+          </div>
+
           <span
             v-if="errors.photoUrl"
             class="form-error"
-          >{{
-            errors.photoUrl
-          }}</span>
+          >{{ errors.photoUrl }}</span>
+
+          <p class="form-help">
+            JPEG、PNG、GIF、WebP形式に対応（最大5MB）
+          </p>
         </div>
 
         <div class="form-actions">
@@ -276,10 +425,10 @@ const birthdateInput = computed({
           </button>
           <button
             type="submit"
-            :disabled="isSubmitting"
+            :disabled="isSubmitting || isUploading"
             class="btn btn--primary"
           >
-            {{ isSubmitting ? "保存中..." : isEditMode ? "更新" : "追加" }}
+            {{ isUploading ? "アップロード中..." : isSubmitting ? "保存中..." : isEditMode ? "更新" : "追加" }}
           </button>
         </div>
       </form>
@@ -389,6 +538,105 @@ const birthdateInput = computed({
   margin-top: 0.25rem;
   font-size: 0.875rem;
   color: #e74c3c;
+}
+
+.form-help {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.form-label-small {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #666;
+}
+
+/* 画像プレビュー */
+.image-preview {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #ddd;
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-clear-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 32px;
+  height: 32px;
+  background-color: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.preview-clear-btn:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+/* ファイルアップロード */
+.upload-section {
+  margin-bottom: 1rem;
+}
+
+.file-input {
+  display: none;
+}
+
+.upload-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.upload-label:hover {
+  border-color: #4caf50;
+  background-color: #f0f8f0;
+}
+
+.upload-icon {
+  font-size: 2rem;
+}
+
+.upload-text {
+  font-size: 0.9rem;
+  color: #666;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* URL入力セクション */
+.url-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
 }
 
 .form-actions {

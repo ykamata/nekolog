@@ -3,7 +3,7 @@ import { prisma } from '~/lib/prisma';
 import { CatUpdateSchema } from '~/lib/validations/cat-meal';
 
 const paramsSchema = z.object({
-  id: z.string().min(1, 'Invalid cat ID format'),
+  id: z.coerce.number().int().positive('Invalid cat ID format'),
 });
 
 export default defineEventHandler(async (event) => {
