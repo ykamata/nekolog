@@ -1,20 +1,20 @@
-import { z } from "zod";
-import { prisma } from "~/lib/prisma";
-import { MedicationUpdateSchema } from "~/lib/validations/medication";
+import { z } from 'zod';
+import { prisma } from '~/lib/prisma';
+import { MedicationUpdateSchema } from '~/lib/validations/medication';
 import {
   withErrorContext,
   validateParams,
   validateBody,
-} from "~/server/utils/error-handler";
+} from '~/server/utils/error-handler';
 
 const paramsSchema = z.object({
-  id: z.coerce.number().positive("Invalid medication ID format"),
+  id: z.coerce.number().positive('Invalid medication ID format'),
 });
 
 export default defineEventHandler(
-  withErrorContext("/api/medications/[id] [PUT]")(async (event) => {
+  withErrorContext('/api/medications/[id] [PUT]')(async (event) => {
     // Only allow PUT method
-    assertMethod(event, "PUT");
+    assertMethod(event, 'PUT');
 
     // Parse and validate route parameters
     const params = getRouterParams(event);
@@ -32,7 +32,7 @@ export default defineEventHandler(
     if (!existingMedication) {
       throw createError({
         statusCode: 404,
-        statusMessage: "指定された薬が見つかりません",
+        statusMessage: '指定された薬が見つかりません',
       });
     }
 
@@ -48,7 +48,7 @@ export default defineEventHandler(
       if (nameConflict) {
         throw createError({
           statusCode: 409,
-          statusMessage: "同じ名前の薬が既に登録されています",
+          statusMessage: '同じ名前の薬が既に登録されています',
         });
       }
     }
@@ -70,7 +70,7 @@ export default defineEventHandler(
 
     return {
       medication,
-      message: "薬の情報が正常に更新されました",
+      message: '薬の情報が正常に更新されました',
     };
-  })
+  }),
 );

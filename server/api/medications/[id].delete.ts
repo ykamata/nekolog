@@ -1,21 +1,21 @@
-import { z } from "zod";
-import { prisma } from "~/lib/prisma";
+import { z } from 'zod';
+import { prisma } from '~/lib/prisma';
 
 const paramsSchema = z.object({
-  id: z.coerce.number().positive("Invalid medication ID format"),
+  id: z.coerce.number().positive('Invalid medication ID format'),
 });
 
 const querySchema = z.object({
   cascade: z
     .string()
     .optional()
-    .transform((val) => val === "true"),
+    .transform(val => val === 'true'),
 });
 
 export default defineEventHandler(async (event) => {
   try {
     // Only allow DELETE method
-    assertMethod(event, "DELETE");
+    assertMethod(event, 'DELETE');
 
     // Parse and validate route parameters
     const params = getRouterParams(event);
@@ -41,20 +41,20 @@ export default defineEventHandler(async (event) => {
     if (!existingMedication) {
       throw createError({
         statusCode: 404,
-        statusMessage: "指定された薬が見つかりません",
+        statusMessage: '指定された薬が見つかりません',
       });
     }
 
     // Check for related records
-    const hasRelatedData =
-      existingMedication._count.records > 0 ||
-      existingMedication._count.schedules > 0;
+    const hasRelatedData
+      = existingMedication._count.records > 0
+        || existingMedication._count.schedules > 0;
 
     if (hasRelatedData && !cascade) {
       throw createError({
         statusCode: 409,
         statusMessage:
-          "この薬には投与記録またはスケジュールが関連付けられています。削除するには cascade=true パラメータを指定してください。",
+          'この薬には投与記録またはスケジュールが関連付けられています。削除するには cascade=true パラメータを指定してください。',
         data: {
           relatedRecords: existingMedication._count.records,
           relatedSchedules: existingMedication._count.schedules,
@@ -87,7 +87,8 @@ export default defineEventHandler(async (event) => {
           where: { id },
         });
       });
-    } else {
+    }
+    else {
       await prisma.medication.delete({
         where: { id },
       });
@@ -98,25 +99,26 @@ export default defineEventHandler(async (event) => {
       deletedRecords: existingMedication._count.records,
       deletedSchedules: existingMedication._count.schedules,
     };
-  } catch (error) {
+  }
+  catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: "Invalid parameters",
+        statusMessage: 'Invalid parameters',
         data: error.errors,
       });
     }
 
     // Re-throw HTTP errors
-    if (error && typeof error === "object" && "statusCode" in error) {
+    if (error && typeof error === 'object' && 'statusCode' in error) {
       throw error;
     }
 
     // Handle unexpected errors
     throw createError({
       statusCode: 500,
-      statusMessage: "Internal server error",
+      statusMessage: 'Internal server error',
     });
   }
 });

@@ -1,16 +1,16 @@
-import { z } from "zod";
-import { prisma } from "~/lib/prisma";
-import { MealRecordUpdateSchema } from "~/lib/validations/cat-meal";
-import { calculateCaloriesFromGrams } from "~/utils/cat-meal";
+import { z } from 'zod';
+import { prisma } from '~/lib/prisma';
+import { MealRecordUpdateSchema } from '~/lib/validations/cat-meal';
+import { calculateCaloriesFromGrams } from '~/utils/cat-meal';
 
 const paramsSchema = z.object({
-  id: z.coerce.number().positive("Invalid meal record ID format"),
+  id: z.coerce.number().positive('Invalid meal record ID format'),
 });
 
 export default defineEventHandler(async (event) => {
   try {
     // Only allow PUT method
-    assertMethod(event, "PUT");
+    assertMethod(event, 'PUT');
 
     // Parse and validate route parameters
     const params = getRouterParams(event);
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
     if (!existingMealRecord) {
       throw createError({
         statusCode: 404,
-        statusMessage: "指定された食事記録が見つかりません",
+        statusMessage: '指定された食事記録が見つかりません',
       });
     }
 
@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
       if (!cat) {
         throw createError({
           statusCode: 404,
-          statusMessage: "指定された猫が見つかりません",
+          statusMessage: '指定された猫が見つかりません',
         });
       }
     }
@@ -68,7 +68,7 @@ export default defineEventHandler(async (event) => {
       if (!newFood) {
         throw createError({
           statusCode: 404,
-          statusMessage: "指定されたフードが見つかりません",
+          statusMessage: '指定されたフードが見つかりません',
         });
       }
       food = newFood;
@@ -111,27 +111,28 @@ export default defineEventHandler(async (event) => {
 
     return {
       mealRecord,
-      message: "食事記録が正常に更新されました",
+      message: '食事記録が正常に更新されました',
     };
-  } catch (error) {
+  }
+  catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: "入力データが無効です",
+        statusMessage: '入力データが無効です',
         data: error.errors,
       });
     }
 
     // Re-throw HTTP errors
-    if (error && typeof error === "object" && "statusCode" in error) {
+    if (error && typeof error === 'object' && 'statusCode' in error) {
       throw error;
     }
 
     // Handle unexpected errors
     throw createError({
       statusCode: 500,
-      statusMessage: "Internal server error",
+      statusMessage: 'Internal server error',
     });
   }
 });

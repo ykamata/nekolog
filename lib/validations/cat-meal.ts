@@ -2,24 +2,24 @@
  * Zod validation schemas for cat meal management
  */
 
-import { z } from "zod";
-import { FoodType } from "~/types/cat-meal";
+import { z } from 'zod';
+import { FoodType } from '~/types/cat-meal';
 
 // Enum schemas
 export const FoodTypeSchema = z.nativeEnum(FoodType);
 
 // Base validation schemas
 export const CatSchema = z.object({
-  id: z.coerce.number().int().positive("IDは正の整数である必要があります"),
+  id: z.coerce.number().int().positive('IDは正の整数である必要があります'),
   name: z
     .string()
-    .min(1, "猫の名前は必須です")
-    .max(50, "猫の名前は50文字以内で入力してください"),
+    .min(1, '猫の名前は必須です')
+    .max(50, '猫の名前は50文字以内で入力してください'),
   birthdate: z.date().optional().nullable(),
   weight: z
     .number()
-    .positive("体重は正の数値で入力してください")
-    .max(20, "体重は20kg以下で入力してください")
+    .positive('体重は正の数値で入力してください')
+    .max(20, '体重は20kg以下で入力してください')
     .optional()
     .nullable(),
   photoUrl: z
@@ -28,14 +28,14 @@ export const CatSchema = z.object({
       (val) => {
         if (!val) return true;
         return (
-          val.startsWith("/") ||
-          val.startsWith("http://") ||
-          val.startsWith("https://")
+          val.startsWith('/')
+          || val.startsWith('http://')
+          || val.startsWith('https://')
         );
       },
       {
-        message: "有効なURLまたはパスを入力してください",
-      }
+        message: '有効なURLまたはパスを入力してください',
+      },
     )
     .optional()
     .nullable(),
@@ -44,51 +44,51 @@ export const CatSchema = z.object({
 });
 
 export const FoodSchema = z.object({
-  id: z.coerce.number().int().positive("IDは正の整数である必要があります"),
+  id: z.coerce.number().int().positive('IDは正の整数である必要があります'),
   name: z
     .string()
-    .min(1, "フード名は必須です")
-    .max(100, "フード名は100文字以内で入力してください"),
+    .min(1, 'フード名は必須です')
+    .max(100, 'フード名は100文字以内で入力してください'),
   type: FoodTypeSchema,
   brand: z
     .string()
-    .max(50, "ブランド名は50文字以内で入力してください")
+    .max(50, 'ブランド名は50文字以内で入力してください')
     .optional()
     .nullable(),
   caloriesPerGram: z
     .number()
-    .positive("カロリーは正の数値で入力してください")
-    .max(10, "グラムあたりのカロリーは10以下で入力してください"),
+    .positive('カロリーは正の数値で入力してください')
+    .max(10, 'グラムあたりのカロリーは10以下で入力してください'),
   pricePerUnit: z
     .number()
-    .positive("価格は正の数値で入力してください")
+    .positive('価格は正の数値で入力してください')
     .optional()
     .nullable(),
   unit: z
     .string()
-    .min(1, "単位は必須です")
-    .max(10, "単位は10文字以内で入力してください")
-    .default("g"),
+    .min(1, '単位は必須です')
+    .max(10, '単位は10文字以内で入力してください')
+    .default('g'),
   createdAt: z.date(),
   updatedAt: z.date(),
 });
 
 export const MealRecordSchema = z.object({
-  id: z.coerce.number().int().positive("IDは正の整数である必要があります"),
-  catId: z.coerce.number().int().positive("有効な猫IDを選択してください"),
-  foodId: z.coerce.number().int().positive("有効なフードIDを選択してください"),
+  id: z.coerce.number().int().positive('IDは正の整数である必要があります'),
+  catId: z.coerce.number().int().positive('有効な猫IDを選択してください'),
+  foodId: z.coerce.number().int().positive('有効なフードIDを選択してください'),
   quantity: z
     .number()
-    .positive("量は正の数値で入力してください")
-    .max(1000, "量は1000g以下で入力してください"),
+    .positive('量は正の数値で入力してください')
+    .max(1000, '量は1000g以下で入力してください'),
   calories: z
     .number()
-    .positive("カロリーは正の数値で入力してください")
-    .max(5000, "カロリーは5000以下で入力してください"),
+    .positive('カロリーは正の数値で入力してください')
+    .max(5000, 'カロリーは5000以下で入力してください'),
   mealTime: z.date(),
   notes: z
     .string()
-    .max(500, "メモは500文字以内で入力してください")
+    .max(500, 'メモは500文字以内で入力してください')
     .optional()
     .nullable(),
   createdAt: z.date(),
@@ -99,12 +99,12 @@ export const MealRecordSchema = z.object({
 export const CatInputSchema = z.object({
   name: z
     .string()
-    .min(1, "猫の名前は必須です")
-    .max(50, "猫の名前は50文字以内で入力してください"),
+    .min(1, '猫の名前は必須です')
+    .max(50, '猫の名前は50文字以内で入力してください'),
   birthdate: z
     .union([
       z.string().transform((str) => {
-        if (!str || str === "") return null;
+        if (!str || str === '') return null;
         const date = new Date(str);
         return isNaN(date.getTime()) ? null : date;
       }),
@@ -118,7 +118,7 @@ export const CatInputSchema = z.object({
     .union([
       z.number(),
       z.string().transform((str) => {
-        if (!str || str === "") return null;
+        if (!str || str === '') return null;
         const num = parseFloat(str);
         return isNaN(num) ? null : num;
       }),
@@ -126,22 +126,22 @@ export const CatInputSchema = z.object({
       z.undefined(),
     ])
     .refine(
-      (val) =>
-        val === null ||
-        val === undefined ||
-        (typeof val === "number" && val > 0 && val <= 20),
+      val =>
+        val === null
+        || val === undefined
+        || (typeof val === 'number' && val > 0 && val <= 20),
       {
-        message: "体重は正の数値で20kg以下で入力してください",
-      }
+        message: '体重は正の数値で20kg以下で入力してください',
+      },
     )
     .optional()
     .nullable(),
   photoUrl: z
-    .union([z.string().min(1), z.literal(""), z.null(), z.undefined()])
+    .union([z.string().min(1), z.literal(''), z.null(), z.undefined()])
     .optional()
     .nullable()
     .transform((val) => {
-      if (!val || val === "") return null;
+      if (!val || val === '') return null;
       return val;
     })
     .refine(
@@ -149,61 +149,61 @@ export const CatInputSchema = z.object({
         if (!val) return true; // null or undefined is valid
         // Allow relative paths (starting with /) or full URLs
         return (
-          val.startsWith("/") ||
-          val.startsWith("http://") ||
-          val.startsWith("https://")
+          val.startsWith('/')
+          || val.startsWith('http://')
+          || val.startsWith('https://')
         );
       },
       {
         message:
-          "有効なURLまたはパスを入力してください（例: /uploads/cats/image.jpg または https://example.com/image.jpg）",
-      }
+          '有効なURLまたはパスを入力してください（例: /uploads/cats/image.jpg または https://example.com/image.jpg）',
+      },
     ),
 });
 
 export const FoodInputSchema = z.object({
   name: z
     .string()
-    .min(1, "フード名は必須です")
-    .max(100, "フード名は100文字以内で入力してください"),
+    .min(1, 'フード名は必須です')
+    .max(100, 'フード名は100文字以内で入力してください'),
   type: FoodTypeSchema,
   brand: z
     .string()
-    .max(50, "ブランド名は50文字以内で入力してください")
+    .max(50, 'ブランド名は50文字以内で入力してください')
     .optional()
     .nullable(),
   caloriesPerGram: z
     .number()
-    .positive("カロリーは正の数値で入力してください")
-    .max(10, "グラムあたりのカロリーは10以下で入力してください"),
+    .positive('カロリーは正の数値で入力してください')
+    .max(10, 'グラムあたりのカロリーは10以下で入力してください'),
   pricePerUnit: z
     .number()
-    .positive("価格は正の数値で入力してください")
+    .positive('価格は正の数値で入力してください')
     .optional()
     .nullable(),
   unit: z
     .string()
-    .min(1, "単位は必須です")
-    .max(10, "単位は10文字以内で入力してください")
-    .default("g"),
+    .min(1, '単位は必須です')
+    .max(10, '単位は10文字以内で入力してください')
+    .default('g'),
 });
 
 export const MealRecordInputSchema = z.object({
-  catId: z.coerce.number().int().positive("有効な猫IDを選択してください"),
-  foodId: z.coerce.number().int().positive("有効なフードIDを選択してください"),
+  catId: z.coerce.number().int().positive('有効な猫IDを選択してください'),
+  foodId: z.coerce.number().int().positive('有効なフードIDを選択してください'),
   quantity: z
     .number()
-    .positive("量は正の数値で入力してください")
-    .max(1000, "量は1000g以下で入力してください"),
+    .positive('量は正の数値で入力してください')
+    .max(1000, '量は1000g以下で入力してください'),
   calories: z
     .number()
-    .positive("カロリーは正の数値で入力してください")
-    .max(5000, "カロリーは5000以下で入力してください")
+    .positive('カロリーは正の数値で入力してください')
+    .max(5000, 'カロリーは5000以下で入力してください')
     .optional(),
   mealTime: z.date(),
   notes: z
     .string()
-    .max(500, "メモは500文字以内で入力してください")
+    .max(500, 'メモは500文字以内で入力してください')
     .optional()
     .nullable(),
 });
@@ -240,19 +240,19 @@ export const FoodFilterSchema = z.object({
 
 // Special validation schemas for form handling
 export const MealRecordFormSchema = z.object({
-  catId: z.coerce.number().int().positive("猫を選択してください"),
-  foodId: z.coerce.number().int().positive("フードを選択してください"),
+  catId: z.coerce.number().int().positive('猫を選択してください'),
+  foodId: z.coerce.number().int().positive('フードを選択してください'),
   quantity: z
     .number()
-    .positive("量は正の数値で入力してください")
-    .max(1000, "量は1000g以下で入力してください"),
+    .positive('量は正の数値で入力してください')
+    .max(1000, '量は1000g以下で入力してください'),
   calories: z
     .number()
-    .positive("カロリーは正の数値で入力してください")
-    .max(5000, "カロリーは5000以下で入力してください")
+    .positive('カロリーは正の数値で入力してください')
+    .max(5000, 'カロリーは5000以下で入力してください')
     .optional(),
   mealTime: z.date(),
-  notes: z.string().max(500, "メモは500文字以内で入力してください").optional(),
+  notes: z.string().max(500, 'メモは500文字以内で入力してください').optional(),
 });
 
 // Date range validation
@@ -261,15 +261,15 @@ export const DateRangeSchema = z
     startDate: z.date(),
     endDate: z.date(),
   })
-  .refine((data) => data.startDate <= data.endDate, {
-    message: "開始日は終了日より前の日付を選択してください",
-    path: ["endDate"],
+  .refine(data => data.startDate <= data.endDate, {
+    message: '開始日は終了日より前の日付を選択してください',
+    path: ['endDate'],
   });
 
 // Quantity input validation (supports both grams and calories)
 export const QuantityInputSchema = z.object({
-  value: z.number().positive("量は正の数値で入力してください"),
-  unit: z.enum(["g", "cal"], { message: "単位はgまたはcalを選択してください" }),
+  value: z.number().positive('量は正の数値で入力してください'),
+  unit: z.enum(['g', 'cal'], { message: '単位はgまたはcalを選択してください' }),
 });
 
 export type CatInput = z.infer<typeof CatInputSchema>;

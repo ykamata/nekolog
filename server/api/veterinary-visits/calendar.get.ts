@@ -1,5 +1,5 @@
-import { z } from "zod";
-import { prisma } from "~/lib/prisma";
+import { z } from 'zod';
+import { prisma } from '~/lib/prisma';
 
 // カレンダー表示用に最適化されたクエリパラメータ
 const calendarQuerySchema = z.object({
@@ -17,19 +17,19 @@ const calendarQuerySchema = z.object({
   includeAppointments: z
     .string()
     .optional()
-    .transform((val) => val === "true")
-    .default("false"),
+    .transform(val => val === 'true')
+    .default('false'),
 });
 
 export default defineEventHandler(async (event) => {
   try {
     // Only allow GET method
-    assertMethod(event, "GET");
+    assertMethod(event, 'GET');
 
     // Parse and validate query parameters
     const query = getQuery(event);
-    const { catId, year, month, includeAppointments } =
-      calendarQuerySchema.parse(query);
+    const { catId, year, month, includeAppointments }
+      = calendarQuerySchema.parse(query);
 
     // デフォルトで現在の年月を使用
     const currentDate = new Date();
@@ -81,7 +81,7 @@ export default defineEventHandler(async (event) => {
           },
         },
       },
-      orderBy: { visitDate: "asc" },
+      orderBy: { visitDate: 'asc' },
     });
 
     // 予約データも含める場合
@@ -92,7 +92,7 @@ export default defineEventHandler(async (event) => {
           gte: startDate,
           lte: endDate,
         },
-        status: "SCHEDULED",
+        status: 'SCHEDULED',
       };
 
       if (catId) {
@@ -127,7 +127,7 @@ export default defineEventHandler(async (event) => {
             },
           },
         },
-        orderBy: { appointmentDate: "asc" },
+        orderBy: { appointmentDate: 'asc' },
       });
     }
 
@@ -141,7 +141,7 @@ export default defineEventHandler(async (event) => {
 
     // 通院記録を日付ごとにグループ化
     visits.forEach((visit) => {
-      const dateKey = visit.visitDate.toISOString().split("T")[0];
+      const dateKey = visit.visitDate.toISOString().split('T')[0];
       if (dateKey && !calendarData[dateKey]) {
         calendarData[dateKey] = {
           date: dateKey,
@@ -155,8 +155,8 @@ export default defineEventHandler(async (event) => {
 
       if (dateKey) {
         calendarData[dateKey].visits.push(visit);
-        calendarData[dateKey].hasBloodTest =
-          calendarData[dateKey].hasBloodTest || visit.hasBloodTest;
+        calendarData[dateKey].hasBloodTest
+          = calendarData[dateKey].hasBloodTest || visit.hasBloodTest;
         calendarData[dateKey].totalCost += visit.cost;
         calendarData[dateKey].catCount.add(visit.catId);
       }
@@ -164,7 +164,7 @@ export default defineEventHandler(async (event) => {
 
     // 予約を日付ごとにグループ化
     appointments.forEach((appointment) => {
-      const dateKey = appointment.appointmentDate.toISOString().split("T")[0];
+      const dateKey = appointment.appointmentDate.toISOString().split('T')[0];
       if (!calendarData[dateKey]) {
         calendarData[dateKey] = {
           date: dateKey,
@@ -182,11 +182,11 @@ export default defineEventHandler(async (event) => {
 
     // Set を配列に変換し、統計情報を追加
     const processedCalendarData = Object.values(calendarData).map(
-      (dayData) => ({
+      dayData => ({
         ...dayData,
         catCount: dayData.catCount.size,
         totalEvents: dayData.visits.length + dayData.appointments.length,
-      })
+      }),
     );
 
     // 統計情報を計算
@@ -194,37 +194,37 @@ export default defineEventHandler(async (event) => {
       totalVisits: visits.length,
       totalAppointments: appointments.length,
       totalCost: visits.reduce((sum, visit) => sum + visit.cost, 0),
-      bloodTestCount: visits.filter((visit) => visit.hasBloodTest).length,
+      bloodTestCount: visits.filter(visit => visit.hasBloodTest).length,
       uniqueCats: new Set([
-        ...visits.map((v) => v.catId),
-        ...appointments.map((a) => a.catId),
+        ...visits.map(v => v.catId),
+        ...appointments.map(a => a.catId),
       ]).size,
       daysWithEvents: processedCalendarData.length,
     };
 
     // 効率的なキャッシュ設定（月データは比較的安定）
-    const cacheMaxAge =
-      targetMonth === currentDate.getMonth() + 1 &&
-      targetYear === currentDate.getFullYear()
+    const cacheMaxAge
+      = targetMonth === currentDate.getMonth() + 1
+        && targetYear === currentDate.getFullYear()
         ? 300 // 現在月は5分
         : 3600; // 過去月は1時間
 
     setHeader(
       event,
-      "Cache-Control",
-      `public, max-age=${cacheMaxAge}, s-maxage=${cacheMaxAge * 2}`
+      'Cache-Control',
+      `public, max-age=${cacheMaxAge}, s-maxage=${cacheMaxAge * 2}`,
     );
     setHeader(
       event,
-      "ETag",
+      'ETag',
       `"calendar-${targetYear}-${targetMonth}-${
-        catId || "all"
-      }-${includeAppointments}"`
+        catId || 'all'
+      }-${includeAppointments}"`,
     );
 
     // パフォーマンス情報をヘッダーに追加
-    setHeader(event, "X-Query-Count", "2"); // visits + appointments
-    setHeader(event, "X-Result-Count", processedCalendarData.length.toString());
+    setHeader(event, 'X-Query-Count', '2'); // visits + appointments
+    setHeader(event, 'X-Result-Count', processedCalendarData.length.toString());
 
     return {
       year: targetYear,
@@ -238,21 +238,22 @@ export default defineEventHandler(async (event) => {
         catId: catId || null,
       },
     };
-  } catch (error) {
+  }
+  catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: "クエリパラメータが無効です",
+        statusMessage: 'クエリパラメータが無効です',
         data: error.errors,
       });
     }
 
     // Handle unexpected errors
-    console.error("Error fetching calendar data:", error);
+    console.error('Error fetching calendar data:', error);
     throw createError({
       statusCode: 500,
-      statusMessage: "カレンダーデータの取得に失敗しました",
+      statusMessage: 'カレンダーデータの取得に失敗しました',
     });
   }
 });

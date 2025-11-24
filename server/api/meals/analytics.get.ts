@@ -1,10 +1,10 @@
-import { z } from "zod";
-import { prisma } from "~/lib/prisma";
+import { z } from 'zod';
+import { prisma } from '~/lib/prisma';
 import {
   generateMealAnalytics,
   calculateDailyCaloriesWithFoodType,
   fillMissingDatesForFoodType,
-} from "~/utils/cat-meal";
+} from '~/utils/cat-meal';
 
 const querySchema = z.object({
   catId: z.coerce.number().positive().optional(),
@@ -18,10 +18,11 @@ const querySchema = z.object({
         const decodedStr = decodeURIComponent(str);
         const date = new Date(decodedStr);
         if (isNaN(date.getTime())) {
-          throw new Error("Invalid date format");
+          throw new Error('Invalid date format');
         }
         return date;
-      } catch (error) {
+      }
+      catch (error) {
         throw new Error(`Invalid startDate format: ${str}`);
       }
     }),
@@ -35,26 +36,27 @@ const querySchema = z.object({
         const decodedStr = decodeURIComponent(str);
         const date = new Date(decodedStr);
         if (isNaN(date.getTime())) {
-          throw new Error("Invalid date format");
+          throw new Error('Invalid date format');
         }
         return date;
-      } catch (error) {
+      }
+      catch (error) {
         throw new Error(`Invalid endDate format: ${str}`);
       }
     }),
   days: z
     .string()
     .optional()
-    .default("30")
+    .default('30')
     .transform((str) => {
       const num = Number(str);
       if (isNaN(num) || num <= 0 || num > 365) {
-        throw new Error("Days must be a positive number between 1 and 365");
+        throw new Error('Days must be a positive number between 1 and 365');
       }
       return num;
     }),
-  chartType: z.enum(["line", "bar"]).optional().default("line"),
-  foodTypeFilter: z.enum(["all", "DRY", "WET"]).optional().default("all"),
+  chartType: z.enum(['line', 'bar']).optional().default('line'),
+  foodTypeFilter: z.enum(['all', 'DRY', 'WET']).optional().default('all'),
 });
 
 export default defineEventHandler(async (event) => {
@@ -62,27 +64,28 @@ export default defineEventHandler(async (event) => {
 
   try {
     // Only allow GET method
-    assertMethod(event, "GET");
+    assertMethod(event, 'GET');
 
     // Parse and validate query parameters
     const query = getQuery(event);
-    console.log("Analytics API: リクエスト受信", { query });
+    console.log('Analytics API: リクエスト受信', { query });
     let parsedQuery;
 
     try {
       parsedQuery = querySchema.parse(query);
-    } catch (validationError) {
+    }
+    catch (validationError) {
       // より詳細なバリデーションエラーメッセージ
       if (validationError instanceof z.ZodError) {
         const errorMessages = validationError.errors
-          .map((err) => `${err.path.join(".")}: ${err.message}`)
-          .join(", ");
+          .map(err => `${err.path.join('.')}: ${err.message}`)
+          .join(', ');
 
         throw createError({
           statusCode: 400,
-          statusMessage: "Invalid query parameters",
+          statusMessage: 'Invalid query parameters',
           data: {
-            message: "クエリパラメータが無効です",
+            message: 'クエリパラメータが無効です',
             details: errorMessages,
             errors: validationError.errors,
           },
@@ -91,9 +94,9 @@ export default defineEventHandler(async (event) => {
       throw validationError;
     }
 
-    const { catId, startDate, endDate, days, chartType, foodTypeFilter } =
-      parsedQuery;
-    console.log("Analytics API: パース済みクエリ", {
+    const { catId, startDate, endDate, days, chartType, foodTypeFilter }
+      = parsedQuery;
+    console.log('Analytics API: パース済みクエリ', {
       catId,
       startDate,
       endDate,
@@ -114,7 +117,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Apply food type filter
-    if (foodTypeFilter !== "all") {
+    if (foodTypeFilter !== 'all') {
       where.food = {
         type: foodTypeFilter,
       };
@@ -128,7 +131,8 @@ export default defineEventHandler(async (event) => {
       if (startDate) {
         where.mealTime.gte = startDate;
         finalStartDate = startDate;
-      } else {
+      }
+      else {
         finalStartDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
         finalStartDate.setHours(0, 0, 0, 0);
         where.mealTime.gte = finalStartDate;
@@ -138,12 +142,14 @@ export default defineEventHandler(async (event) => {
       if (endDate) {
         where.mealTime.lte = endDate;
         finalEndDate = endDate;
-      } else {
+      }
+      else {
         finalEndDate = new Date();
         finalEndDate.setHours(23, 59, 59, 999);
         where.mealTime.lte = finalEndDate;
       }
-    } else {
+    }
+    else {
       // Default to last N days
       finalEndDate = new Date();
       finalStartDate = new Date();
@@ -164,16 +170,17 @@ export default defineEventHandler(async (event) => {
     try {
       recordCount = await prisma.mealRecord.count({ where });
       isLargeDataset = recordCount > 1000;
-    } catch (dbError) {
+    }
+    catch (dbError) {
       // データベース接続エラーの詳細なハンドリング
-      console.error("Database count query failed:", dbError);
+      console.error('Database count query failed:', dbError);
       throw createError({
         statusCode: 503,
-        statusMessage: "Database connection error",
+        statusMessage: 'Database connection error',
         data: {
           message:
-            "データベースに接続できません。しばらく待ってから再試行してください。",
-          code: "DATABASE_CONNECTION_ERROR",
+            'データベースに接続できません。しばらく待ってから再試行してください。',
+          code: 'DATABASE_CONNECTION_ERROR',
           timestamp: new Date().toISOString(),
         },
       });
@@ -187,7 +194,7 @@ export default defineEventHandler(async (event) => {
         // 大量データの場合は最新のデータを優先して取得
         mealRecords = await prisma.mealRecord.findMany({
           where,
-          orderBy: { mealTime: "desc" },
+          orderBy: { mealTime: 'desc' },
           take: 2000, // 最大2000件に制限
           select: {
             id: true,
@@ -218,11 +225,12 @@ export default defineEventHandler(async (event) => {
 
         // 時系列順に並び替え
         mealRecords.reverse();
-      } else {
+      }
+      else {
         // 通常のクエリ
         mealRecords = await prisma.mealRecord.findMany({
           where,
-          orderBy: { mealTime: "asc" },
+          orderBy: { mealTime: 'asc' },
           select: {
             id: true,
             catId: true,
@@ -250,33 +258,34 @@ export default defineEventHandler(async (event) => {
           },
         });
       }
-    } catch (dbError) {
+    }
+    catch (dbError) {
       // データベースクエリエラーの詳細なハンドリング
-      console.error("Database query failed:", dbError);
+      console.error('Database query failed:', dbError);
 
       // エラーの種類に応じて適切なレスポンスを返す
       if (dbError instanceof Error) {
-        if (dbError.message.includes("timeout")) {
+        if (dbError.message.includes('timeout')) {
           throw createError({
             statusCode: 504,
-            statusMessage: "Database query timeout",
+            statusMessage: 'Database query timeout',
             data: {
               message:
-                "データベースの応答が遅すぎます。しばらく待ってから再試行してください。",
-              code: "DATABASE_TIMEOUT",
+                'データベースの応答が遅すぎます。しばらく待ってから再試行してください。',
+              code: 'DATABASE_TIMEOUT',
               timestamp: new Date().toISOString(),
             },
           });
         }
 
-        if (dbError.message.includes("connection")) {
+        if (dbError.message.includes('connection')) {
           throw createError({
             statusCode: 503,
-            statusMessage: "Database connection error",
+            statusMessage: 'Database connection error',
             data: {
               message:
-                "データベースに接続できません。しばらく待ってから再試行してください。",
-              code: "DATABASE_CONNECTION_ERROR",
+                'データベースに接続できません。しばらく待ってから再試行してください。',
+              code: 'DATABASE_CONNECTION_ERROR',
               timestamp: new Date().toISOString(),
             },
           });
@@ -286,17 +295,17 @@ export default defineEventHandler(async (event) => {
       // その他のデータベースエラー
       throw createError({
         statusCode: 500,
-        statusMessage: "Database query error",
+        statusMessage: 'Database query error',
         data: {
-          message: "データの取得中にエラーが発生しました。",
-          code: "DATABASE_QUERY_ERROR",
+          message: 'データの取得中にエラーが発生しました。',
+          code: 'DATABASE_QUERY_ERROR',
           timestamp: new Date().toISOString(),
         },
       });
     }
 
     // Transform data for analytics utility
-    const transformedRecords = mealRecords.map((record) => ({
+    const transformedRecords = mealRecords.map(record => ({
       id: record.id,
       catId: record.catId,
       foodId: record.foodId,
@@ -321,11 +330,11 @@ export default defineEventHandler(async (event) => {
         ? {
             id: record.food.id,
             name: record.food.name,
-            type: record.food.type as "DRY" | "WET",
+            type: record.food.type as 'DRY' | 'WET',
             brand: record.food.brand,
             caloriesPerGram: 0, // Not needed for analytics
             pricePerUnit: undefined,
-            unit: "g",
+            unit: 'g',
             createdAt: new Date(),
             updatedAt: new Date(),
           }
@@ -337,8 +346,8 @@ export default defineEventHandler(async (event) => {
       // 基本的なデータ妥当性チェック
       if (!record.id || !record.catId || !record.foodId) {
         console.warn(
-          "Invalid record found: missing required fields",
-          record.id
+          'Invalid record found: missing required fields',
+          record.id,
         );
         return false;
       }
@@ -346,10 +355,10 @@ export default defineEventHandler(async (event) => {
       // カロリー値の妥当性チェック
       if (record.calories < 0 || record.calories > 10000) {
         console.warn(
-          "Invalid calorie value found:",
+          'Invalid calorie value found:',
           record.calories,
-          "for record:",
-          record.id
+          'for record:',
+          record.id,
         );
         return false;
       }
@@ -357,10 +366,10 @@ export default defineEventHandler(async (event) => {
       // 数量の妥当性チェック
       if (record.quantity < 0 || record.quantity > 10000) {
         console.warn(
-          "Invalid quantity value found:",
+          'Invalid quantity value found:',
           record.quantity,
-          "for record:",
-          record.id
+          'for record:',
+          record.id,
         );
         return false;
       }
@@ -368,10 +377,10 @@ export default defineEventHandler(async (event) => {
       // 日付の妥当性チェック
       if (!record.mealTime || isNaN(record.mealTime.getTime())) {
         console.warn(
-          "Invalid meal time found:",
+          'Invalid meal time found:',
           record.mealTime,
-          "for record:",
-          record.id
+          'for record:',
+          record.id,
         );
         return false;
       }
@@ -383,7 +392,7 @@ export default defineEventHandler(async (event) => {
     const invalidRecordCount = transformedRecords.length - validRecords.length;
     if (invalidRecordCount > 0) {
       console.warn(
-        `${invalidRecordCount} invalid records were filtered out of ${transformedRecords.length} total records`
+        `${invalidRecordCount} invalid records were filtered out of ${transformedRecords.length} total records`,
       );
     }
 
@@ -395,13 +404,13 @@ export default defineEventHandler(async (event) => {
         weeklyAverage: 0,
         foodTypeBreakdown: [
           {
-            type: "DRY" as const,
+            type: 'DRY' as const,
             percentage: 0,
             totalCalories: 0,
             totalWeight: 0,
           },
           {
-            type: "WET" as const,
+            type: 'WET' as const,
             percentage: 0,
             totalCalories: 0,
             totalWeight: 0,
@@ -450,27 +459,28 @@ export default defineEventHandler(async (event) => {
     let analytics;
     try {
       analytics = generateMealAnalytics(
-        validRecords.map((record) => ({
+        validRecords.map(record => ({
           ...record,
           notes: record.notes || undefined,
           food: record.food
             ? {
                 ...record.food,
-                type: record.food.type as "DRY" | "WET",
+                type: record.food.type as 'DRY' | 'WET',
                 pricePerUnit: record.food.pricePerUnit || undefined,
                 brand: record.food.brand || undefined,
               }
             : undefined,
-        })) as any[]
+        })) as any[],
       );
-    } catch (analyticsError) {
-      console.error("Analytics generation failed:", analyticsError);
+    }
+    catch (analyticsError) {
+      console.error('Analytics generation failed:', analyticsError);
       throw createError({
         statusCode: 500,
-        statusMessage: "Analytics processing error",
+        statusMessage: 'Analytics processing error',
         data: {
-          message: "データの分析中にエラーが発生しました。",
-          code: "ANALYTICS_PROCESSING_ERROR",
+          message: 'データの分析中にエラーが発生しました。',
+          code: 'ANALYTICS_PROCESSING_ERROR',
           timestamp: new Date().toISOString(),
         },
       });
@@ -478,38 +488,39 @@ export default defineEventHandler(async (event) => {
 
     // Generate chart-specific data based on chart type
     let chartData = {};
-    if (chartType === "bar") {
+    if (chartType === 'bar') {
       // For bar chart, provide daily calories by food type for stacked bar chart
       const dailyCaloriesByFoodType = calculateDailyCaloriesWithFoodType(
-        transformedRecords.map((record) => ({
+        transformedRecords.map(record => ({
           ...record,
           notes: record.notes || undefined,
           food: record.food
             ? {
                 ...record.food,
-                type: record.food.type as "DRY" | "WET",
+                type: record.food.type as 'DRY' | 'WET',
                 pricePerUnit: record.food.pricePerUnit || undefined,
                 brand: record.food.brand || undefined,
               }
             : undefined,
-        })) as any[]
+        })) as any[],
       );
 
       // Fill missing dates with zero values to show data gaps
       const filledData = fillMissingDatesForFoodType(
         dailyCaloriesByFoodType,
         finalStartDate,
-        finalEndDate
+        finalEndDate,
       );
 
       chartData = {
-        chartType: "bar",
+        chartType: 'bar',
         dailyCaloriesByFoodType: filledData,
       };
-    } else {
+    }
+    else {
       // For line chart, use existing daily calories data
       chartData = {
-        chartType: "line",
+        chartType: 'line',
         dailyCalories: analytics.dailyCalories,
       };
     }
@@ -518,10 +529,10 @@ export default defineEventHandler(async (event) => {
     const totalMeals = mealRecords.length;
     const totalCalories = mealRecords.reduce(
       (sum, record) => sum + record.calories,
-      0
+      0,
     );
-    const averageCaloriesPerMeal =
-      totalMeals > 0 ? Math.round((totalCalories / totalMeals) * 100) / 100 : 0;
+    const averageCaloriesPerMeal
+      = totalMeals > 0 ? Math.round((totalCalories / totalMeals) * 100) / 100 : 0;
 
     // Get cat-specific data if no specific cat is requested
     let catBreakdown = undefined;
@@ -571,8 +582,8 @@ export default defineEventHandler(async (event) => {
       dataCompleteness:
         transformedRecords.length > 0
           ? Math.round(
-              (validRecords.length / transformedRecords.length) * 100 * 100
-            ) / 100
+            (validRecords.length / transformedRecords.length) * 100 * 100,
+          ) / 100
           : 100,
     };
 
@@ -582,8 +593,8 @@ export default defineEventHandler(async (event) => {
     const cacheSharedMaxAge = isLargeDataset ? 1200 : 600;
     setHeader(
       event,
-      "Cache-Control",
-      `public, max-age=${cacheMaxAge}, s-maxage=${cacheSharedMaxAge}`
+      'Cache-Control',
+      `public, max-age=${cacheMaxAge}, s-maxage=${cacheSharedMaxAge}`,
     );
 
     return {
@@ -602,12 +613,13 @@ export default defineEventHandler(async (event) => {
       dataQuality,
       ...(catBreakdown && { catBreakdown }),
     };
-  } catch (error) {
+  }
+  catch (error) {
     const endTime = Date.now();
     const processingTime = endTime - startTime;
 
     // すでにcreateErrorで作成されたエラーはそのまま再スローする
-    if (error && typeof error === "object" && "statusCode" in error) {
+    if (error && typeof error === 'object' && 'statusCode' in error) {
       throw error;
     }
 
@@ -615,10 +627,10 @@ export default defineEventHandler(async (event) => {
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: "Invalid query parameters",
+        statusMessage: 'Invalid query parameters',
         data: {
-          message: "クエリパラメータが無効です",
-          code: "VALIDATION_ERROR",
+          message: 'クエリパラメータが無効です',
+          code: 'VALIDATION_ERROR',
           errors: error.errors,
           timestamp: new Date().toISOString(),
           processingTime,
@@ -627,54 +639,54 @@ export default defineEventHandler(async (event) => {
     }
 
     // Prisma specific errors
-    if (error && typeof error === "object" && "code" in error) {
+    if (error && typeof error === 'object' && 'code' in error) {
       const prismaError = error as any;
 
       switch (prismaError.code) {
-        case "P2002":
+        case 'P2002':
           throw createError({
             statusCode: 409,
-            statusMessage: "Unique constraint violation",
+            statusMessage: 'Unique constraint violation',
             data: {
-              message: "データの重複エラーが発生しました",
-              code: "UNIQUE_CONSTRAINT_ERROR",
+              message: 'データの重複エラーが発生しました',
+              code: 'UNIQUE_CONSTRAINT_ERROR',
               timestamp: new Date().toISOString(),
               processingTime,
             },
           });
 
-        case "P2025":
+        case 'P2025':
           throw createError({
             statusCode: 404,
-            statusMessage: "Record not found",
+            statusMessage: 'Record not found',
             data: {
-              message: "指定されたデータが見つかりません",
-              code: "RECORD_NOT_FOUND",
+              message: '指定されたデータが見つかりません',
+              code: 'RECORD_NOT_FOUND',
               timestamp: new Date().toISOString(),
               processingTime,
             },
           });
 
-        case "P1001":
+        case 'P1001':
           throw createError({
             statusCode: 503,
-            statusMessage: "Database connection error",
+            statusMessage: 'Database connection error',
             data: {
-              message: "データベースに接続できません",
-              code: "DATABASE_CONNECTION_ERROR",
+              message: 'データベースに接続できません',
+              code: 'DATABASE_CONNECTION_ERROR',
               timestamp: new Date().toISOString(),
               processingTime,
             },
           });
 
         default:
-          console.error("Prisma error:", prismaError);
+          console.error('Prisma error:', prismaError);
           throw createError({
             statusCode: 500,
-            statusMessage: "Database error",
+            statusMessage: 'Database error',
             data: {
-              message: "データベースエラーが発生しました",
-              code: "DATABASE_ERROR",
+              message: 'データベースエラーが発生しました',
+              code: 'DATABASE_ERROR',
               timestamp: new Date().toISOString(),
               processingTime,
             },
@@ -683,13 +695,13 @@ export default defineEventHandler(async (event) => {
     }
 
     // Handle unexpected errors
-    console.error("Unexpected error in analytics API:", error);
+    console.error('Unexpected error in analytics API:', error);
     throw createError({
       statusCode: 500,
-      statusMessage: "Internal server error",
+      statusMessage: 'Internal server error',
       data: {
-        message: "予期しないエラーが発生しました",
-        code: "INTERNAL_SERVER_ERROR",
+        message: '予期しないエラーが発生しました',
+        code: 'INTERNAL_SERVER_ERROR',
         timestamp: new Date().toISOString(),
         processingTime,
       },

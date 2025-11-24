@@ -2,8 +2,8 @@
  * Zod validation schemas for veterinary visit management
  */
 
-import { z } from "zod";
-import { AppointmentStatus } from "@prisma/client";
+import { z } from 'zod';
+import { AppointmentStatus } from '@prisma/client';
 
 // Enum schemas
 export const AppointmentStatusSchema = z.nativeEnum(AppointmentStatus);
@@ -13,19 +13,19 @@ export const VeterinaryHospitalSchema = z.object({
   id: z.coerce.number().int().positive(),
   name: z
     .string()
-    .min(1, "病院名は必須です")
-    .max(100, "病院名は100文字以内で入力してください")
+    .min(1, '病院名は必須です')
+    .max(100, '病院名は100文字以内で入力してください')
     .trim(),
   address: z
     .string()
-    .max(200, "住所は200文字以内で入力してください")
+    .max(200, '住所は200文字以内で入力してください')
     .trim()
     .optional()
     .nullable(),
   phone: z
     .string()
-    .max(20, "電話番号は20文字以内で入力してください")
-    .regex(/^[\d\-\(\)\+\s]*$/, "有効な電話番号を入力してください")
+    .max(20, '電話番号は20文字以内で入力してください')
+    .regex(/^[\d\-\(\)\+\s]*$/, '有効な電話番号を入力してください')
     .trim()
     .optional()
     .nullable(),
@@ -37,13 +37,13 @@ export const VeterinaryDoctorSchema = z.object({
   id: z.coerce.number().int().positive(),
   name: z
     .string()
-    .min(1, "先生名は必須です")
-    .max(50, "先生名は50文字以内で入力してください")
+    .min(1, '先生名は必須です')
+    .max(50, '先生名は50文字以内で入力してください')
     .trim(),
   hospitalId: z.coerce.number().int().positive().optional().nullable(),
   specialty: z
     .string()
-    .max(100, "専門分野は100文字以内で入力してください")
+    .max(100, '専門分野は100文字以内で入力してください')
     .trim()
     .optional()
     .nullable(),
@@ -55,18 +55,18 @@ export const VeterinaryTreatmentSchema = z.object({
   id: z.coerce.number().int().positive(),
   name: z
     .string()
-    .min(1, "処方内容名は必須です")
-    .max(100, "処方内容名は100文字以内で入力してください")
+    .min(1, '処方内容名は必須です')
+    .max(100, '処方内容名は100文字以内で入力してください')
     .trim(),
   category: z
     .string()
-    .max(50, "カテゴリは50文字以内で入力してください")
+    .max(50, 'カテゴリは50文字以内で入力してください')
     .trim()
     .optional()
     .nullable(),
   description: z
     .string()
-    .max(500, "説明は500文字以内で入力してください")
+    .max(500, '説明は500文字以内で入力してください')
     .trim()
     .optional()
     .nullable(),
@@ -79,17 +79,17 @@ export const VeterinaryVisitSchema = z.object({
   id: z.coerce.number().int().positive(),
   catId: z.coerce.number().int().positive(),
   visitDate: z.date({
-    errorMap: () => ({ message: "有効な診察日時を入力してください" }),
+    errorMap: () => ({ message: '有効な診察日時を入力してください' }),
   }),
   hospitalId: z.coerce.number().int().positive(),
   doctorId: z.coerce.number().int().positive().optional().nullable(),
   cost: z
     .number()
-    .min(0, "費用は0以上で入力してください")
-    .max(1000000, "費用は1,000,000円以下で入力してください"),
+    .min(0, '費用は0以上で入力してください')
+    .max(1000000, '費用は1,000,000円以下で入力してください'),
   notes: z
     .string()
-    .max(1000, "メモは1000文字以内で入力してください")
+    .max(1000, 'メモは1000文字以内で入力してください')
     .trim()
     .optional()
     .nullable(),
@@ -102,19 +102,19 @@ export const VeterinaryAppointmentSchema = z.object({
   id: z.coerce.number().int().positive(),
   catId: z.coerce.number().int().positive(),
   appointmentDate: z.date({
-    errorMap: () => ({ message: "有効な予約日時を入力してください" }),
+    errorMap: () => ({ message: '有効な予約日時を入力してください' }),
   }),
   hospitalId: z.coerce.number().int().positive(),
   doctorId: z.coerce.number().int().positive().optional().nullable(),
   plannedTreatments: z
     .string()
-    .max(500, "予定処方内容は500文字以内で入力してください")
+    .max(500, '予定処方内容は500文字以内で入力してください')
     .trim()
     .optional()
     .nullable(),
   notes: z
     .string()
-    .max(1000, "メモは1000文字以内で入力してください")
+    .max(1000, 'メモは1000文字以内で入力してください')
     .trim()
     .optional()
     .nullable(),
@@ -127,90 +127,90 @@ export const VeterinaryAppointmentSchema = z.object({
 export const VeterinaryHospitalInputSchema = z.object({
   name: z
     .string()
-    .min(1, "病院名は必須です")
-    .max(100, "病院名は100文字以内で入力してください")
+    .min(1, '病院名は必須です')
+    .max(100, '病院名は100文字以内で入力してください')
     .trim(),
   address: z
     .string()
-    .max(200, "住所は200文字以内で入力してください")
+    .max(200, '住所は200文字以内で入力してください')
     .trim()
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
   phone: z
     .string()
-    .max(20, "電話番号は20文字以内で入力してください")
-    .regex(/^[\d\-\(\)\+\s]*$/, "有効な電話番号を入力してください")
+    .max(20, '電話番号は20文字以内で入力してください')
+    .regex(/^[\d\-\(\)\+\s]*$/, '有効な電話番号を入力してください')
     .trim()
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
 });
 
 export const VeterinaryDoctorInputSchema = z.object({
   name: z
     .string()
-    .min(1, "先生名は必須です")
-    .max(50, "先生名は50文字以内で入力してください")
+    .min(1, '先生名は必須です')
+    .max(50, '先生名は50文字以内で入力してください')
     .trim(),
   hospitalId: z.coerce.number().int().positive().optional(),
   specialty: z
     .string()
-    .max(100, "専門分野は100文字以内で入力してください")
+    .max(100, '専門分野は100文字以内で入力してください')
     .trim()
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
 });
 
 export const VeterinaryTreatmentInputSchema = z.object({
   name: z
     .string()
-    .min(1, "処方内容名は必須です")
-    .max(100, "処方内容名は100文字以内で入力してください")
+    .min(1, '処方内容名は必須です')
+    .max(100, '処方内容名は100文字以内で入力してください')
     .trim(),
   category: z
     .string()
-    .max(50, "カテゴリは50文字以内で入力してください")
+    .max(50, 'カテゴリは50文字以内で入力してください')
     .trim()
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
   description: z
     .string()
-    .max(500, "説明は500文字以内で入力してください")
+    .max(500, '説明は500文字以内で入力してください')
     .trim()
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
 });
 
 // Input validation schemas for main entities
 export const VeterinaryVisitInputSchema = z.object({
   catId: z.coerce.number().int().positive(),
   visitDate: z.date({
-    errorMap: () => ({ message: "診察日時を入力してください" }),
+    errorMap: () => ({ message: '診察日時を入力してください' }),
   }),
   hospitalName: z
     .string()
-    .min(1, "病院名を入力してください")
-    .max(100, "病院名は100文字以内で入力してください")
+    .min(1, '病院名を入力してください')
+    .max(100, '病院名は100文字以内で入力してください')
     .trim(),
   doctorName: z
     .string()
-    .max(50, "先生名は50文字以内で入力してください")
+    .max(50, '先生名は50文字以内で入力してください')
     .trim()
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
   treatments: z
-    .array(z.string().min(1, "処方内容を入力してください"))
-    .min(1, "処方内容を少なくとも1つ選択してください")
-    .max(20, "処方内容は20個まで選択できます"),
+    .array(z.string().min(1, '処方内容を入力してください'))
+    .min(1, '処方内容を少なくとも1つ選択してください')
+    .max(20, '処方内容は20個まで選択できます'),
   cost: z
     .number()
-    .min(0, "費用は0以上で入力してください")
-    .max(1000000, "費用は1,000,000円以下で入力してください"),
+    .min(0, '費用は0以上で入力してください')
+    .max(1000000, '費用は1,000,000円以下で入力してください'),
   notes: z
     .string()
-    .max(1000, "メモは1000文字以内で入力してください")
+    .max(1000, 'メモは1000文字以内で入力してください')
     .trim()
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
   hasBloodTest: z.boolean().default(false),
 });
 
@@ -218,46 +218,46 @@ export const VeterinaryAppointmentInputSchema = z.object({
   catId: z.coerce.number().int().positive(),
   appointmentDate: z
     .date({
-      errorMap: () => ({ message: "予約日時を入力してください" }),
+      errorMap: () => ({ message: '予約日時を入力してください' }),
     })
-    .refine((date) => date > new Date(), {
-      message: "予約日時は未来の日時を選択してください",
+    .refine(date => date > new Date(), {
+      message: '予約日時は未来の日時を選択してください',
     }),
   hospitalName: z
     .string()
-    .min(1, "病院名を入力してください")
-    .max(100, "病院名は100文字以内で入力してください")
+    .min(1, '病院名を入力してください')
+    .max(100, '病院名は100文字以内で入力してください')
     .trim(),
   doctorName: z
     .string()
-    .max(50, "先生名は50文字以内で入力してください")
+    .max(50, '先生名は50文字以内で入力してください')
     .trim()
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
   plannedTreatments: z
     .string()
-    .max(500, "予定処方内容は500文字以内で入力してください")
+    .max(500, '予定処方内容は500文字以内で入力してください')
     .trim()
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
   notes: z
     .string()
-    .max(1000, "メモは1000文字以内で入力してください")
+    .max(1000, 'メモは1000文字以内で入力してください')
     .trim()
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
 });
 
 // Update validation schemas
-export const VeterinaryHospitalUpdateSchema =
-  VeterinaryHospitalInputSchema.partial();
-export const VeterinaryDoctorUpdateSchema =
-  VeterinaryDoctorInputSchema.partial();
-export const VeterinaryTreatmentUpdateSchema =
-  VeterinaryTreatmentInputSchema.partial();
+export const VeterinaryHospitalUpdateSchema
+  = VeterinaryHospitalInputSchema.partial();
+export const VeterinaryDoctorUpdateSchema
+  = VeterinaryDoctorInputSchema.partial();
+export const VeterinaryTreatmentUpdateSchema
+  = VeterinaryTreatmentInputSchema.partial();
 export const VeterinaryVisitUpdateSchema = VeterinaryVisitInputSchema.partial();
-export const VeterinaryAppointmentUpdateSchema =
-  VeterinaryAppointmentInputSchema.partial().extend({
+export const VeterinaryAppointmentUpdateSchema
+  = VeterinaryAppointmentInputSchema.partial().extend({
     status: AppointmentStatusSchema.optional(),
   });
 
@@ -267,19 +267,19 @@ export const ConvertAppointmentToVisitSchema = z.object({
   actualVisitDate: z.date().optional(),
   actualCost: z
     .number()
-    .min(0, "費用は0以上で入力してください")
-    .max(1000000, "費用は1,000,000円以下で入力してください")
+    .min(0, '費用は0以上で入力してください')
+    .max(1000000, '費用は1,000,000円以下で入力してください')
     .optional(),
   actualTreatments: z
-    .array(z.string().min(1, "処方内容を入力してください"))
-    .max(20, "処方内容は20個まで選択できます")
+    .array(z.string().min(1, '処方内容を入力してください'))
+    .max(20, '処方内容は20個まで選択できます')
     .optional(),
   actualNotes: z
     .string()
-    .max(1000, "メモは1000文字以内で入力してください")
+    .max(1000, 'メモは1000文字以内で入力してください')
     .trim()
     .optional()
-    .or(z.literal("")),
+    .or(z.literal('')),
   hasBloodTest: z.boolean().optional(),
 });
 
@@ -296,12 +296,12 @@ export const VeterinaryVisitFilterSchema = z
     offset: z.number().int().min(0).optional().default(0),
   })
   .refine(
-    (data) =>
+    data =>
       !data.startDate || !data.endDate || data.endDate >= data.startDate,
     {
-      message: "終了日は開始日以降の日付を設定してください",
-      path: ["endDate"],
-    }
+      message: '終了日は開始日以降の日付を設定してください',
+      path: ['endDate'],
+    },
   );
 
 export const VeterinaryAppointmentFilterSchema = z
@@ -316,12 +316,12 @@ export const VeterinaryAppointmentFilterSchema = z
     offset: z.number().int().min(0).optional().default(0),
   })
   .refine(
-    (data) =>
+    data =>
       !data.startDate || !data.endDate || data.endDate >= data.startDate,
     {
-      message: "終了日は開始日以降の日付を設定してください",
-      path: ["endDate"],
-    }
+      message: '終了日は開始日以降の日付を設定してください',
+      path: ['endDate'],
+    },
   );
 
 export const VeterinaryHospitalFilterSchema = z.object({
@@ -349,29 +349,29 @@ export const VeterinaryTreatmentFilterSchema = z.object({
 export const VeterinaryVisitFormSchema = z.object({
   catId: z.coerce.number().int().positive(),
   visitDate: z.date({
-    errorMap: () => ({ message: "診察日時を入力してください" }),
+    errorMap: () => ({ message: '診察日時を入力してください' }),
   }),
   hospitalName: z
     .string()
-    .min(1, "病院名を入力してください")
-    .max(100, "病院名は100文字以内で入力してください")
+    .min(1, '病院名を入力してください')
+    .max(100, '病院名は100文字以内で入力してください')
     .trim(),
   doctorName: z
     .string()
-    .max(50, "先生名は50文字以内で入力してください")
+    .max(50, '先生名は50文字以内で入力してください')
     .trim()
     .optional(),
   treatments: z
-    .array(z.string().min(1, "処方内容を入力してください"))
-    .min(1, "処方内容を少なくとも1つ選択してください")
-    .max(20, "処方内容は20個まで選択できます"),
+    .array(z.string().min(1, '処方内容を入力してください'))
+    .min(1, '処方内容を少なくとも1つ選択してください')
+    .max(20, '処方内容は20個まで選択できます'),
   cost: z
     .number()
-    .min(0, "費用は0以上で入力してください")
-    .max(1000000, "費用は1,000,000円以下で入力してください"),
+    .min(0, '費用は0以上で入力してください')
+    .max(1000000, '費用は1,000,000円以下で入力してください'),
   notes: z
     .string()
-    .max(1000, "メモは1000文字以内で入力してください")
+    .max(1000, 'メモは1000文字以内で入力してください')
     .optional(),
   hasBloodTest: z.boolean().default(false),
 });
@@ -380,28 +380,28 @@ export const VeterinaryAppointmentFormSchema = z.object({
   catId: z.coerce.number().int().positive(),
   appointmentDate: z
     .date({
-      errorMap: () => ({ message: "予約日時を入力してください" }),
+      errorMap: () => ({ message: '予約日時を入力してください' }),
     })
-    .refine((date) => date > new Date(), {
-      message: "予約日時は未来の日時を選択してください",
+    .refine(date => date > new Date(), {
+      message: '予約日時は未来の日時を選択してください',
     }),
   hospitalName: z
     .string()
-    .min(1, "病院名を入力してください")
-    .max(100, "病院名は100文字以内で入力してください")
+    .min(1, '病院名を入力してください')
+    .max(100, '病院名は100文字以内で入力してください')
     .trim(),
   doctorName: z
     .string()
-    .max(50, "先生名は50文字以内で入力してください")
+    .max(50, '先生名は50文字以内で入力してください')
     .trim()
     .optional(),
   plannedTreatments: z
     .string()
-    .max(500, "予定処方内容は500文字以内で入力してください")
+    .max(500, '予定処方内容は500文字以内で入力してください')
     .optional(),
   notes: z
     .string()
-    .max(1000, "メモは1000文字以内で入力してください")
+    .max(1000, 'メモは1000文字以内で入力してください')
     .optional(),
 });
 
@@ -411,9 +411,9 @@ export const DateRangeSchema = z
     startDate: z.date(),
     endDate: z.date(),
   })
-  .refine((data) => data.startDate <= data.endDate, {
-    message: "開始日は終了日より前の日付を選択してください",
-    path: ["endDate"],
+  .refine(data => data.startDate <= data.endDate, {
+    message: '開始日は終了日より前の日付を選択してください',
+    path: ['endDate'],
   });
 
 // ID validation schema for route parameters

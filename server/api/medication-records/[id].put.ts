@@ -1,15 +1,15 @@
-import { z } from "zod";
-import { prisma } from "~/lib/prisma";
-import { MedicationRecordUpdateSchema } from "~/lib/validations/medication";
+import { z } from 'zod';
+import { prisma } from '~/lib/prisma';
+import { MedicationRecordUpdateSchema } from '~/lib/validations/medication';
 
 const paramsSchema = z.object({
-  id: z.coerce.number().positive("有効なIDを指定してください"),
+  id: z.coerce.number().positive('有効なIDを指定してください'),
 });
 
 export default defineEventHandler(async (event) => {
   try {
     // Only allow PUT method
-    assertMethod(event, "PUT");
+    assertMethod(event, 'PUT');
 
     // Parse and validate route parameters
     const params = getRouterParams(event);
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
     if (!existingRecord) {
       throw createError({
         statusCode: 404,
-        statusMessage: "投与記録が見つかりません",
+        statusMessage: '投与記録が見つかりません',
       });
     }
 
@@ -42,15 +42,15 @@ export default defineEventHandler(async (event) => {
       if (!cat) {
         throw createError({
           statusCode: 404,
-          statusMessage: "指定された猫が見つかりません",
+          statusMessage: '指定された猫が見つかりません',
         });
       }
     }
 
     // If medicationId is being updated, verify the medication exists
     if (
-      updateData.medicationId &&
-      updateData.medicationId !== existingRecord.medicationId
+      updateData.medicationId
+      && updateData.medicationId !== existingRecord.medicationId
     ) {
       const medication = await prisma.medication.findUnique({
         where: { id: updateData.medicationId },
@@ -60,7 +60,7 @@ export default defineEventHandler(async (event) => {
       if (!medication) {
         throw createError({
           statusCode: 404,
-          statusMessage: "指定された薬が見つかりません",
+          statusMessage: '指定された薬が見つかりません',
         });
       }
     }
@@ -89,27 +89,28 @@ export default defineEventHandler(async (event) => {
 
     return {
       record,
-      message: "投与記録が正常に更新されました",
+      message: '投与記録が正常に更新されました',
     };
-  } catch (error) {
+  }
+  catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: "入力データが無効です",
+        statusMessage: '入力データが無効です',
         data: error.errors,
       });
     }
 
     // Re-throw HTTP errors
-    if (error && typeof error === "object" && "statusCode" in error) {
+    if (error && typeof error === 'object' && 'statusCode' in error) {
       throw error;
     }
 
     // Handle unexpected errors
     throw createError({
       statusCode: 500,
-      statusMessage: "Internal server error",
+      statusMessage: 'Internal server error',
     });
   }
 });

@@ -1,10 +1,10 @@
-import { z } from "zod";
-import { prisma } from "~/lib/prisma";
-import { VeterinaryAppointmentUpdateSchema } from "~/lib/validations/veterinary-visit";
-import { requireAuth } from "~/lib/auth-middleware";
+import { z } from 'zod';
+import { prisma } from '~/lib/prisma';
+import { VeterinaryAppointmentUpdateSchema } from '~/lib/validations/veterinary-visit';
+import { requireAuth } from '~/lib/auth-middleware';
 
 const paramsSchema = z.object({
-  id: z.coerce.number().positive("有効なIDを指定してください"),
+  id: z.coerce.number().positive('有効なIDを指定してください'),
 });
 
 // マスタデータの検索または作成を行うヘルパー関数
@@ -28,7 +28,7 @@ async function findOrCreateHospital(name: string, userId: string) {
 async function findOrCreateDoctor(
   name: string,
   hospitalId: string,
-  userId: string
+  userId: string,
 ) {
   const existing = await prisma.veterinaryDoctor.findFirst({
     where: {
@@ -54,7 +54,7 @@ async function findOrCreateDoctor(
 export default defineEventHandler(async (event) => {
   try {
     // Only allow PUT method
-    assertMethod(event, "PUT");
+    assertMethod(event, 'PUT');
 
     // 認証チェック
     const user = await requireAuth(event);
@@ -67,7 +67,7 @@ export default defineEventHandler(async (event) => {
     const body = await readBody(event);
 
     // Convert appointmentDate string to Date object if needed
-    if (body.appointmentDate && typeof body.appointmentDate === "string") {
+    if (body.appointmentDate && typeof body.appointmentDate === 'string') {
       body.appointmentDate = new Date(body.appointmentDate);
     }
 
@@ -81,7 +81,7 @@ export default defineEventHandler(async (event) => {
     if (!existingAppointment) {
       throw createError({
         statusCode: 404,
-        statusMessage: "指定された予約が見つかりません",
+        statusMessage: '指定された予約が見つかりません',
       });
     }
 
@@ -94,7 +94,7 @@ export default defineEventHandler(async (event) => {
       if (!cat) {
         throw createError({
           statusCode: 404,
-          statusMessage: "指定された猫が見つかりません",
+          statusMessage: '指定された猫が見つかりません',
         });
       }
     }
@@ -111,8 +111,8 @@ export default defineEventHandler(async (event) => {
     }
 
     if (updateData.plannedTreatments !== undefined) {
-      appointmentUpdateData.plannedTreatments =
-        updateData.plannedTreatments || null;
+      appointmentUpdateData.plannedTreatments
+        = updateData.plannedTreatments || null;
     }
 
     if (updateData.notes !== undefined) {
@@ -127,7 +127,7 @@ export default defineEventHandler(async (event) => {
     if (updateData.hospitalName) {
       const hospital = await findOrCreateHospital(
         updateData.hospitalName,
-        user.userId
+        user.userId,
       );
       appointmentUpdateData.hospitalId = hospital.id;
     }
@@ -136,15 +136,16 @@ export default defineEventHandler(async (event) => {
     if (updateData.doctorName !== undefined) {
       if (updateData.doctorName && updateData.doctorName.trim()) {
         // Get hospital ID (either from update data or existing appointment)
-        const hospitalId =
-          appointmentUpdateData.hospitalId || existingAppointment.hospitalId;
+        const hospitalId
+          = appointmentUpdateData.hospitalId || existingAppointment.hospitalId;
         const doctor = await findOrCreateDoctor(
           updateData.doctorName.trim(),
           hospitalId,
-          user.userId
+          user.userId,
         );
         appointmentUpdateData.doctorId = doctor.id;
-      } else {
+      }
+      else {
         appointmentUpdateData.doctorId = null;
       }
     }
@@ -180,28 +181,29 @@ export default defineEventHandler(async (event) => {
 
     return {
       appointment: updatedAppointment,
-      message: "予約が正常に更新されました",
+      message: '予約が正常に更新されました',
     };
-  } catch (error) {
+  }
+  catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: "入力データが無効です",
+        statusMessage: '入力データが無効です',
         data: error.errors,
       });
     }
 
     // Re-throw HTTP errors
-    if (error && typeof error === "object" && "statusCode" in error) {
+    if (error && typeof error === 'object' && 'statusCode' in error) {
       throw error;
     }
 
     // Handle unexpected errors
-    console.error("Error updating veterinary appointment:", error);
+    console.error('Error updating veterinary appointment:', error);
     throw createError({
       statusCode: 500,
-      statusMessage: "予約の更新に失敗しました",
+      statusMessage: '予約の更新に失敗しました',
     });
   }
 });

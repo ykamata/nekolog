@@ -1,14 +1,14 @@
-import { z } from "zod";
-import { prisma } from "~/lib/prisma";
+import { z } from 'zod';
+import { prisma } from '~/lib/prisma';
 
 const paramsSchema = z.object({
-  id: z.coerce.number().positive("Invalid meal record ID format"),
+  id: z.coerce.number().positive('Invalid meal record ID format'),
 });
 
 export default defineEventHandler(async (event) => {
   try {
     // Only allow DELETE method
-    assertMethod(event, "DELETE");
+    assertMethod(event, 'DELETE');
 
     // Parse and validate route parameters
     const params = getRouterParams(event);
@@ -36,7 +36,7 @@ export default defineEventHandler(async (event) => {
     if (!existingMealRecord) {
       throw createError({
         statusCode: 404,
-        statusMessage: "指定された食事記録が見つかりません",
+        statusMessage: '指定された食事記録が見つかりません',
       });
     }
 
@@ -46,7 +46,7 @@ export default defineEventHandler(async (event) => {
     });
 
     return {
-      message: "食事記録が正常に削除されました",
+      message: '食事記録が正常に削除されました',
       deletedRecord: {
         id: existingMealRecord.id,
         catName: existingMealRecord.cat.name,
@@ -54,25 +54,26 @@ export default defineEventHandler(async (event) => {
         mealTime: existingMealRecord.mealTime,
       },
     };
-  } catch (error) {
+  }
+  catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: "Invalid meal record ID",
+        statusMessage: 'Invalid meal record ID',
         data: error.errors,
       });
     }
 
     // Re-throw HTTP errors
-    if (error && typeof error === "object" && "statusCode" in error) {
+    if (error && typeof error === 'object' && 'statusCode' in error) {
       throw error;
     }
 
     // Handle unexpected errors
     throw createError({
       statusCode: 500,
-      statusMessage: "Internal server error",
+      statusMessage: 'Internal server error',
     });
   }
 });

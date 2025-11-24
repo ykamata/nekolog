@@ -1,15 +1,15 @@
-import { z } from "zod";
-import { prisma } from "~/lib/prisma";
-import { ExcretionRecordUpdateSchema } from "~/lib/validations/excretion";
+import { z } from 'zod';
+import { prisma } from '~/lib/prisma';
+import { ExcretionRecordUpdateSchema } from '~/lib/validations/excretion';
 
 const paramsSchema = z.object({
-  id: z.coerce.number().positive("Invalid excretion record ID format"),
+  id: z.coerce.number().positive('Invalid excretion record ID format'),
 });
 
 export default defineEventHandler(async (event) => {
   try {
     // Only allow PUT method
-    assertMethod(event, "PUT");
+    assertMethod(event, 'PUT');
 
     // Parse and validate route parameters
     const params = getRouterParams(event);
@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
     if (!existingRecord) {
       throw createError({
         statusCode: 404,
-        statusMessage: "指定された排泄記録が見つかりません",
+        statusMessage: '指定された排泄記録が見つかりません',
       });
     }
 
@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
       if (!cat) {
         throw createError({
           statusCode: 404,
-          statusMessage: "指定された猫が見つかりません",
+          statusMessage: '指定された猫が見つかりません',
         });
       }
     }
@@ -50,14 +50,14 @@ export default defineEventHandler(async (event) => {
     // Prepare update data with proper typing
     const finalUpdateData: {
       catId?: string;
-      type?: "URINE" | "FECES";
+      type?: 'URINE' | 'FECES';
       recordedAt?: Date;
       notes?: string;
     } = {};
 
     if (updateData.catId) finalUpdateData.catId = updateData.catId;
     if (updateData.type)
-      finalUpdateData.type = updateData.type as "URINE" | "FECES";
+      finalUpdateData.type = updateData.type as 'URINE' | 'FECES';
     if (updateData.recordedAt)
       finalUpdateData.recordedAt = updateData.recordedAt;
     if (updateData.notes !== undefined)
@@ -80,27 +80,28 @@ export default defineEventHandler(async (event) => {
 
     return {
       record: excretionRecord,
-      message: "排泄記録が正常に更新されました",
+      message: '排泄記録が正常に更新されました',
     };
-  } catch (error) {
+  }
+  catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: "入力データが無効です",
+        statusMessage: '入力データが無効です',
         data: error.errors,
       });
     }
 
     // Re-throw HTTP errors
-    if (error && typeof error === "object" && "statusCode" in error) {
+    if (error && typeof error === 'object' && 'statusCode' in error) {
       throw error;
     }
 
     // Handle unexpected errors
     throw createError({
       statusCode: 500,
-      statusMessage: "Internal server error",
+      statusMessage: 'Internal server error',
     });
   }
 });
