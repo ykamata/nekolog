@@ -141,7 +141,7 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
   /**
    * 先生情報を更新
    */
-  const updateDoctor = async (id: string, doctorData: VeterinaryDoctorInput): Promise<VeterinaryDoctor> => {
+  const updateDoctor = async (id: number, doctorData: VeterinaryDoctorInput): Promise<VeterinaryDoctor> => {
     setLoading(true, 'update');
     clearError();
 
@@ -180,7 +180,7 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
   /**
    * 先生を削除
    */
-  const deleteDoctor = async (id: string): Promise<void> => {
+  const deleteDoctor = async (id: number): Promise<void> => {
     setLoading(true, 'delete');
     clearError();
 
@@ -243,14 +243,14 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
   /**
    * 先生IDから先生情報を取得
    */
-  const getDoctorById = (id: string): VeterinaryDoctor | undefined => {
+  const getDoctorById = (id: number): VeterinaryDoctor | undefined => {
     return doctors.value.find(d => d.id === id);
   };
 
   /**
    * 先生名の重複チェック
    */
-  const checkDuplicateName = (name: string, excludeId?: string): boolean => {
+  const checkDuplicateName = (name: string, excludeId?: number): boolean => {
     return doctors.value.some(d =>
       d.name.toLowerCase() === name.toLowerCase() && d.id !== excludeId,
     );
@@ -259,7 +259,7 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
   /**
    * 病院IDで先生をフィルタリング
    */
-  const getDoctorsByHospitalId = (hospitalId: string): VeterinaryDoctor[] => {
+  const getDoctorsByHospitalId = (hospitalId: number): VeterinaryDoctor[] => {
     return doctors.value.filter(d => d.hospitalId === hospitalId);
   };
 
@@ -273,7 +273,7 @@ export const useVeterinaryDoctors = (): UseVeterinaryDoctorsReturn => {
   /**
    * 先生に関連データがあるかチェック（削除前の確認用）
    */
-  const checkDoctorRelatedData = async (id: string): Promise<{ hasVisits: boolean; hasAppointments: boolean }> => {
+  const checkDoctorRelatedData = async (id: number): Promise<{ hasVisits: boolean; hasAppointments: boolean }> => {
     try {
       const response = await $fetch<{ hasVisits: boolean; hasAppointments: boolean }>(`/api/veterinary-doctors/${id}/related-data`);
       return response;

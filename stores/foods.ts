@@ -24,7 +24,7 @@ export const useFoodsStore = defineStore('foods', () => {
 
   // Getters
   const getFoodById = computed(() =>
-    (id: string): Food | undefined => {
+    (id: number): Food | undefined => {
       return foods.value.find(food => food.id === id);
     },
   );
@@ -165,7 +165,7 @@ export const useFoodsStore = defineStore('foods', () => {
     }
   };
 
-  const updateFood = async (id: string, foodUpdate: FoodUpdate): Promise<Food> => {
+  const updateFood = async (id: number, foodUpdate: FoodUpdate): Promise<Food> => {
     const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
@@ -204,7 +204,7 @@ export const useFoodsStore = defineStore('foods', () => {
     }
   };
 
-  const deleteFood = async (id: string): Promise<void> => {
+  const deleteFood = async (id: number): Promise<void> => {
     const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
@@ -280,7 +280,7 @@ export const useFoodsStore = defineStore('foods', () => {
     }
   };
 
-  const removeFoodFromState = (id: string) => {
+  const removeFoodFromState = (id: number) => {
     foods.value = foods.value.filter(food => food.id !== id);
   };
 

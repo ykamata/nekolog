@@ -138,7 +138,7 @@ export const useVeterinaryHospitals = (): UseVeterinaryHospitalsReturn => {
   /**
    * 病院情報を更新
    */
-  const updateHospital = async (id: string, hospitalData: VeterinaryHospitalInput): Promise<VeterinaryHospital> => {
+  const updateHospital = async (id: number, hospitalData: VeterinaryHospitalInput): Promise<VeterinaryHospital> => {
     setLoading(true, 'update');
     clearError();
 
@@ -177,7 +177,7 @@ export const useVeterinaryHospitals = (): UseVeterinaryHospitalsReturn => {
   /**
    * 病院を削除
    */
-  const deleteHospital = async (id: string): Promise<void> => {
+  const deleteHospital = async (id: number): Promise<void> => {
     setLoading(true, 'delete');
     clearError();
 
@@ -234,14 +234,14 @@ export const useVeterinaryHospitals = (): UseVeterinaryHospitalsReturn => {
   /**
    * 病院IDから病院情報を取得
    */
-  const getHospitalById = (id: string): VeterinaryHospital | undefined => {
+  const getHospitalById = (id: number): VeterinaryHospital | undefined => {
     return hospitals.value.find(h => h.id === id);
   };
 
   /**
    * 病院名の重複チェック
    */
-  const checkDuplicateName = (name: string, excludeId?: string): boolean => {
+  const checkDuplicateName = (name: string, excludeId?: number): boolean => {
     return hospitals.value.some(h =>
       h.name.toLowerCase() === name.toLowerCase() && h.id !== excludeId,
     );
@@ -257,7 +257,7 @@ export const useVeterinaryHospitals = (): UseVeterinaryHospitalsReturn => {
   /**
    * 病院に関連データがあるかチェック（削除前の確認用）
    */
-  const checkHospitalRelatedData = async (id: string): Promise<{ hasDoctors: boolean; hasVisits: boolean; hasAppointments: boolean }> => {
+  const checkHospitalRelatedData = async (id: number): Promise<{ hasDoctors: boolean; hasVisits: boolean; hasAppointments: boolean }> => {
     try {
       const response = await $fetch<{ hasDoctors: boolean; hasVisits: boolean; hasAppointments: boolean }>(`/api/veterinary-hospitals/${id}/related-data`);
       return response;

@@ -158,7 +158,7 @@ export const useVeterinaryVisitsOptimized = () => {
   /**
    * 猫別の効率的な取得
    */
-  const fetchVisitsByCat = async (catId: string, params: Omit<GetVeterinaryVisitsParams, 'catId'> = {}) => {
+  const fetchVisitsByCat = async (catId: number, params: Omit<GetVeterinaryVisitsParams, 'catId'> = {}) => {
     return await fetchVisits({ ...params, catId });
   };
 
@@ -233,7 +233,7 @@ export const useVeterinaryVisitsOptimized = () => {
   /**
    * 通院記録を削除（キャッシュ無効化付き）
    */
-  const deleteVisit = async (id: string) => {
+  const deleteVisit = async (id: number) => {
     loading.value = true;
     clearError();
 

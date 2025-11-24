@@ -283,7 +283,7 @@ import type { MedicationRecord, MedicationReminder, MedicationStatus, ReminderSt
 // Props
 interface Props {
   initialDate?: Date;
-  catId?: string;
+  catId?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -304,7 +304,7 @@ const catsStore = useCatsStore();
 // Reactive state
 const currentDate = ref(new Date(props.initialDate));
 const selectedDate = ref<string | null>(null);
-const selectedCatId = ref(props.catId || '');
+const selectedCatId = ref(props.catId || undefined);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
@@ -413,12 +413,12 @@ const createRecord = () => {
   }
 };
 
-const getMedicationName = (medicationId: string): string => {
+const getMedicationName = (medicationId: number): string => {
   const medication = medicationsStore.getMedicationById(medicationId);
   return medication?.name || '不明な薬';
 };
 
-const getCatName = (catId: string): string => {
+const getCatName = (catId: number): string => {
   const cat = catsStore.getCatById(catId);
   return cat?.name || '不明な猫';
 };

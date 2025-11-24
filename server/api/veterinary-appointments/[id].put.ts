@@ -8,7 +8,7 @@ const paramsSchema = z.object({
 });
 
 // マスタデータの検索または作成を行うヘルパー関数
-async function findOrCreateHospital(name: string, userId: string) {
+async function findOrCreateHospital(name: string, userId: number) {
   const existing = await prisma.veterinaryHospital.findFirst({
     where: { name, userId },
   });
@@ -27,8 +27,8 @@ async function findOrCreateHospital(name: string, userId: string) {
 
 async function findOrCreateDoctor(
   name: string,
-  hospitalId: string,
-  userId: string,
+  hospitalId: number,
+  userId: number,
 ) {
   const existing = await prisma.veterinaryDoctor.findFirst({
     where: {

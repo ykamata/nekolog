@@ -26,7 +26,7 @@ const isLoading = ref(false);
 const error = ref<string | null>(null);
 
 // Filter state
-const selectedCatId = ref<string>('');
+const selectedCatId = ref<number | null>(null);
 const selectedStatus = ref<AppointmentStatus | ''>('');
 
 // Modal states

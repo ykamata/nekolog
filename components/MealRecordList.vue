@@ -33,7 +33,7 @@ const error = ref<string | null>(null);
 
 // Filter state
 const filter = ref<MealRecordFilter>({
-  catId: props.initialFilter?.catId || '',
+  catId: props.initialFilter?.catId || undefined,
   startDate: props.initialFilter?.startDate || undefined,
   endDate: props.initialFilter?.endDate || undefined,
   foodType: props.initialFilter?.foodType || undefined,
@@ -74,7 +74,7 @@ const fetchMealRecords = async (reset = false) => {
   try {
     const queryParams = new URLSearchParams();
 
-    if (filter.value.catId) queryParams.append('catId', filter.value.catId);
+    if (filter.value.catId) queryParams.append('catId', String(filter.value.catId));
     if (filter.value.startDate)
       queryParams.append('startDate', filter.value.startDate.toISOString());
     if (filter.value.endDate)
@@ -128,7 +128,7 @@ const applyFilter = async () => {
 
 const clearFilters = async () => {
   filter.value = {
-    catId: '',
+    catId: undefined,
     startDate: undefined,
     endDate: undefined,
     foodType: undefined,
@@ -139,7 +139,7 @@ const clearFilters = async () => {
   emit('filter-change', filter.value);
 };
 
-const handleCatFilter = async (catId: string) => {
+const handleCatFilter = async (catId: number | undefined) => {
   filter.value.catId = catId;
   await applyFilter();
 };

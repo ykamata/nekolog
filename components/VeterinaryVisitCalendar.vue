@@ -13,7 +13,7 @@ interface Props {
   visits: VeterinaryVisitWithRelations[];
   appointments?: VeterinaryAppointmentWithRelations[];
   cats: Cat[];
-  selectedCatId?: string;
+  selectedCatId?: number;
   showAppointments?: boolean;
   loading?: boolean;
   viewMode?: 'calendar' | 'list';
@@ -27,16 +27,16 @@ interface Emits {
   (e: 'visitCreate', date: Date): void;
   (e: 'appointmentCreate', date: Date): void;
   (e: 'monthChanged', year: number, month: number): void;
-  (e: 'catFilterChanged', catId: string): void;
+  (e: 'catFilterChanged', catId: number | null): void;
   (e: 'viewModeChanged', mode: 'calendar' | 'list'): void;
   (e: 'bloodTestFilterChanged', showBloodTestOnly: boolean): void;
   (e: 'appointmentFilterChanged', showAppointments: boolean): void;
-  (e: 'notesUpdated', data: { eventId: string; eventType: 'visit' | 'appointment'; notes: string }): void;
+  (e: 'notesUpdated', data: { eventId: number; eventType: 'visit' | 'appointment'; notes: string }): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   appointments: () => [],
-  selectedCatId: '',
+  selectedCatId: undefined,
   showAppointments: true,
   loading: false,
   viewMode: 'calendar',
@@ -60,7 +60,7 @@ const bloodTestFilter = ref<'all' | 'bloodTest' | 'noBloodTest'>('all');
 const appointmentFilter = ref(props.showAppointments);
 
 // Detail modal state
-const editingEventId = ref<string | null>(null);
+const editingEventId = ref<number | null>(null);
 const editingNotes = ref('');
 
 // レスポンシブ対応

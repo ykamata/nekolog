@@ -85,7 +85,7 @@ export const useVeterinaryVisits = () => {
    * 特定の通院記録を取得
    * @param id 通院記録ID
    */
-  const fetchVisit = async (id: string) => {
+  const fetchVisit = async (id: number) => {
     loading.value = true;
     clearError();
 
@@ -172,7 +172,7 @@ export const useVeterinaryVisits = () => {
    * 通院記録を削除
    * @param id 削除する通院記録ID
    */
-  const deleteVisit = async (id: string) => {
+  const deleteVisit = async (id: number) => {
     loading.value = true;
     clearError();
 
@@ -203,7 +203,7 @@ export const useVeterinaryVisits = () => {
    * @param catId 猫ID
    * @param params 追加の検索条件
    */
-  const fetchVisitsByCat = async (catId: string, params: Omit<GetVeterinaryVisitsParams, 'catId'> = {}) => {
+  const fetchVisitsByCat = async (catId: number, params: Omit<GetVeterinaryVisitsParams, 'catId'> = {}) => {
     return await fetchVisits({ ...params, catId });
   };
 

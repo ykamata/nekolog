@@ -44,19 +44,19 @@ export const useMealsStore = defineStore('meals', () => {
 
   // Getters
   const getMealById = computed(() =>
-    (id: string): MealRecord | undefined => {
+    (id: number): MealRecord | undefined => {
       return meals.value.find(meal => meal.id === id);
     },
   );
 
   const getMealsByCat = computed(() =>
-    (catId: string): MealRecord[] => {
+    (catId: number): MealRecord[] => {
       return meals.value.filter(meal => meal.catId === catId);
     },
   );
 
   const getMealsByFood = computed(() =>
-    (foodId: string): MealRecord[] => {
+    (foodId: number): MealRecord[] => {
       return meals.value.filter(meal => meal.foodId === foodId);
     },
   );
@@ -160,8 +160,8 @@ export const useMealsStore = defineStore('meals', () => {
       );
 
       // Add filters
-      if (filters.value.catId) query.append('catId', filters.value.catId);
-      if (filters.value.foodId) query.append('foodId', filters.value.foodId);
+      if (filters.value.catId) query.append('catId', String(filters.value.catId));
+      if (filters.value.foodId) query.append('foodId', String(filters.value.foodId));
       if (filters.value.startDate)
         query.append('startDate', filters.value.startDate.toISOString());
       if (filters.value.endDate)
@@ -272,7 +272,7 @@ export const useMealsStore = defineStore('meals', () => {
   };
 
   const updateMeal = async (
-    id: string,
+    id: number,
     mealUpdate: MealRecordUpdate,
   ): Promise<MealRecord> => {
     const { syncStatus } = useSync();
@@ -321,7 +321,7 @@ export const useMealsStore = defineStore('meals', () => {
     }
   };
 
-  const deleteMeal = async (id: string): Promise<void> => {
+  const deleteMeal = async (id: number): Promise<void> => {
     const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
@@ -438,7 +438,7 @@ export const useMealsStore = defineStore('meals', () => {
     lastUpdate.value = new Date();
   };
 
-  const removeMealFromState = (id: string) => {
+  const removeMealFromState = (id: number) => {
     meals.value = meals.value.filter(meal => meal.id !== id);
     pagination.value.totalCount = Math.max(0, pagination.value.totalCount - 1);
     lastUpdate.value = new Date();
@@ -451,7 +451,7 @@ export const useMealsStore = defineStore('meals', () => {
   };
 
   // Bulk operations
-  const bulkDeleteMeals = async (ids: string[]): Promise<void> => {
+  const bulkDeleteMeals = async (ids: number[]): Promise<void> => {
     const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;

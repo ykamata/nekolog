@@ -16,7 +16,7 @@ export const useCatsStore = defineStore('cats', () => {
 
   // Getters
   const getCatById = computed(() =>
-    (id: string): Cat | undefined => {
+    (id: number): Cat | undefined => {
       return cats.value.find(cat => cat.id === id);
     },
   );
@@ -137,7 +137,7 @@ export const useCatsStore = defineStore('cats', () => {
     }
   };
 
-  const updateCat = async (id: string, catUpdate: CatUpdate): Promise<Cat> => {
+  const updateCat = async (id: number, catUpdate: CatUpdate): Promise<Cat> => {
     const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
@@ -180,7 +180,7 @@ export const useCatsStore = defineStore('cats', () => {
     }
   };
 
-  const deleteCat = async (id: string): Promise<void> => {
+  const deleteCat = async (id: number): Promise<void> => {
     const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
@@ -235,7 +235,7 @@ export const useCatsStore = defineStore('cats', () => {
     }
   };
 
-  const removeCatFromState = (id: string) => {
+  const removeCatFromState = (id: number) => {
     cats.value = cats.value.filter(cat => cat.id !== id);
   };
 

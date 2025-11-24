@@ -349,7 +349,7 @@ export const useAnalyticsStore = defineStore("analytics", () => {
       const params = new URLSearchParams();
       const activeFilters = filters || currentFilters.value;
 
-      if (activeFilters.catId) params.append("catId", activeFilters.catId);
+      if (activeFilters.catId) params.append("catId", String(activeFilters.catId));
       if (activeFilters.startDate)
         params.append("startDate", activeFilters.startDate.toISOString());
       if (activeFilters.endDate)
@@ -434,7 +434,7 @@ export const useAnalyticsStore = defineStore("analytics", () => {
     setDateRange(startDate, endDate);
   };
 
-  const setSelectedCat = (catId: string | null) => {
+  const setSelectedCat = (catId: number | null) => {
     selectedCatId.value = catId;
   };
 

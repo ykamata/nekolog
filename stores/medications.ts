@@ -556,7 +556,7 @@ export const useMedicationsStore = defineStore("medications", () => {
     }
   };
 
-  const deleteMedication = async (id: string) => {
+  const deleteMedication = async (id: number) => {
     loading.value = true;
     error.value = null;
 
@@ -582,9 +582,9 @@ export const useMedicationsStore = defineStore("medications", () => {
 
     try {
       const params = new URLSearchParams();
-      if (filter?.catId) params.append("catId", filter.catId);
+      if (filter?.catId) params.append("catId", String(filter.catId));
       if (filter?.medicationId)
-        params.append("medicationId", filter.medicationId);
+        params.append("medicationId", String(filter.medicationId));
       if (filter?.status) params.append("status", filter.status);
       if (filter?.startDate)
         params.append("startDate", filter.startDate.toISOString());
@@ -675,7 +675,7 @@ export const useMedicationsStore = defineStore("medications", () => {
 
     try {
       const params = new URLSearchParams();
-      if (filter?.catId) params.append("catId", filter.catId);
+      if (filter?.catId) params.append("catId", String(filter.catId));
       if (filter?.status) params.append("status", filter.status);
       if (filter?.startDate)
         params.append("startDate", filter.startDate.toISOString());

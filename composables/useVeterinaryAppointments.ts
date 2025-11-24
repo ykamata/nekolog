@@ -83,7 +83,7 @@ export const useVeterinaryAppointments = () => {
    * 特定の予約を取得
    * @param id 予約ID
    */
-  const fetchAppointment = async (id: string) => {
+  const fetchAppointment = async (id: number) => {
     loading.value = true;
     clearError();
 
@@ -180,7 +180,7 @@ export const useVeterinaryAppointments = () => {
    * 予約を削除
    * @param id 削除する予約ID
    */
-  const deleteAppointment = async (id: string) => {
+  const deleteAppointment = async (id: number) => {
     loading.value = true;
     clearError();
 
@@ -247,7 +247,7 @@ export const useVeterinaryAppointments = () => {
    * 予約をキャンセル（ステータスをCANCELLEDに変更）
    * @param id 予約ID
    */
-  const cancelAppointment = async (id: string) => {
+  const cancelAppointment = async (id: number) => {
     return await updateAppointment({
       id,
       status: 'CANCELLED' as AppointmentStatus,
@@ -259,7 +259,7 @@ export const useVeterinaryAppointments = () => {
    * @param catId 猫ID
    * @param params 追加の検索条件
    */
-  const fetchAppointmentsByCat = async (catId: string, params: Omit<GetVeterinaryAppointmentsParams, 'catId'> = {}) => {
+  const fetchAppointmentsByCat = async (catId: number, params: Omit<GetVeterinaryAppointmentsParams, 'catId'> = {}) => {
     return await fetchAppointments({ ...params, catId });
   };
 

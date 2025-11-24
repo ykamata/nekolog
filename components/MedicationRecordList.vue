@@ -14,7 +14,7 @@ interface Props {
   medications: Medication[];
   initialFilter?: Partial<MedicationRecordFilter>;
   loading?: boolean;
-  selectedCatId?: string; // Add support for pre-selected cat
+  selectedCatId?: number; // Add support for pre-selected cat
 }
 
 interface Emits {
@@ -25,7 +25,7 @@ interface Emits {
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
-  selectedCatId: '',
+  selectedCatId: undefined,
 });
 
 const emit = defineEmits<Emits>();
@@ -48,8 +48,8 @@ const recordToDelete = ref<MedicationRecord | null>(null);
 
 // Filter state
 const filter = ref<MedicationRecordFilter>({
-  catId: props.selectedCatId || props.initialFilter?.catId || '',
-  medicationId: props.initialFilter?.medicationId || '',
+  catId: props.selectedCatId || props.initialFilter?.catId || undefined,
+  medicationId: props.initialFilter?.medicationId || undefined,
   startDate: props.initialFilter?.startDate || undefined,
   endDate: props.initialFilter?.endDate || undefined,
   status: props.initialFilter?.status || undefined,
@@ -127,9 +127,9 @@ const fetchMedicationRecords = async (reset = false) => {
   try {
     const queryParams = new URLSearchParams();
 
-    if (filter.value.catId) queryParams.append('catId', filter.value.catId);
+    if (filter.value.catId) queryParams.append('catId', String(filter.value.catId));
     if (filter.value.medicationId)
-      queryParams.append('medicationId', filter.value.medicationId);
+      queryParams.append('medicationId', String(filter.value.medicationId));
     if (filter.value.startDate)
       queryParams.append('startDate', filter.value.startDate.toISOString());
     if (filter.value.endDate)
@@ -189,8 +189,8 @@ const applyFilter = async () => {
 
 const clearFilters = async () => {
   filter.value = {
-    catId: '',
-    medicationId: '',
+    catId: undefined,
+    medicationId: undefined,
     startDate: undefined,
     endDate: undefined,
     status: undefined,
@@ -343,7 +343,7 @@ watch(
   () => props.selectedCatId,
   (newCatId) => {
     if (newCatId !== filter.value.catId) {
-      filter.value.catId = newCatId || '';
+      filter.value.catId = newCatId || undefined;
       filter.value.offset = 0;
       fetchMedicationRecords(true);
     }

@@ -125,7 +125,7 @@ export const useExcretionRecords = () => {
     }
   };
 
-  const updateRecord = async (id: string, data: Partial<ExcretionRecordInput>): Promise<ExcretionRecord> => {
+  const updateRecord = async (id: number, data: Partial<ExcretionRecordInput>): Promise<ExcretionRecord> => {
     try {
       const response = await performanceMonitor.measureApiCall(
         'updateExcretionRecord',
@@ -153,7 +153,7 @@ export const useExcretionRecords = () => {
     }
   };
 
-  const deleteRecord = async (id: string): Promise<void> => {
+  const deleteRecord = async (id: number): Promise<void> => {
     try {
       await performanceMonitor.measureApiCall(
         'deleteExcretionRecord',
@@ -179,7 +179,7 @@ export const useExcretionRecords = () => {
     }
   };
 
-  const fetchRecordsByCat = async (catId: string) => {
+  const fetchRecordsByCat = async (catId: number) => {
     return await fetchRecords({ catId });
   };
 

@@ -324,7 +324,7 @@ const showDetail = ref(false);
 const formMode = ref<'create' | 'edit'>('create');
 const selectedDoctor = ref<VeterinaryDoctor | null>(null);
 const searchQuery = ref('');
-const hospitalFilter = ref('');
+const hospitalFilter = ref<number | null>(null);
 const preselectedHospitalId = ref<string | undefined>(undefined);
 
 // ユーティリティ関数
@@ -366,7 +366,7 @@ const handleEditFromDetail = () => {
   clearError();
 };
 
-const handleDeleteDoctor = async (doctorId: string) => {
+const handleDeleteDoctor = async (doctorId: number) => {
   try {
     await deleteDoctor(doctorId);
   }
@@ -421,7 +421,7 @@ const handleSearch = (query: string) => {
   fetchDoctors(hospitalFilter.value, query);
 };
 
-const handleHospitalFilter = (hospitalId: string) => {
+const handleHospitalFilter = (hospitalId: number | null) => {
   hospitalFilter.value = hospitalId;
   fetchDoctors(hospitalId, searchQuery.value);
 };

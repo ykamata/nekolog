@@ -17,7 +17,7 @@ export interface ChartDataActions {
   fetchData: (filters: ChartFilters, forceRefresh?: boolean) => Promise<void>;
   refreshData: () => Promise<void>;
   clearCache: (pattern?: string) => void;
-  invalidateCat: (catId: string) => void;
+  invalidateCat: (catId: number) => void;
   warmCache: (commonFilters: ChartFilters[]) => Promise<void>;
   getCacheStats: () => any;
 }
@@ -229,7 +229,7 @@ export function useChartData(): UseChartDataReturn {
   /**
    * 特定の猫のキャッシュを無効化
    */
-  const invalidateCat = (catId: string): void => {
+  const invalidateCat = (catId: number): void => {
     cache.invalidateCat(catId);
     console.log('猫のキャッシュを無効化しました', { catId });
   };

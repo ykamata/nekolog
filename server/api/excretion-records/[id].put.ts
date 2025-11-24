@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
 
     // Prepare update data with proper typing
     const finalUpdateData: {
-      catId?: string;
+      catId?: number;
       type?: 'URINE' | 'FECES';
       recordedAt?: Date;
       notes?: string;

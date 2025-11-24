@@ -18,7 +18,7 @@ interface Props {
   isOpen: boolean;
   cats: Cat[];
   medications: Medication[];
-  selectedCatId?: string; // Add support for pre-selected cat
+  selectedCatId?: number; // Add support for pre-selected cat
 }
 
 interface Emits {
@@ -31,8 +31,8 @@ const emit = defineEmits<Emits>();
 
 // Form state
 const formData = reactive<MedicationRecordInput>({
-  catId: '',
-  medicationId: '',
+  catId: 0,
+  medicationId: 0,
   quantity: 1,
   administeredAt: new Date(),
   status: 'ADMINISTERED' as MedicationStatus,
@@ -71,8 +71,8 @@ watch(
     }
     else {
       // Reset form for new medication record
-      formData.catId = props.selectedCatId || '';
-      formData.medicationId = '';
+      formData.catId = props.selectedCatId || 0;
+      formData.medicationId = 0;
       formData.quantity = 1;
       formData.administeredAt = new Date();
       formData.status = 'ADMINISTERED' as MedicationStatus;
@@ -88,7 +88,7 @@ watch(
   () => props.selectedCatId,
   (newCatId) => {
     if (!props.medicationRecord && newCatId !== formData.catId) {
-      formData.catId = newCatId || '';
+      formData.catId = newCatId || 0;
     }
   },
 );
@@ -216,8 +216,8 @@ const handleReset = () => {
     formData.notes = props.medicationRecord.notes || '';
   }
   else {
-    formData.catId = props.selectedCatId || '';
-    formData.medicationId = '';
+    formData.catId = props.selectedCatId || 0;
+    formData.medicationId = 0;
     formData.quantity = 1;
     formData.administeredAt = new Date();
     formData.status = 'ADMINISTERED' as MedicationStatus;

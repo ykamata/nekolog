@@ -170,7 +170,7 @@ const { sortedCats } = storeToRefs(catsStore);
 const showMobileFilters = ref(false);
 
 // フィルター状態
-const selectedCatId = ref<string>('');
+const selectedCatId = ref<number | undefined>(undefined);
 const dateRange = ref<DateRange>({
   start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7日前
   end: new Date(),

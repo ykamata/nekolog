@@ -26,8 +26,8 @@ const emit = defineEmits<Emits>();
 
 // Form state
 const formData = ref<MealRecordForm>({
-  catId: props.initialData?.catId || '',
-  foodId: props.initialData?.foodId || '',
+  catId: props.initialData?.catId || 0,
+  foodId: props.initialData?.foodId || 0,
   quantity: props.initialData?.quantity || 0,
   calories: props.initialData?.calories,
   mealTime: props.initialData?.mealTime || new Date(),
@@ -207,8 +207,8 @@ const handleCancel = () => {
 
 const resetForm = () => {
   formData.value = {
-    catId: '',
-    foodId: '',
+    catId: 0,
+    foodId: 0,
     quantity: 0,
     calories: undefined,
     mealTime: new Date(),
@@ -223,8 +223,8 @@ watch(
   (newData) => {
     if (newData) {
       formData.value = {
-        catId: newData.catId || '',
-        foodId: newData.foodId || '',
+        catId: newData.catId || 0,
+        foodId: newData.foodId || 0,
         quantity: newData.quantity || 0,
         calories: newData.calories,
         mealTime: newData.mealTime || new Date(),

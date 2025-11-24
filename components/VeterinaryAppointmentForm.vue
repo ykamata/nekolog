@@ -22,7 +22,7 @@ interface Props {
 interface Emits {
   (e: 'close'): void;
   (e: 'save', appointment: CreateVeterinaryAppointmentInput): void;
-  (e: 'convertToVisit', appointmentId: string): void;
+  (e: 'convertToVisit', appointmentId: number): void;
 }
 
 const props = defineProps<Props>();
@@ -30,7 +30,7 @@ const emit = defineEmits<Emits>();
 
 // Form state
 const formData = reactive<CreateVeterinaryAppointmentInput>({
-  catId: '',
+  catId: 0,
   appointmentDate: new Date(),
   hospitalName: '',
   doctorName: '',
@@ -52,7 +52,7 @@ const loadingHospitals = ref(false);
 const loadingDoctors = ref(false);
 
 // 選択された病院のID（先生フィルタリング用）
-const selectedHospitalId = ref<string>('');
+const selectedHospitalId = ref<number | null>(null);
 
 // 全マスタアイテム（病院と先生を統合）
 const allMasterItems = computed(() => {
@@ -140,7 +140,7 @@ const initializeForm = () => {
   }
   else if (props.initialData) {
     // New appointment with initial data
-    formData.catId = props.initialData.catId || '';
+    formData.catId = props.initialData.catId || 0;
     formData.appointmentDate = props.initialData.appointmentDate || new Date();
     formData.hospitalName = props.initialData.hospitalName || '';
     formData.doctorName = props.initialData.doctorName || '';
@@ -149,7 +149,7 @@ const initializeForm = () => {
   }
   else {
     // New appointment - reset to defaults
-    formData.catId = props.cats.length === 1 ? props.cats[0]?.id || '' : '';
+    formData.catId = props.cats.length === 1 ? props.cats[0]?.id || 0 : 0;
     formData.appointmentDate = new Date();
     formData.hospitalName = '';
     formData.doctorName = '';
@@ -280,7 +280,7 @@ const handleHospitalSelect = (item: { id: string; name: string }) => {
 };
 
 // 先生選択ハンドラー
-const handleDoctorSelect = (item: { id: string; name: string; hospitalId?: string }) => {
+const handleDoctorSelect = (item: { id: number; name: string; hospitalId?: number }) => {
   formData.doctorName = item.name;
 
   // 先生に所属病院がある場合、病院も自動選択
@@ -318,7 +318,7 @@ const validateForm = () => {
   const newErrors: Record<string, string> = {};
 
   // 猫の選択チェック
-  if (!formData.catId.trim()) {
+  if (!formData.catId || formData.catId === 0) {
     newErrors.catId = '猫を選択してください';
   }
 
@@ -480,7 +480,7 @@ watch(() => props.initialData, () => {
 
 // Field validation watchers
 watch(() => formData.catId, () => {
-  if (errors.value.catId && formData.catId.trim()) {
+  if (errors.value.catId && formData.catId && formData.catId !== 0) {
     delete errors.value.catId;
   }
 });

@@ -246,7 +246,7 @@ const handleViewHospital = async (hospital: VeterinaryHospital) => {
   await fetchHospitalDetail(hospital.id);
 };
 
-const fetchHospitalDetail = async (hospitalId: string) => {
+const fetchHospitalDetail = async (hospitalId: number) => {
   detailLoading.value = true;
   detailError.value = null;
 
@@ -262,7 +262,7 @@ const fetchHospitalDetail = async (hospitalId: string) => {
   }
 };
 
-const handleDeleteHospital = async (hospitalId: string) => {
+const handleDeleteHospital = async (hospitalId: number) => {
   try {
     await deleteHospital(hospitalId);
   }
@@ -271,7 +271,7 @@ const handleDeleteHospital = async (hospitalId: string) => {
   }
 };
 
-const handleDeleteFromDetail = async (hospitalId: string) => {
+const handleDeleteFromDetail = async (hospitalId: number) => {
   try {
     await deleteHospital(hospitalId);
     showDetail.value = false;
@@ -293,7 +293,7 @@ const handleEditDoctorFromDetail = (doctor: any) => {
   navigateTo(`/veterinary-doctors?editId=${doctor.id}`);
 };
 
-const handleDeleteDoctorFromDetail = async (doctorId: string) => {
+const handleDeleteDoctorFromDetail = async (doctorId: number) => {
   try {
     await deleteDoctorById(doctorId);
     // 病院詳細を再取得して先生一覧を更新

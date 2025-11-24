@@ -664,7 +664,7 @@ function debounce<T extends (...args: any[]) => any>(func: T, wait: number): T {
 }
 
 interface Props {
-  catId?: string;
+  catId?: number;
   height?: number;
   periodDays?: number;
 }

@@ -12,7 +12,7 @@ interface Props {
 
 // Define emits with TypeScript
 interface Emits {
-  (e: 'select' | 'delete', id: string): void;
+  (e: 'select' | 'delete', id: number): void;
   (e: 'edit' | 'quick-meal', cat: Cat): void;
 }
 

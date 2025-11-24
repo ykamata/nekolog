@@ -33,7 +33,7 @@ const emit = defineEmits<Emits>();
 
 // Filter state
 const filters = ref<ExcretionRecordFilter>({
-  catId: '',
+  catId: undefined,
   type: undefined,
   startDate: undefined,
   endDate: undefined,
@@ -73,7 +73,7 @@ const applyFilters = () => {
 
 const clearFilters = () => {
   filters.value = {
-    catId: '',
+    catId: undefined,
     type: undefined,
     startDate: undefined,
     endDate: undefined,
@@ -81,7 +81,7 @@ const clearFilters = () => {
   emit('filter', {});
 };
 
-const handleCatFilter = (catId: string) => {
+const handleCatFilter = (catId: number | undefined) => {
   filters.value.catId = catId;
   applyFilters();
 };

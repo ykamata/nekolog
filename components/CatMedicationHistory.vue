@@ -19,7 +19,7 @@ interface Props {
 interface Emits {
   (e: 'record-created', record: MedicationRecord): void;
   (e: 'record-updated', record: MedicationRecord): void;
-  (e: 'record-deleted', recordId: string): void;
+  (e: 'record-deleted', recordId: number): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -60,7 +60,7 @@ const handleSaveRecord = (recordInput: MedicationRecordInput) => {
   else {
     // Create new record
     const newRecord: MedicationRecord = {
-      id: `temp-${Date.now()}`, // Temporary ID, will be replaced by server
+      id: -1, // Temporary ID, will be replaced by server
       ...recordInput,
       status: recordInput.status || MedicationStatus.PENDING,
       createdAt: new Date(),

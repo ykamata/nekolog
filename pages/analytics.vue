@@ -8,7 +8,7 @@ interface DateRange {
 }
 
 interface ChartFilters {
-  catId?: string;
+  catId?: number;
   dateRange: DateRange;
   chartType: 'line' | 'stacked-bar';
 }
@@ -36,7 +36,7 @@ const error = ref<string | null>(null);
 
 // Chart filters state
 const chartFilters = ref<ChartFilters>({
-  catId: '',
+  catId: undefined,
   dateRange: {
     start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90日前
     end: new Date(),
@@ -89,10 +89,12 @@ const fetchCats = async () => {
 
     // Set first cat as default if available
     if (cats.value.length > 0 && !chartFilters.value.catId) {
-      chartFilters.value.catId = cats.value[0]?.id || '';
+      chartFilters.value.catId = cats.value[0]?.id;
       console.log('Analytics page: デフォルト猫を設定', { catId: chartFilters.value.catId });
       // Analytics storeにも設定
-      analyticsStore.setSelectedCat(chartFilters.value.catId);
+      if (chartFilters.value.catId) {
+        analyticsStore.setSelectedCat(chartFilters.value.catId);
+      }
 
       // 初期データを取得
       try {

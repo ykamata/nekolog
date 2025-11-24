@@ -10,7 +10,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
 
 export interface JWTPayload {
-  userId: string;
+  userId: number;
   email: string;
   iat?: number;
   exp?: number;
