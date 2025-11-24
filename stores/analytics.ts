@@ -1,20 +1,18 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import type {
-  MealAnalytics,
-} from '~/types/cat-meal';
-import { FoodType } from '~/types/cat-meal';
-import type { ErrorInfo } from '~/utils/error-handling';
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import type { MealAnalytics } from "~/types/cat-meal";
+import { FoodType } from "~/types/cat-meal";
+import type { ErrorInfo } from "~/utils/error-handling";
 
 interface AnalyticsFilter {
-  catId?: string;
+  catId?: number;
   startDate?: Date;
   endDate?: Date;
   foodType?: FoodType;
   days?: number;
 }
 
-export const useAnalyticsStore = defineStore('analytics', () => {
+export const useAnalyticsStore = defineStore("analytics", () => {
   // State
   const analytics = ref<MealAnalytics | null>(null);
   const chartData = ref<any>(null);
@@ -24,10 +22,12 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
     endDate: new Date(),
   });
-  const selectedCatId = ref<string | null>(null);
+  const selectedCatId = ref<number | null>(null);
   const selectedFoodType = ref<FoodType | null>(null);
-  const chartDisplayMode = ref<'line' | 'bar'>('line');
-  const cache = ref<Record<string, { data: any; timestamp: Date; ttl: number }>>({});
+  const chartDisplayMode = ref<"line" | "bar">("line");
+  const cache = ref<
+    Record<string, { data: any; timestamp: Date; ttl: number }>
+  >({});
   const retryCount = ref(0);
   const lastErrorTime = ref<Date | null>(null);
   const dataQuality = ref<unknown>(null);
@@ -36,12 +36,14 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const refreshInterval = ref<NodeJS.Timeout | null>(null);
 
   // Getters
-  const currentFilters = computed((): AnalyticsFilter => ({
-    catId: selectedCatId.value || undefined,
-    startDate: dateRange.value.startDate,
-    endDate: dateRange.value.endDate,
-    foodType: selectedFoodType.value || undefined,
-  }));
+  const currentFilters = computed(
+    (): AnalyticsFilter => ({
+      catId: selectedCatId.value || undefined,
+      startDate: dateRange.value.startDate,
+      endDate: dateRange.value.endDate,
+      foodType: selectedFoodType.value || undefined,
+    })
+  );
 
   const hasData = computed((): boolean => {
     return !!analytics.value && analytics.value.dailyCalories.length > 0;
@@ -65,25 +67,35 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   });
 
   const dryFoodPercentage = computed(() => {
-    const breakdown = foodTypeBreakdown.value.find(item => item.type === 'DRY');
+    const breakdown = foodTypeBreakdown.value.find(
+      (item) => item.type === "DRY"
+    );
     return breakdown?.percentage || 0;
   });
 
   const wetFoodPercentage = computed(() => {
-    const breakdown = foodTypeBreakdown.value.find(item => item.type === 'WET');
+    const breakdown = foodTypeBreakdown.value.find(
+      (item) => item.type === "WET"
+    );
     return breakdown?.percentage || 0;
   });
 
   const totalCaloriesToday = computed(() => {
     if (!analytics.value) return 0;
-    const today = new Date().toISOString().split('T')[0];
-    const todayData = analytics.value.dailyCalories.filter(data => data.date === today);
+    const today = new Date().toISOString().split("T")[0];
+    const todayData = analytics.value.dailyCalories.filter(
+      (data) => data.date === today
+    );
     return todayData.reduce((sum, data) => sum + data.calories, 0);
   });
 
   const averageDailyCalories = computed(() => {
-    if (!analytics.value || analytics.value.dailyCalories.length === 0) return 0;
-    const total = analytics.value.dailyCalories.reduce((sum, data) => sum + data.calories, 0);
+    if (!analytics.value || analytics.value.dailyCalories.length === 0)
+      return 0;
+    const total = analytics.value.dailyCalories.reduce(
+      (sum, data) => sum + data.calories,
+      0
+    );
     return total / analytics.value.dailyCalories.length;
   });
 
@@ -92,11 +104,13 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
     const data = analytics.value.dailyCalories;
     return {
-      labels: data.map(item => item.date),
-      datasets: [{
-        label: 'カロリー',
-        data: data.map(item => item.calories),
-      }],
+      labels: data.map((item) => item.date),
+      datasets: [
+        {
+          label: "カロリー",
+          data: data.map((item) => item.calories),
+        },
+      ],
     };
   });
 
@@ -109,11 +123,11 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         labels: dailyData.map((item: any) => item.date),
         datasets: [
           {
-            label: 'ドライフード',
+            label: "ドライフード",
             data: dailyData.map((item: any) => item.dryCalories || 0),
           },
           {
-            label: 'ウェットフード',
+            label: "ウェットフード",
             data: dailyData.map((item: any) => item.wetCalories || 0),
           },
         ],
@@ -129,7 +143,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     }
 
     // フォールバック: 従来の方法（analyticsデータから生成）
-    console.log('AnalyticsStore: chartDataForBarChart フォールバック処理開始', {
+    console.log("AnalyticsStore: chartDataForBarChart フォールバック処理開始", {
       hasAnalytics: !!analytics.value,
       dailyCaloriesCount: analytics.value?.dailyCalories?.length || 0,
       sampleData: analytics.value?.dailyCalories?.slice(0, 3),
@@ -144,33 +158,39 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
-      dates.push(currentDate.toISOString().split('T')[0]);
+      dates.push(currentDate.toISOString().split("T")[0]);
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
     const dryData = dates.map((date) => {
       // 日付フォーマットを統一（YYYY-MM-DD → YYYY/MM/DD）
       if (!date) return 0;
-      const formattedDate = date.replace(/-/g, '/');
-      const dayData = analytics.value!.dailyCalories.filter(item => item.date === formattedDate && item.type === 'DRY');
+      const formattedDate = date.replace(/-/g, "/");
+      const dayData = analytics.value!.dailyCalories.filter(
+        (item) => item.date === formattedDate && item.type === "DRY"
+      );
       return dayData.reduce((sum, item) => sum + item.calories, 0);
     });
 
     const wetData = dates.map((date) => {
       // 日付フォーマットを統一（YYYY-MM-DD → YYYY/MM/DD）
       if (!date) return 0;
-      const formattedDate = date.replace(/-/g, '/');
-      const dayData = analytics.value!.dailyCalories.filter(item => item.date === formattedDate && item.type === 'WET');
+      const formattedDate = date.replace(/-/g, "/");
+      const dayData = analytics.value!.dailyCalories.filter(
+        (item) => item.date === formattedDate && item.type === "WET"
+      );
       return dayData.reduce((sum, item) => sum + item.calories, 0);
     });
 
     const missingDataDates = dates.filter((date) => {
       if (!date) return false;
-      const formattedDate = date.replace(/-/g, '/');
-      return !analytics.value!.dailyCalories.some(item => item.date === formattedDate);
+      const formattedDate = date.replace(/-/g, "/");
+      return !analytics.value!.dailyCalories.some(
+        (item) => item.date === formattedDate
+      );
     });
 
-    console.log('AnalyticsStore: chartDataForBarChart フォールバック処理結果', {
+    console.log("AnalyticsStore: chartDataForBarChart フォールバック処理結果", {
       datesCount: dates.length,
       dryDataSum: dryData.reduce((sum, val) => sum + val, 0),
       wetDataSum: wetData.reduce((sum, val) => sum + val, 0),
@@ -183,11 +203,11 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       labels: dates,
       datasets: [
         {
-          label: 'ドライフード',
+          label: "ドライフード",
           data: dryData,
         },
         {
-          label: 'ウェットフード',
+          label: "ウェットフード",
           data: wetData,
         },
       ],
@@ -208,25 +228,34 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
     // 実際のデータから期間を計算
     const dailyCalories = analytics.value.dailyCalories;
-    const dates = dailyCalories.map(item => item.date).sort();
+    const dates = dailyCalories.map((item) => item.date).sort();
 
     if (dates.length === 0) return null;
 
     const firstDate = new Date(dates[0]!);
     const lastDate = new Date(dates[dates.length - 1]!);
-    const totalDays = Math.ceil((lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const totalDays =
+      Math.ceil(
+        (lastDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24)
+      ) + 1;
 
     const uniqueDates = [...new Set(dates)];
     const daysWithData = uniqueDates.length;
     const missingDays = totalDays - daysWithData;
-    const dataCompleteness = totalDays > 0 ? (daysWithData / totalDays) * 100 : 100;
+    const dataCompleteness =
+      totalDays > 0 ? (daysWithData / totalDays) * 100 : 100;
 
     // 欠損期間の詳細分析（実際のデータ期間内のみ）
-    const missingDateRanges = getMissingDateRanges(firstDate, lastDate, uniqueDates);
+    const missingDateRanges = getMissingDateRanges(
+      firstDate,
+      lastDate,
+      uniqueDates
+    );
     const longestMissingPeriod = getLongestMissingPeriod(missingDateRanges);
 
     // 欠損が重要かどうかの判定を緩和（連続する期間のデータがある場合は問題なし）
-    const hasSignificantGaps = missingDays > Math.max(3, totalDays * 0.3) || longestMissingPeriod > 3;
+    const hasSignificantGaps =
+      missingDays > Math.max(3, totalDays * 0.3) || longestMissingPeriod > 3;
 
     return {
       totalDays,
@@ -244,20 +273,20 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
     // Always include date range
     filters.push({
-      type: 'dateRange',
+      type: "dateRange",
       value: `${dateRange.value.startDate.toLocaleDateString()} - ${dateRange.value.endDate.toLocaleDateString()}`,
     });
 
     if (selectedCatId.value) {
       filters.push({
-        type: 'cat',
+        type: "cat",
         value: selectedCatId.value,
       });
     }
 
     if (selectedFoodType.value) {
       filters.push({
-        type: 'foodType',
+        type: "foodType",
         value: selectedFoodType.value,
       });
     }
@@ -273,22 +302,30 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const canRetry = computed(() => retryCount.value < 3);
   const currentChartMode = computed(() => chartDisplayMode.value);
   const hasDataQualityIssues = computed(() => false);
-  const dataQualityScore = computed(() => analytics.value ? 100 : 0);
-  const dataQualityLevel = computed(() => analytics.value ? 'good' : null);
-  const anomaliesInfo = computed(() => analytics.value ? ({ anomalies: [] }) : null);
-  const qualityRecommendations = computed(() => analytics.value ? [] : []);
-  const errorMessage = computed(() => error.value?.message || '');
+  const dataQualityScore = computed(() => (analytics.value ? 100 : 0));
+  const dataQualityLevel = computed(() => (analytics.value ? "good" : null));
+  const anomaliesInfo = computed(() =>
+    analytics.value ? { anomalies: [] } : null
+  );
+  const qualityRecommendations = computed(() => (analytics.value ? [] : []));
+  const errorMessage = computed(() => error.value?.message || "");
 
   // Additional getters for display mode tests
-  const isLineChartMode = computed(() => chartDisplayMode.value === 'line');
-  const isBarChartMode = computed(() => chartDisplayMode.value === 'bar');
+  const isLineChartMode = computed(() => chartDisplayMode.value === "line");
+  const isBarChartMode = computed(() => chartDisplayMode.value === "bar");
 
   // Additional getters for error handling tests
   const errorSeverity = computed(() => null); // Placeholder
 
   // Actions
-  const fetchAnalytics = async (filters?: AnalyticsFilter, forceRefresh = false) => {
-    console.log('AnalyticsStore: fetchAnalytics開始', { filters, forceRefresh });
+  const fetchAnalytics = async (
+    filters?: AnalyticsFilter,
+    forceRefresh = false
+  ) => {
+    console.log("AnalyticsStore: fetchAnalytics開始", {
+      filters,
+      forceRefresh,
+    });
 
     // Check cache first
     const cacheKey = JSON.stringify(filters || currentFilters.value);
@@ -298,7 +335,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       const now = new Date();
       const cacheAge = now.getTime() - cachedData.timestamp.getTime();
       if (cacheAge < cachedData.ttl) {
-        console.log('AnalyticsStore: キャッシュからデータを返却');
+        console.log("AnalyticsStore: キャッシュからデータを返却");
         analytics.value = cachedData.data.analytics;
         chartData.value = cachedData.data.chartData;
         return cachedData.data.analytics;
@@ -312,26 +349,32 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       const params = new URLSearchParams();
       const activeFilters = filters || currentFilters.value;
 
-      if (activeFilters.catId) params.append('catId', activeFilters.catId);
-      if (activeFilters.startDate) params.append('startDate', activeFilters.startDate.toISOString());
-      if (activeFilters.endDate) params.append('endDate', activeFilters.endDate.toISOString());
-      if (activeFilters.foodType) params.append('foodTypeFilter', activeFilters.foodType);
+      if (activeFilters.catId) params.append("catId", activeFilters.catId);
+      if (activeFilters.startDate)
+        params.append("startDate", activeFilters.startDate.toISOString());
+      if (activeFilters.endDate)
+        params.append("endDate", activeFilters.endDate.toISOString());
+      if (activeFilters.foodType)
+        params.append("foodTypeFilter", activeFilters.foodType);
 
       // チャートタイプをパラメータに追加
       const currentMode = chartDisplayMode.value;
-      if (currentMode === 'bar') {
-        params.append('chartType', 'bar');
+      if (currentMode === "bar") {
+        params.append("chartType", "bar");
       }
 
       const url = `/api/meals/analytics?${params.toString()}`;
-      console.log('AnalyticsStore: APIリクエスト送信', {
+      console.log("AnalyticsStore: APIリクエスト送信", {
         url,
         params: params.toString(),
         chartDisplayMode: currentMode,
       });
 
-      const response = await $fetch<{ analytics: MealAnalytics; chartData?: unknown }>(url);
-      console.log('AnalyticsStore: APIレスポンス受信', {
+      const response = await $fetch<{
+        analytics: MealAnalytics;
+        chartData?: unknown;
+      }>(url);
+      console.log("AnalyticsStore: APIレスポンス受信", {
         hasAnalytics: !!response.analytics,
         hasChartData: !!response.chartData,
         dailyCaloriesCount: response.analytics?.dailyCalories?.length || 0,
@@ -352,20 +395,19 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       notifyDataUpdate();
 
       return response.analytics;
-    }
-    catch (err) {
-      console.error('AnalyticsStore: fetchAnalytics失敗:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analytics';
+    } catch (err) {
+      console.error("AnalyticsStore: fetchAnalytics失敗:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch analytics";
       error.value = {
-        code: 'FETCH_ERROR',
+        code: "FETCH_ERROR",
         message: errorMessage,
-        userMessage: 'データの取得に失敗しました',
-        severity: 'medium',
+        userMessage: "データの取得に失敗しました",
+        severity: "medium",
         timestamp: new Date(),
       };
       throw err;
-    }
-    finally {
+    } finally {
       loading.value = false;
     }
   };
@@ -400,12 +442,11 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     selectedFoodType.value = foodType;
 
     // localStorageに永続化
-    if (typeof window !== 'undefined' && window.localStorage) {
+    if (typeof window !== "undefined" && window.localStorage) {
       if (foodType) {
-        localStorage.setItem('analytics-food-type-filter', foodType);
-      }
-      else {
-        localStorage.removeItem('analytics-food-type-filter');
+        localStorage.setItem("analytics-food-type-filter", foodType);
+      } else {
+        localStorage.removeItem("analytics-food-type-filter");
       }
     }
   };
@@ -438,45 +479,52 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     lastErrorTime.value = null;
   };
 
-  const setChartDisplayMode = (mode: 'line' | 'bar') => {
+  const setChartDisplayMode = (mode: "line" | "bar") => {
     chartDisplayMode.value = mode;
 
     // localStorageに永続化
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem('analytics-chart-mode', mode);
+    if (typeof window !== "undefined" && window.localStorage) {
+      localStorage.setItem("analytics-chart-mode", mode);
     }
   };
 
   const toggleChartDisplayMode = () => {
-    const newMode = chartDisplayMode.value === 'line' ? 'bar' : 'line';
+    const newMode = chartDisplayMode.value === "line" ? "bar" : "line";
     setChartDisplayMode(newMode);
   };
 
   const restoreDisplaySettings = () => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const savedMode = localStorage.getItem('analytics-chart-mode') as 'line' | 'bar';
-      if (savedMode && (savedMode === 'line' || savedMode === 'bar')) {
+    if (typeof window !== "undefined" && window.localStorage) {
+      const savedMode = localStorage.getItem("analytics-chart-mode") as
+        | "line"
+        | "bar";
+      if (savedMode && (savedMode === "line" || savedMode === "bar")) {
         chartDisplayMode.value = savedMode;
       }
 
-      const savedFoodType = localStorage.getItem('analytics-food-type-filter') as FoodType | null;
-      if (savedFoodType && (savedFoodType === FoodType.DRY || savedFoodType === FoodType.WET)) {
+      const savedFoodType = localStorage.getItem(
+        "analytics-food-type-filter"
+      ) as FoodType | null;
+      if (
+        savedFoodType &&
+        (savedFoodType === FoodType.DRY || savedFoodType === FoodType.WET)
+      ) {
         selectedFoodType.value = savedFoodType;
       }
     }
   };
 
   const exportToCsv = (): string => {
-    if (!analytics.value) return '';
+    if (!analytics.value) return "";
 
-    const headers = ['Date', 'Calories', 'Food Type'];
-    const rows = analytics.value.dailyCalories.map(data => [
+    const headers = ["Date", "Calories", "Food Type"];
+    const rows = analytics.value.dailyCalories.map((data) => [
       data.date,
       data.calories.toString(),
-      data.type || 'UNKNOWN',
+      data.type || "UNKNOWN",
     ]);
 
-    return [headers, ...rows].map(row => row.join(',')).join('\n');
+    return [headers, ...rows].map((row) => row.join(",")).join("\n");
   };
 
   const getAnalyticsSummary = () => {
@@ -485,7 +533,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     const totalDays = analytics.value.dailyCalories.length;
     const totalCalories = analytics.value.dailyCalories.reduce(
       (sum, data) => sum + data.calories,
-      0,
+      0
     );
     const avgCalories = totalDays > 0 ? totalCalories / totalDays : 0;
 
@@ -504,7 +552,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     const chartData = chartDataForBarChart.value;
     const qualityInfo = dataQualityInfo.value;
 
-    const totalCalories = analytics.value.dailyCalories.reduce((sum, data) => sum + data.calories, 0);
+    const totalCalories = analytics.value.dailyCalories.reduce(
+      (sum, data) => sum + data.calories,
+      0
+    );
     const averageDaily = totalCalories / (qualityInfo?.daysWithData || 1);
 
     // Find peak day
@@ -514,7 +565,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       dailyTotals.set(data.date, current + data.calories);
     });
 
-    let peakDay = { date: '', calories: 0 };
+    let peakDay = { date: "", calories: 0 };
     dailyTotals.forEach((calories, date) => {
       if (calories > peakDay.calories) {
         peakDay = { date, calories };
@@ -538,7 +589,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
   const retryLastOperation = async () => {
     if (retryCount.value >= 3) {
-      throw new Error('Maximum retry attempts reached');
+      throw new Error("Maximum retry attempts reached");
     }
     retryCount.value++;
     await fetchAnalytics(currentFilters.value, true);
@@ -561,10 +612,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
         try {
           await fetchAnalytics(currentFilters.value, true);
           lastDataUpdate.value = new Date();
-        }
-        catch (err) {
-
-        }
+        } catch (err) {}
       }
     }, intervalMs);
   };
@@ -580,8 +628,7 @@ export const useAnalyticsStore = defineStore('analytics', () => {
   const toggleAutoRefresh = () => {
     if (autoRefreshEnabled.value) {
       stopAutoRefresh();
-    }
-    else {
+    } else {
       startAutoRefresh();
     }
   };
@@ -591,18 +638,24 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     lastDataUpdate.value = new Date();
 
     // カスタムイベントを発火してコンポーネントに通知
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('analytics-data-updated', {
-        detail: {
-          timestamp: lastDataUpdate.value,
-          filters: currentFilters.value,
-        },
-      }));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("analytics-data-updated", {
+          detail: {
+            timestamp: lastDataUpdate.value,
+            filters: currentFilters.value,
+          },
+        })
+      );
     }
   };
 
   // データ欠損期間の分析ヘルパー関数
-  const getMissingDateRanges = (startDate: Date, endDate: Date, existingDates: string[]) => {
+  const getMissingDateRanges = (
+    startDate: Date,
+    endDate: Date,
+    existingDates: string[]
+  ) => {
     const ranges: Array<{ start: string; end: string; days: number }> = [];
     const existingDateSet = new Set(existingDates);
 
@@ -610,22 +663,25 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0] as string;
+      const dateStr = currentDate.toISOString().split("T")[0] as string;
 
       if (!existingDateSet.has(dateStr)) {
         if (!currentMissingStart) {
           currentMissingStart = dateStr;
         }
-      }
-      else {
+      } else {
         if (currentMissingStart) {
           const prevDate = new Date(currentDate);
           prevDate.setDate(prevDate.getDate() - 1);
-          const endDateStr = prevDate.toISOString().split('T')[0] as string;
+          const endDateStr = prevDate.toISOString().split("T")[0] as string;
 
           const startDateObj = new Date(currentMissingStart);
           const endDateObj = new Date(endDateStr);
-          const days = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          const days =
+            Math.ceil(
+              (endDateObj.getTime() - startDateObj.getTime()) /
+                (1000 * 60 * 60 * 24)
+            ) + 1;
 
           ranges.push({
             start: currentMissingStart,
@@ -642,10 +698,14 @@ export const useAnalyticsStore = defineStore('analytics', () => {
 
     // 最後の期間が欠損している場合
     if (currentMissingStart) {
-      const endDateStr = endDate.toISOString().split('T')[0] as string;
+      const endDateStr = endDate.toISOString().split("T")[0] as string;
       const startDateObj = new Date(currentMissingStart);
       const endDateObj = new Date(endDateStr);
-      const days = Math.ceil((endDateObj.getTime() - startDateObj.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const days =
+        Math.ceil(
+          (endDateObj.getTime() - startDateObj.getTime()) /
+            (1000 * 60 * 60 * 24)
+        ) + 1;
 
       ranges.push({
         start: currentMissingStart,
@@ -657,7 +717,9 @@ export const useAnalyticsStore = defineStore('analytics', () => {
     return ranges;
   };
 
-  const getLongestMissingPeriod = (missingRanges: Array<{ start: string; end: string; days: number }>) => {
+  const getLongestMissingPeriod = (
+    missingRanges: Array<{ start: string; end: string; days: number }>
+  ) => {
     return missingRanges.reduce((max, range) => Math.max(max, range.days), 0);
   };
 
