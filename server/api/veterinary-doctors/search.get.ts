@@ -1,10 +1,10 @@
-import { z } from 'zod';
-import { prisma } from '~/lib/prisma';
-import { requireAuth } from '~/lib/auth-middleware';
+import { z } from "zod";
+import { prisma } from "~/lib/prisma";
+import { requireAuth } from "~/lib/auth-middleware";
 
 const searchQuerySchema = z.object({
-  name: z.string().min(1, '検索クエリは必須です'),
-  hospitalId: z.string().optional(),
+  name: z.string().min(1, "検索クエリは必須です"),
+  hospitalId: z.coerce.number().positive().optional(),
 });
 
 export default defineEventHandler(async (event) => {
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
         ],
       },
       orderBy: {
-        name: 'asc',
+        name: "asc",
       },
       select: {
         id: true,
@@ -52,13 +52,12 @@ export default defineEventHandler(async (event) => {
     });
 
     return { doctors };
-  }
-  catch (error) {
+  } catch (error) {
     // Zodバリデーションエラーの場合
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: '検索クエリが無効です',
+        statusMessage: "検索クエリが無効です",
         data: {
           validationErrors: error.errors,
         },
@@ -66,14 +65,14 @@ export default defineEventHandler(async (event) => {
     }
 
     // Re-throw HTTP errors
-    if (error && typeof error === 'object' && 'statusCode' in error) {
+    if (error && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
 
-    console.error('Failed to search veterinary doctors:', error);
+    console.error("Failed to search veterinary doctors:", error);
     throw createError({
       statusCode: 500,
-      statusMessage: '先生の検索に失敗しました',
+      statusMessage: "先生の検索に失敗しました",
     });
   }
 });

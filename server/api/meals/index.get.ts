@@ -1,43 +1,43 @@
-import { z } from 'zod';
-import { prisma } from '~/lib/prisma';
+import { z } from "zod";
+import { prisma } from "~/lib/prisma";
 
 const querySchema = z.object({
-  catId: z.string().min(1).optional(),
-  foodId: z.string().min(1).optional(),
+  catId: z.coerce.number().positive().optional(),
+  foodId: z.coerce.number().positive().optional(),
   startDate: z
     .string()
-    .transform(str => new Date(str))
+    .transform((str) => new Date(str))
     .pipe(z.date())
     .optional(),
   endDate: z
     .string()
-    .transform(str => new Date(str))
+    .transform((str) => new Date(str))
     .pipe(z.date())
     .optional(),
-  foodType: z.enum(['DRY', 'WET']).optional(),
+  foodType: z.enum(["DRY", "WET"]).optional(),
   limit: z
     .string()
     .transform(Number)
     .pipe(z.number().int().positive().max(100))
     .optional()
-    .default('20'),
+    .default("20"),
   offset: z
     .string()
     .transform(Number)
     .pipe(z.number().int().min(0))
     .optional()
-    .default('0'),
+    .default("0"),
 });
 
 export default defineEventHandler(async (event) => {
   try {
     // Only allow GET method
-    assertMethod(event, 'GET');
+    assertMethod(event, "GET");
 
     // Parse and validate query parameters
     const query = getQuery(event);
-    const { catId, foodId, startDate, endDate, foodType, limit, offset }
-      = querySchema.parse(query);
+    const { catId, foodId, startDate, endDate, foodType, limit, offset } =
+      querySchema.parse(query);
 
     // Build where clause
     const where: Record<string, any> = {};
@@ -70,7 +70,7 @@ export default defineEventHandler(async (event) => {
     const [mealRecords, total] = await Promise.all([
       prisma.mealRecord.findMany({
         where,
-        orderBy: { mealTime: 'desc' },
+        orderBy: { mealTime: "desc" },
         take: limit,
         skip: offset,
         select: {
@@ -107,7 +107,7 @@ export default defineEventHandler(async (event) => {
     ]);
 
     // Add response caching headers for better performance
-    setHeader(event, 'Cache-Control', 'public, max-age=60, s-maxage=120');
+    setHeader(event, "Cache-Control", "public, max-age=60, s-maxage=120");
 
     // フロントエンドが期待する形式でレスポンスを返す
     return {
@@ -119,13 +119,12 @@ export default defineEventHandler(async (event) => {
         hasMore: offset + limit < total,
       },
     };
-  }
-  catch (error) {
+  } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Invalid query parameters',
+        statusMessage: "Invalid query parameters",
         data: error.errors,
       });
     }
@@ -133,7 +132,7 @@ export default defineEventHandler(async (event) => {
     // Handle unexpected errors
     throw createError({
       statusCode: 500,
-      statusMessage: 'Internal server error',
+      statusMessage: "Internal server error",
     });
   }
 });

@@ -1,22 +1,26 @@
-import { z } from 'zod';
-import { prisma } from '~/lib/prisma';
-import { requireAuth } from '~/lib/auth-middleware';
-import { veterinaryDoctorSchema } from '~/lib/validations/veterinary-master';
-import { validateParams, validateBody, createApiErrorHandler } from '~/server/utils/error-handler';
+import { z } from "zod";
+import { prisma } from "~/lib/prisma";
+import { requireAuth } from "~/lib/auth-middleware";
+import { veterinaryDoctorSchema } from "~/lib/validations/veterinary-master";
+import {
+  validateParams,
+  validateBody,
+  createApiErrorHandler,
+} from "~/server/utils/error-handler";
 
 // バリデーションスキーマを定義
-const veterinaryIdSchema = z.object({ id: z.string() });
+const veterinaryIdSchema = z.object({ id: z.coerce.number().positive() });
 const veterinaryDoctorUpdateSchema = z.object({
   name: z.string().optional(),
-  hospitalId: z.string().optional(),
+  hospitalId: z.coerce.number().positive().optional(),
   specialty: z.string().optional(),
   memo: z.string().optional(),
 });
 
 export default defineEventHandler(async (event) => {
   const errorHandler = createApiErrorHandler({
-    endpoint: 'veterinary-doctors',
-    method: 'PUT',
+    endpoint: "veterinary-doctors",
+    method: "PUT",
   });
 
   try {
@@ -40,10 +44,10 @@ export default defineEventHandler(async (event) => {
     if (!existingDoctor) {
       throw createError({
         statusCode: 404,
-        statusMessage: '指定された先生が見つかりません',
+        statusMessage: "指定された先生が見つかりません",
         data: {
-          code: 'NOT_FOUND',
-          resource: 'doctor',
+          code: "NOT_FOUND",
+          resource: "doctor",
           id,
         },
       });
@@ -62,10 +66,10 @@ export default defineEventHandler(async (event) => {
       if (duplicateDoctor) {
         throw createError({
           statusCode: 409,
-          statusMessage: 'この先生名は既に登録されています',
+          statusMessage: "この先生名は既に登録されています",
           data: {
-            code: 'DUPLICATE_NAME',
-            field: 'name',
+            code: "DUPLICATE_NAME",
+            field: "name",
             value: body.name,
           },
         });
@@ -84,10 +88,10 @@ export default defineEventHandler(async (event) => {
       if (!hospital) {
         throw createError({
           statusCode: 400,
-          statusMessage: '指定された病院が存在しません',
+          statusMessage: "指定された病院が存在しません",
           data: {
-            code: 'INVALID_HOSPITAL',
-            field: 'hospitalId',
+            code: "INVALID_HOSPITAL",
+            field: "hospitalId",
             value: body.hospitalId,
           },
         });
@@ -99,8 +103,12 @@ export default defineEventHandler(async (event) => {
       where: { id },
       data: {
         ...(body.name !== undefined && { name: body.name }),
-        ...(body.hospitalId !== undefined && { hospitalId: body.hospitalId || null }),
-        ...(body.specialty !== undefined && { specialty: body.specialty || null }),
+        ...(body.hospitalId !== undefined && {
+          hospitalId: body.hospitalId || null,
+        }),
+        ...(body.specialty !== undefined && {
+          specialty: body.specialty || null,
+        }),
         ...(body.memo !== undefined && { memo: body.memo || null }),
       },
       include: {
@@ -109,8 +117,7 @@ export default defineEventHandler(async (event) => {
     });
 
     return updatedDoctor;
-  }
-  catch (error) {
+  } catch (error) {
     throw errorHandler(error);
   }
 });

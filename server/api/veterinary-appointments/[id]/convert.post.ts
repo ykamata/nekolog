@@ -1,9 +1,9 @@
-import { z } from 'zod';
-import { prisma } from '~/lib/prisma';
-import { ConvertAppointmentToVisitSchema } from '~/lib/validations/veterinary-visit';
+import { z } from "zod";
+import { prisma } from "~/lib/prisma";
+import { ConvertAppointmentToVisitSchema } from "~/lib/validations/veterinary-visit";
 
 const paramsSchema = z.object({
-  id: z.string().min(1, '有効なIDを指定してください'),
+  id: z.coerce.number().positive("有効なIDを指定してください"),
 });
 
 // マスタデータの検索または作成を行うヘルパー関数
@@ -30,7 +30,7 @@ async function findOrCreateTreatments(treatmentNames: string[]) {
 export default defineEventHandler(async (event) => {
   try {
     // Only allow POST method
-    assertMethod(event, 'POST');
+    assertMethod(event, "POST");
 
     // Parse and validate route parameters
     const params = getRouterParams(event);
@@ -56,31 +56,38 @@ export default defineEventHandler(async (event) => {
     if (!existingAppointment) {
       throw createError({
         statusCode: 404,
-        statusMessage: '指定された予約が見つかりません',
+        statusMessage: "指定された予約が見つかりません",
       });
     }
 
-    if (existingAppointment.status !== 'SCHEDULED') {
+    if (existingAppointment.status !== "SCHEDULED") {
       throw createError({
         statusCode: 400,
-        statusMessage: 'この予約は既に処理済みです',
+        statusMessage: "この予約は既に処理済みです",
       });
     }
 
     // Prepare visit data from appointment and conversion data
-    const visitDate = conversionData.actualVisitDate || existingAppointment.appointmentDate;
+    const visitDate =
+      conversionData.actualVisitDate || existingAppointment.appointmentDate;
     const cost = conversionData.actualCost || 0;
     const notes = conversionData.actualNotes || existingAppointment.notes;
     const hasBloodTest = conversionData.hasBloodTest || false;
 
     // Handle treatments
     let treatments: any[] = [];
-    if (conversionData.actualTreatments && conversionData.actualTreatments.length > 0) {
-      treatments = await findOrCreateTreatments(conversionData.actualTreatments);
-    }
-    else if (existingAppointment.plannedTreatments) {
+    if (
+      conversionData.actualTreatments &&
+      conversionData.actualTreatments.length > 0
+    ) {
+      treatments = await findOrCreateTreatments(
+        conversionData.actualTreatments
+      );
+    } else if (existingAppointment.plannedTreatments) {
       // If no actual treatments provided, use planned treatments as a single treatment
-      treatments = await findOrCreateTreatments([existingAppointment.plannedTreatments]);
+      treatments = await findOrCreateTreatments([
+        existingAppointment.plannedTreatments,
+      ]);
     }
 
     // Create visit and update appointment status in a transaction
@@ -96,7 +103,7 @@ export default defineEventHandler(async (event) => {
           notes: notes || null,
           hasBloodTest,
           treatments: {
-            create: treatments.map(treatment => ({
+            create: treatments.map((treatment) => ({
               treatmentId: treatment.id,
             })),
           },
@@ -142,7 +149,7 @@ export default defineEventHandler(async (event) => {
       const updatedAppointment = await tx.veterinaryAppointment.update({
         where: { id },
         data: {
-          status: 'COMPLETED',
+          status: "COMPLETED",
         },
         include: {
           cat: {
@@ -175,35 +182,34 @@ export default defineEventHandler(async (event) => {
     // Transform the visit data to flatten treatments
     const transformedVisit = {
       ...result.visit,
-      treatments: result.visit.treatments.map(vt => vt.treatment),
+      treatments: result.visit.treatments.map((vt) => vt.treatment),
     };
 
     return {
       visit: transformedVisit,
       appointment: result.appointment,
-      message: '予約が通院記録に正常に変換されました',
+      message: "予約が通院記録に正常に変換されました",
     };
-  }
-  catch (error) {
+  } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: '入力データが無効です',
+        statusMessage: "入力データが無効です",
         data: error.errors,
       });
     }
 
     // Re-throw HTTP errors
-    if (error && typeof error === 'object' && 'statusCode' in error) {
+    if (error && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
 
     // Handle unexpected errors
-    console.error('Error converting appointment to visit:', error);
+    console.error("Error converting appointment to visit:", error);
     throw createError({
       statusCode: 500,
-      statusMessage: '予約の変換に失敗しました',
+      statusMessage: "予約の変換に失敗しました",
     });
   }
 });

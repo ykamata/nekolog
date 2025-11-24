@@ -1,10 +1,10 @@
-import { z } from 'zod';
-import { prisma } from '~/lib/prisma';
-import { VeterinaryVisitUpdateSchema } from '~/lib/validations/veterinary-visit';
-import { requireAuth } from '~/lib/auth-middleware';
+import { z } from "zod";
+import { prisma } from "~/lib/prisma";
+import { VeterinaryVisitUpdateSchema } from "~/lib/validations/veterinary-visit";
+import { requireAuth } from "~/lib/auth-middleware";
 
 const paramsSchema = z.object({
-  id: z.string().min(1, '有効なIDを指定してください'),
+  id: z.coerce.number().positive("有効なIDを指定してください"),
 });
 
 // マスタデータの検索または作成を行うヘルパー関数
@@ -25,7 +25,11 @@ async function findOrCreateHospital(name: string, userId: string) {
   });
 }
 
-async function findOrCreateDoctor(name: string, hospitalId: string, userId: string) {
+async function findOrCreateDoctor(
+  name: string,
+  hospitalId: string,
+  userId: string
+) {
   const existing = await prisma.veterinaryDoctor.findFirst({
     where: {
       name,
@@ -70,7 +74,7 @@ async function findOrCreateTreatments(treatmentNames: string[]) {
 export default defineEventHandler(async (event) => {
   try {
     // Only allow PUT method
-    assertMethod(event, 'PUT');
+    assertMethod(event, "PUT");
 
     // 認証チェック
     const user = await requireAuth(event);
@@ -94,7 +98,7 @@ export default defineEventHandler(async (event) => {
     if (!existingVisit) {
       throw createError({
         statusCode: 404,
-        statusMessage: '指定された通院記録が見つかりません',
+        statusMessage: "指定された通院記録が見つかりません",
       });
     }
 
@@ -107,7 +111,7 @@ export default defineEventHandler(async (event) => {
       if (!cat) {
         throw createError({
           statusCode: 404,
-          statusMessage: '指定された猫が見つかりません',
+          statusMessage: "指定された猫が見つかりません",
         });
       }
     }
@@ -137,7 +141,10 @@ export default defineEventHandler(async (event) => {
 
     // Handle hospital update
     if (updateData.hospitalName) {
-      const hospital = await findOrCreateHospital(updateData.hospitalName, user.userId);
+      const hospital = await findOrCreateHospital(
+        updateData.hospitalName,
+        user.userId
+      );
       visitUpdateData.hospitalId = hospital.id;
     }
 
@@ -145,11 +152,15 @@ export default defineEventHandler(async (event) => {
     if (updateData.doctorName !== undefined) {
       if (updateData.doctorName && updateData.doctorName.trim()) {
         // Get hospital ID (either from update data or existing visit)
-        const hospitalId = visitUpdateData.hospitalId || existingVisit.hospitalId;
-        const doctor = await findOrCreateDoctor(updateData.doctorName.trim(), hospitalId, user.userId);
+        const hospitalId =
+          visitUpdateData.hospitalId || existingVisit.hospitalId;
+        const doctor = await findOrCreateDoctor(
+          updateData.doctorName.trim(),
+          hospitalId,
+          user.userId
+        );
         visitUpdateData.doctorId = doctor.id;
-      }
-      else {
+      } else {
         visitUpdateData.doctorId = null;
       }
     }
@@ -177,7 +188,7 @@ export default defineEventHandler(async (event) => {
 
         // Create new treatment relationships
         await tx.veterinaryVisitTreatment.createMany({
-          data: treatmentsToUpdate.map(treatment => ({
+          data: treatmentsToUpdate.map((treatment) => ({
             visitId: id,
             treatmentId: treatment.id,
           })),
@@ -228,34 +239,33 @@ export default defineEventHandler(async (event) => {
     // Transform the data to flatten treatments
     const transformedVisit = {
       ...updatedVisit,
-      treatments: updatedVisit!.treatments.map(vt => vt.treatment),
+      treatments: updatedVisit!.treatments.map((vt) => vt.treatment),
     };
 
     return {
       visit: transformedVisit,
-      message: '通院記録が正常に更新されました',
+      message: "通院記録が正常に更新されました",
     };
-  }
-  catch (error) {
+  } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: '入力データが無効です',
+        statusMessage: "入力データが無効です",
         data: error.errors,
       });
     }
 
     // Re-throw HTTP errors
-    if (error && typeof error === 'object' && 'statusCode' in error) {
+    if (error && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
 
     // Handle unexpected errors
-    console.error('Error updating veterinary visit:', error);
+    console.error("Error updating veterinary visit:", error);
     throw createError({
       statusCode: 500,
-      statusMessage: '通院記録の更新に失敗しました',
+      statusMessage: "通院記録の更新に失敗しました",
     });
   }
 });

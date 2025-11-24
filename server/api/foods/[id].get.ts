@@ -1,14 +1,14 @@
-import { z } from 'zod';
-import { prisma } from '~/lib/prisma';
+import { z } from "zod";
+import { prisma } from "~/lib/prisma";
 
 const paramsSchema = z.object({
-  id: z.string().min(1, '有効なフードIDを指定してください'),
+  id: z.coerce.number().positive("有効なフードIDを指定してください"),
 });
 
 export default defineEventHandler(async (event) => {
   try {
     // Only allow GET method
-    assertMethod(event, 'GET');
+    assertMethod(event, "GET");
 
     // Parse and validate route parameters
     const params = getRouterParams(event);
@@ -38,31 +38,30 @@ export default defineEventHandler(async (event) => {
     if (!food) {
       throw createError({
         statusCode: 404,
-        statusMessage: '指定されたフードが見つかりません',
+        statusMessage: "指定されたフードが見つかりません",
       });
     }
 
     return { food };
-  }
-  catch (error) {
+  } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Invalid food ID',
+        statusMessage: "Invalid food ID",
         data: error.errors,
       });
     }
 
     // Re-throw HTTP errors
-    if (error && typeof error === 'object' && 'statusCode' in error) {
+    if (error && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
 
     // Handle unexpected errors
     throw createError({
       statusCode: 500,
-      statusMessage: 'Internal server error',
+      statusMessage: "Internal server error",
     });
   }
 });

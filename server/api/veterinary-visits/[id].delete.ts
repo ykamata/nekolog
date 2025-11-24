@@ -1,14 +1,14 @@
-import { z } from 'zod';
-import { prisma } from '~/lib/prisma';
+import { z } from "zod";
+import { prisma } from "~/lib/prisma";
 
 const paramsSchema = z.object({
-  id: z.string().min(1, '有効なIDを指定してください'),
+  id: z.coerce.number().positive("有効なIDを指定してください"),
 });
 
 export default defineEventHandler(async (event) => {
   try {
     // Only allow DELETE method
-    assertMethod(event, 'DELETE');
+    assertMethod(event, "DELETE");
 
     // Parse and validate route parameters
     const params = getRouterParams(event);
@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
     if (!existingVisit) {
       throw createError({
         statusCode: 404,
-        statusMessage: '指定された通院記録が見つかりません',
+        statusMessage: "指定された通院記録が見つかりません",
       });
     }
 
@@ -63,27 +63,26 @@ export default defineEventHandler(async (event) => {
         treatmentCount: existingVisit.treatments.length,
       },
     };
-  }
-  catch (error) {
+  } catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'パラメータが無効です',
+        statusMessage: "パラメータが無効です",
         data: error.errors,
       });
     }
 
     // Re-throw HTTP errors
-    if (error && typeof error === 'object' && 'statusCode' in error) {
+    if (error && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
 
     // Handle unexpected errors
-    console.error('Error deleting veterinary visit:', error);
+    console.error("Error deleting veterinary visit:", error);
     throw createError({
       statusCode: 500,
-      statusMessage: '通院記録の削除に失敗しました',
+      statusMessage: "通院記録の削除に失敗しました",
     });
   }
 });

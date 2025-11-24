@@ -1,11 +1,15 @@
-import { z } from 'zod';
-import { prisma } from '~/lib/prisma';
-import { requireAuth } from '~/lib/auth-middleware';
-import { veterinaryHospitalSchema } from '~/lib/validations/veterinary-master';
-import { validateParams, validateBody, createApiErrorHandler } from '~/server/utils/error-handler';
+import { z } from "zod";
+import { prisma } from "~/lib/prisma";
+import { requireAuth } from "~/lib/auth-middleware";
+import { veterinaryHospitalSchema } from "~/lib/validations/veterinary-master";
+import {
+  validateParams,
+  validateBody,
+  createApiErrorHandler,
+} from "~/server/utils/error-handler";
 
 // バリデーションスキーマを定義
-const veterinaryIdSchema = z.object({ id: z.string() });
+const veterinaryIdSchema = z.object({ id: z.coerce.number().positive() });
 const veterinaryHospitalUpdateSchema = z.object({
   name: z.string().optional(),
   address: z.string().optional(),
@@ -15,8 +19,8 @@ const veterinaryHospitalUpdateSchema = z.object({
 
 export default defineEventHandler(async (event) => {
   const errorHandler = createApiErrorHandler({
-    endpoint: 'veterinary-hospitals',
-    method: 'PUT',
+    endpoint: "veterinary-hospitals",
+    method: "PUT",
   });
 
   try {
@@ -40,10 +44,10 @@ export default defineEventHandler(async (event) => {
     if (!existingHospital) {
       throw createError({
         statusCode: 404,
-        statusMessage: '指定された病院が見つかりません',
+        statusMessage: "指定された病院が見つかりません",
         data: {
-          code: 'NOT_FOUND',
-          resource: 'hospital',
+          code: "NOT_FOUND",
+          resource: "hospital",
           id,
         },
       });
@@ -62,10 +66,10 @@ export default defineEventHandler(async (event) => {
       if (duplicateHospital) {
         throw createError({
           statusCode: 409,
-          statusMessage: 'この病院名は既に登録されています',
+          statusMessage: "この病院名は既に登録されています",
           data: {
-            code: 'DUPLICATE_NAME',
-            field: 'name',
+            code: "DUPLICATE_NAME",
+            field: "name",
             value: body.name,
           },
         });
@@ -84,8 +88,7 @@ export default defineEventHandler(async (event) => {
     });
 
     return updatedHospital;
-  }
-  catch (error) {
+  } catch (error) {
     throw errorHandler(error);
   }
 });
