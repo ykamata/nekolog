@@ -6,7 +6,11 @@
         {{ formTitle }}
       </h2>
       <p class="text-sm text-gray-600">
-        {{ isEditMode ? '先生情報を編集してください' : '新しい先生を登録してください' }}
+        {{
+          isEditMode
+            ? "先生情報を編集してください"
+            : "新しい先生を登録してください"
+        }}
       </p>
     </div>
 
@@ -30,9 +34,7 @@
           </svg>
         </div>
         <div class="ml-3">
-          <h3 class="text-sm font-medium text-red-800">
-            エラーが発生しました
-          </h3>
+          <h3 class="text-sm font-medium text-red-800">エラーが発生しました</h3>
           <p class="mt-1 text-sm text-red-700">
             {{ submitError }}
           </p>
@@ -41,16 +43,10 @@
     </div>
 
     <!-- フォーム -->
-    <form
-      class="space-y-6"
-      @submit.prevent="handleSubmit"
-    >
+    <form class="space-y-6" @submit.prevent="handleSubmit">
       <!-- 先生名 -->
       <div>
-        <label
-          for="name"
-          class="block text-sm font-medium text-gray-700 mb-1"
-        >
+        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
           先生名 <span class="text-red-500">*</span>
         </label>
         <input
@@ -62,13 +58,10 @@
             'block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
             errors.name ? 'border-red-300' : 'border-gray-300',
           ]"
-          placeholder="先生名を入力してください"
+          placeholder="先生の名前を入力してください"
           @blur="validateField('name')"
-        >
-        <p
-          v-if="errors.name"
-          class="mt-1 text-sm text-red-600"
-        >
+        />
+        <p v-if="errors.name" class="mt-1 text-sm text-red-600">
           {{ errors.name }}
         </p>
       </div>
@@ -90,9 +83,7 @@
           ]"
           @blur="validateField('hospitalId')"
         >
-          <option value="">
-            病院を選択してください
-          </option>
+          <option value="">病院を選択してください</option>
           <option
             v-for="hospital in hospitals"
             :key="hospital.id"
@@ -101,10 +92,7 @@
             {{ hospital.name }}
           </option>
         </select>
-        <p
-          v-if="errors.hospitalId"
-          class="mt-1 text-sm text-red-600"
-        >
+        <p v-if="errors.hospitalId" class="mt-1 text-sm text-red-600">
           {{ errors.hospitalId }}
         </p>
         <p class="mt-1 text-xs text-gray-500">
@@ -130,16 +118,11 @@
           ]"
           placeholder="専門分野を入力してください"
           @blur="validateField('specialty')"
-        >
-        <p
-          v-if="errors.specialty"
-          class="mt-1 text-sm text-red-600"
-        >
+        />
+        <p v-if="errors.specialty" class="mt-1 text-sm text-red-600">
           {{ errors.specialty }}
         </p>
-        <p class="mt-1 text-xs text-gray-500">
-          例: 内科、外科、皮膚科など
-        </p>
+        <p class="mt-1 text-xs text-gray-500">例: 内科、外科、皮膚科など</p>
       </div>
 
       <!-- ボタン -->
@@ -154,10 +137,7 @@
               : 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
           ]"
         >
-          <span
-            v-if="isSubmitting"
-            class="flex items-center justify-center"
-          >
+          <span v-if="isSubmitting" class="flex items-center justify-center">
             <svg
               class="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
               fill="none"
@@ -180,7 +160,7 @@
             保存中...
           </span>
           <span v-else>
-            {{ isEditMode ? '更新' : '登録' }}
+            {{ isEditMode ? "更新" : "登録" }}
           </span>
         </button>
 
@@ -198,18 +178,22 @@
 </template>
 
 <script setup lang="ts">
-import type { VeterinaryDoctor, VeterinaryDoctorInput, VeterinaryHospital } from '~/types/veterinary-master';
-import { VeterinaryDoctorInputSchema } from '~/lib/validations/veterinary-visit';
+import type {
+  VeterinaryDoctor,
+  VeterinaryDoctorInput,
+  VeterinaryHospital,
+} from "~/types/veterinary-master";
+import { VeterinaryDoctorInputSchema } from "~/lib/validations/veterinary-visit";
 
 // Props
 interface Props {
   doctor?: VeterinaryDoctor;
-  mode: 'create' | 'edit';
+  mode: "create" | "edit";
   preselectedHospitalId?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  mode: 'create',
+  mode: "create",
 });
 
 // Emits
@@ -225,9 +209,9 @@ const { hospitals, fetchHospitals } = useVeterinaryHospitals();
 
 // リアクティブデータ
 const formData = ref<VeterinaryDoctorInput>({
-  name: '',
+  name: "",
   hospitalId: undefined,
-  specialty: '',
+  specialty: "",
 });
 
 const errors = ref<Record<string, string>>({});
@@ -235,11 +219,16 @@ const isSubmitting = ref(false);
 const submitError = ref<string | null>(null);
 
 // 計算プロパティ
-const isEditMode = computed(() => props.mode === 'edit');
-const formTitle = computed(() => isEditMode.value ? '先生情報編集' : '先生登録');
+const isEditMode = computed(() => props.mode === "edit");
+const formTitle = computed(() =>
+  isEditMode.value ? "先生情報編集" : "先生登録"
+);
 
 const isFormValid = computed(() => {
-  return formData.value.name.trim().length > 0 && Object.keys(errors.value).length === 0;
+  return (
+    formData.value.name.trim().length > 0 &&
+    Object.keys(errors.value).length === 0
+  );
 });
 
 // フォームデータの初期化
@@ -248,14 +237,13 @@ const initializeForm = () => {
     formData.value = {
       name: props.doctor.name,
       hospitalId: props.doctor.hospitalId || undefined,
-      specialty: props.doctor.specialty || '',
+      specialty: props.doctor.specialty || "",
     };
-  }
-  else {
+  } else {
     formData.value = {
-      name: '',
+      name: "",
       hospitalId: props.preselectedHospitalId || undefined,
-      specialty: '',
+      specialty: "",
     };
   }
   errors.value = {};
@@ -267,13 +255,15 @@ const validateField = (field: keyof VeterinaryDoctorInput) => {
   try {
     // 特定のフィールドのみバリデーション
     const value = formData.value[field];
-    if (field === 'name' && (!value || (typeof value === 'string' && value.trim().length === 0))) {
-      errors.value[field] = '先生名は必須です';
+    if (
+      field === "name" &&
+      (!value || (typeof value === "string" && value.trim().length === 0))
+    ) {
+      errors.value[field] = "先生名は必須です";
       return;
     }
     delete errors.value[field];
-  }
-  catch (error: any) {
+  } catch (error: any) {
     if (error.errors && error.errors[0]) {
       errors.value[field] = error.errors[0].message;
     }
@@ -285,8 +275,7 @@ const validateForm = () => {
     VeterinaryDoctorInputSchema.parse(formData.value);
     errors.value = {};
     return true;
-  }
-  catch (error: any) {
+  } catch (error: any) {
     const newErrors: Record<string, string> = {};
     if (error.errors) {
       error.errors.forEach((err: any) => {
@@ -317,28 +306,29 @@ const handleSubmit = async () => {
       specialty: formData.value.specialty?.trim() || undefined,
     };
 
-    emit('save', cleanedData);
-  }
-  catch (error: any) {
-    submitError.value = error.message || '保存に失敗しました';
-  }
-  finally {
+    emit("save", cleanedData);
+  } catch (error: any) {
+    submitError.value = error.message || "保存に失敗しました";
+  } finally {
     isSubmitting.value = false;
   }
 };
 
 const handleCancel = () => {
-  emit('cancel');
+  emit("cancel");
 };
 
 // ウォッチャー
 watch(() => props.doctor, initializeForm, { immediate: true });
 watch(() => props.mode, initializeForm);
-watch(() => props.preselectedHospitalId, (newHospitalId) => {
-  if (!isEditMode.value && newHospitalId) {
-    formData.value.hospitalId = newHospitalId;
+watch(
+  () => props.preselectedHospitalId,
+  (newHospitalId) => {
+    if (!isEditMode.value && newHospitalId) {
+      formData.value.hospitalId = newHospitalId;
+    }
   }
-});
+);
 
 // 初期化
 onMounted(async () => {

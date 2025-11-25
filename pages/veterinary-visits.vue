@@ -32,6 +32,7 @@ const selectedCatId = ref<number | undefined>(undefined);
 // Modal states
 const showAddModal = ref(false);
 const showEditModal = ref(false);
+const showAddAppointmentModal = ref(false);
 const editingVisit = ref<VeterinaryVisitWithRelations | null>(null);
 
 // Delete confirmation state
@@ -169,6 +170,12 @@ const handleAdd = (date?: string) => {
   showAddModal.value = true;
 };
 
+// Handle add appointment (右クリック用)
+const handleAddAppointment = (date: Date) => {
+  selectedDate.value = date.toISOString().split('T')[0];
+  showAddAppointmentModal.value = true;
+};
+
 // Handle edit visit
 const handleEdit = (visit: VeterinaryVisitWithRelations) => {
   editingVisit.value = visit;
@@ -263,6 +270,27 @@ const handleEditSubmit = async (data: CreateVeterinaryVisitInput) => {
   }
 };
 
+// Handle form submission for add appointment
+const handleAddAppointmentSubmit = async (data: any) => {
+  try {
+    await $fetch('/api/veterinary-appointments', {
+      method: 'POST',
+      body: data,
+    });
+
+    // Close modal
+    showAddAppointmentModal.value = false;
+    selectedDate.value = null;
+
+    // Refresh data (予約データも表示する場合)
+    await fetchInitialData();
+  }
+  catch (err) {
+    error.value = '予約の作成に失敗しました';
+    console.error('Failed to create appointment:', err);
+  }
+};
+
 // Handle form cancel
 const handleAddCancel = () => {
   showAddModal.value = false;
@@ -272,6 +300,11 @@ const handleAddCancel = () => {
 const handleEditCancel = () => {
   showEditModal.value = false;
   editingVisit.value = null;
+};
+
+const handleAddAppointmentCancel = () => {
+  showAddAppointmentModal.value = false;
+  selectedDate.value = null;
 };
 
 // Handle calendar date selection
@@ -313,6 +346,21 @@ const getEditFormData = (): Partial<CreateVeterinaryVisitInput> => {
     notes: editingVisit.value.notes || undefined,
     hasBloodTest: editingVisit.value.hasBloodTest,
   };
+};
+
+// Get pre-filled appointment form data
+const getPrefilledAppointmentFormData = (): any => {
+  const baseData: any = {};
+
+  if (selectedDate.value) {
+    baseData.appointmentDate = new Date(selectedDate.value);
+  }
+
+  if (selectedCatId.value) {
+    baseData.catId = selectedCatId.value;
+  }
+
+  return baseData;
 };
 
 // Format currency
@@ -548,7 +596,8 @@ onMounted(() => {
           :cats="cats"
           :selected-cat-id="selectedCatId"
           @date-selected="handleDateSelected"
-          @record-create="handleRecordCreate"
+          @visit-create="handleRecordCreate"
+          @appointment-create="handleAddAppointment"
           @visit-edit="handleEdit"
           @visit-delete="handleDelete"
         />
@@ -626,6 +675,15 @@ onMounted(() => {
       :initial-data="getEditFormData()"
       @close="handleEditCancel"
       @save="handleEditSubmit"
+    />
+
+    <!-- Add Appointment Modal -->
+    <VeterinaryAppointmentForm
+      :is-open="showAddAppointmentModal"
+      :cats="cats"
+      :initial-data="getPrefilledAppointmentFormData()"
+      @close="handleAddAppointmentCancel"
+      @save="handleAddAppointmentSubmit"
     />
 
     <!-- Delete Confirmation Dialog -->

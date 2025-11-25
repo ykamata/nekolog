@@ -1,18 +1,24 @@
 <script setup lang="ts">
-import { z } from 'zod';
-import type { Cat } from '~/types/cat-meal';
+import { z } from "zod";
+import type { Cat } from "~/types/cat-meal";
 import type {
   VeterinaryVisitWithRelations,
   CreateVeterinaryVisitInput,
   VeterinaryHospital,
   VeterinaryDoctor,
   VeterinaryTreatment,
-} from '~/types/veterinary-visit';
-import { VeterinaryVisitFormSchema } from '~/lib/validations/veterinary-visit';
-import { parseApiError, formatValidationErrors, createDebouncedValidator, errorInfoToApiError, createUnifiedErrorHandler } from '~/utils/error-handling';
-import { useToast } from '~/composables/useToast';
-import { useVeterinaryMasters } from '~/composables/useVeterinaryMasters';
-import { useResponsive } from '~/composables/useResponsive';
+} from "~/types/veterinary-visit";
+import { VeterinaryVisitFormSchema } from "~/lib/validations/veterinary-visit";
+import {
+  parseApiError,
+  formatValidationErrors,
+  createDebouncedValidator,
+  errorInfoToApiError,
+  createUnifiedErrorHandler,
+} from "~/utils/error-handling";
+import { useToast } from "~/composables/useToast";
+import { useVeterinaryMasters } from "~/composables/useVeterinaryMasters";
+import { useResponsive } from "~/composables/useResponsive";
 
 interface Props {
   visit?: VeterinaryVisitWithRelations;
@@ -22,8 +28,8 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'close'): void;
-  (e: 'save', visit: CreateVeterinaryVisitInput): void;
+  (e: "close"): void;
+  (e: "save", visit: CreateVeterinaryVisitInput): void;
 }
 
 const props = defineProps<Props>();
@@ -33,21 +39,21 @@ const emit = defineEmits<Emits>();
 const formData = reactive<CreateVeterinaryVisitInput>({
   catId: 0,
   visitDate: new Date(),
-  hospitalName: '',
-  doctorName: '',
+  hospitalName: "",
+  doctorName: "",
   treatments: [],
   cost: 0,
-  notes: '',
+  notes: "",
   hasBloodTest: false,
 });
 
 const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
-const submitError = ref<string>('');
+const submitError = ref<string>("");
 const retryCount = ref(0);
 
 // 統一エラーハンドラーの初期化
-const errorHandler = createUnifiedErrorHandler('VeterinaryVisitForm', {
+const errorHandler = createUnifiedErrorHandler("VeterinaryVisitForm", {
   maxRetries: 3,
   baseDelay: 1000,
   maxDelay: 5000,
@@ -57,13 +63,16 @@ const errorHandler = createUnifiedErrorHandler('VeterinaryVisitForm', {
 const hospitals = ref<VeterinaryHospital[]>([]);
 const doctors = ref<VeterinaryDoctor[]>([]);
 const treatments = ref<VeterinaryTreatment[]>([]);
+const medications = ref<any[]>([]);
 const loadingMasterData = ref(false);
 
 // Form UI state
 const showHospitalInput = ref(false);
 const showDoctorInput = ref(false);
 const showTreatmentInput = ref(false);
-const newTreatmentName = ref('');
+const newTreatmentName = ref("");
+const treatmentInputMode = ref<'medication' | 'text'>('medication');
+const selectedMedicationId = ref<number | undefined>(undefined);
 
 const { error: showErrorToast } = useToast();
 const {
@@ -81,7 +90,7 @@ const { screenSize, getResponsiveClasses } = useResponsive();
 // Methods
 const clearErrors = () => {
   errors.value = {};
-  submitError.value = '';
+  submitError.value = "";
 };
 
 // Initialize form data when visit prop changes
@@ -92,57 +101,63 @@ watch(
       formData.catId = visit.catId;
       formData.visitDate = new Date(visit.visitDate);
       formData.hospitalName = visit.hospital.name;
-      formData.doctorName = visit.doctor?.name || '';
-      formData.treatments = visit.treatments.map(t => t.treatment?.name || 'Unknown Treatment');
+      formData.doctorName = visit.doctor?.name || "";
+      formData.treatments = visit.treatments.map(
+        (t) => t.treatment?.name || "Unknown Treatment"
+      );
       formData.cost = visit.cost;
-      formData.notes = visit.notes || '';
+      formData.notes = visit.notes || "";
       formData.hasBloodTest = visit.hasBloodTest;
-    }
-    else {
+    } else {
       // Reset form for new visit
       formData.catId = props.initialData?.catId || 0;
       formData.visitDate = props.initialData?.visitDate || new Date();
-      formData.hospitalName = props.initialData?.hospitalName || '';
-      formData.doctorName = props.initialData?.doctorName || '';
+      formData.hospitalName = props.initialData?.hospitalName || "";
+      formData.doctorName = props.initialData?.doctorName || "";
       formData.treatments = props.initialData?.treatments || [];
       formData.cost = props.initialData?.cost || 0;
-      formData.notes = props.initialData?.notes || '';
+      formData.notes = props.initialData?.notes || "";
       formData.hasBloodTest = props.initialData?.hasBloodTest || false;
     }
     clearErrors();
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 const loadMasterData = async () => {
   loadingMasterData.value = true;
   try {
-    const [hospitalsResponse, doctorsResponse, treatmentsResponse] = await Promise.all([
-      $fetch<VeterinaryHospital[]>('/api/veterinary-hospitals'),
-      $fetch<VeterinaryDoctor[]>('/api/veterinary-doctors'),
-      $fetch<VeterinaryTreatment[]>('/api/veterinary-treatments'),
-    ]);
+    const [hospitalsResponse, doctorsResponse, treatmentsResponse, medicationsResponse] =
+      await Promise.all([
+        $fetch<{ hospitals: VeterinaryHospital[] }>("/api/veterinary-hospitals"),
+        $fetch<{ doctors: VeterinaryDoctor[] }>("/api/veterinary-doctors"),
+        $fetch<{ treatments: VeterinaryTreatment[] }>("/api/veterinary-treatments"),
+        $fetch<{ medications: any[] }>("/api/medications").catch(() => ({ medications: [] })),
+      ]);
 
-    hospitals.value = hospitalsResponse;
-    doctors.value = doctorsResponse;
-    treatments.value = treatmentsResponse;
-  }
-  catch (error) {
-    console.error('Failed to load master data:', error);
+    hospitals.value = hospitalsResponse.hospitals || [];
+    doctors.value = doctorsResponse.doctors || [];
+    treatments.value = treatmentsResponse.treatments || [];
+    medications.value = medicationsResponse.medications || [];
+  } catch (error) {
+    console.error("Failed to load master data:", error);
     // In test environment, use the mock data from composable
-    if (import.meta.env.NODE_ENV === 'test') {
+    if (import.meta.env.NODE_ENV === "test") {
       hospitals.value = [...masterHospitals.value];
       doctors.value = [...masterDoctors.value];
       treatments.value = [...masterTreatments.value];
-    }
-    else {
+    } else {
+      // Initialize with empty arrays on error
+      hospitals.value = [];
+      doctors.value = [];
+      treatments.value = [];
+      medications.value = [];
       showErrorToast({
-        title: 'データの読み込みに失敗しました',
-        message: 'マスタデータの取得に失敗しました',
+        title: "データの読み込みに失敗しました",
+        message: "マスタデータの取得に失敗しました",
       });
     }
-  }
-  finally {
+  } finally {
     loadingMasterData.value = false;
   }
 };
@@ -154,46 +169,51 @@ watch(
     if (isOpen) {
       await loadMasterData();
       // In test environment, ensure we have the mock data
-      if (import.meta.env.NODE_ENV === 'test') {
+      if (import.meta.env.NODE_ENV === "test") {
         hospitals.value = [...masterHospitals.value];
         doctors.value = [...masterDoctors.value];
         treatments.value = [...masterTreatments.value];
       }
+    } else {
+      // Reset submitting state when modal closes
+      isSubmitting.value = false;
     }
   },
-  { immediate: true },
+  { immediate: true }
 );
 
 // Debounced validation for real-time feedback
-const debouncedValidate = createDebouncedValidator((data: CreateVeterinaryVisitInput) => {
-  try {
-    VeterinaryVisitFormSchema.parse(data);
-    // Clear field-specific errors if validation passes
-    Object.keys(errors.value).forEach((key) => {
-      if (key !== 'submit') {
-        delete errors.value[key];
-      }
-    });
-  }
-  catch (error) {
-    if (error instanceof z.ZodError) {
-      const validationErrors = formatValidationErrors(
-        error.errors.map(err => ({
-          field: err.path.join('.'),
-          message: err.message,
-        })),
-      );
-
-      // Only update field errors, preserve submit errors
-      Object.keys(validationErrors).forEach((key) => {
-        const errorMessage = validationErrors[key];
-        if (errorMessage) {
-          errors.value[key] = errorMessage;
+const debouncedValidate = createDebouncedValidator(
+  (data: CreateVeterinaryVisitInput) => {
+    try {
+      VeterinaryVisitFormSchema.parse(data);
+      // Clear field-specific errors if validation passes
+      Object.keys(errors.value).forEach((key) => {
+        if (key !== "submit") {
+          delete errors.value[key];
         }
       });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const validationErrors = formatValidationErrors(
+          error.errors.map((err) => ({
+            field: err.path.join("."),
+            message: err.message,
+          }))
+        );
+
+        // Only update field errors, preserve submit errors
+        Object.keys(validationErrors).forEach((key) => {
+          const errorMessage = validationErrors[key];
+          if (errorMessage) {
+            errors.value[key] = errorMessage;
+          }
+        });
+      }
     }
-  }
-}, 500);
+  },
+  500
+);
 
 // Watch form data for real-time validation
 watch(
@@ -205,39 +225,43 @@ watch(
       });
     }
   },
-  { deep: true },
+  { deep: true }
 );
 
 // Computed properties
 const isEditMode = computed(() => !!props.visit);
 const formTitle = computed(() =>
-  isEditMode.value ? '通院記録を編集' : '新しい通院記録を追加',
+  isEditMode.value ? "通院記録を編集" : "新しい通院記録を追加"
 );
 
 const filteredHospitals = computed(() => {
   if (!formData.hospitalName) return hospitals.value || [];
-  return hospitals.value?.filter(h =>
-    h.name.toLowerCase().includes(formData.hospitalName.toLowerCase()),
-  ) || [];
+  return (
+    hospitals.value?.filter((h) =>
+      h.name.toLowerCase().includes(formData.hospitalName.toLowerCase())
+    ) || []
+  );
 });
 
 const filteredDoctors = computed(() => {
   if (!formData.doctorName) return doctors.value || [];
-  return doctors.value?.filter(d =>
-    d.name.toLowerCase().includes((formData.doctorName || '').toLowerCase()),
-  ) || [];
+  return (
+    doctors.value?.filter((d) =>
+      d.name.toLowerCase().includes((formData.doctorName || "").toLowerCase())
+    ) || []
+  );
 });
 
 const filteredTreatments = computed(() => {
-  return treatments.value?.filter(t =>
-    !formData.treatments.includes(t.name),
-  ) || [];
+  return (
+    treatments.value?.filter((t) => !formData.treatments.includes(t.name)) || []
+  );
 });
 
 const validateForm = (): boolean => {
   // Clear previous field errors but keep submit errors
   Object.keys(errors.value).forEach((key) => {
-    if (key !== 'submit') {
+    if (key !== "submit") {
       delete errors.value[key];
     }
   });
@@ -245,14 +269,13 @@ const validateForm = (): boolean => {
   try {
     VeterinaryVisitFormSchema.parse(formData);
     return true;
-  }
-  catch (error) {
+  } catch (error) {
     if (error instanceof z.ZodError) {
       const validationErrors = formatValidationErrors(
-        error.errors.map(err => ({
-          field: err.path.join('.'),
+        error.errors.map((err) => ({
+          field: err.path.join("."),
           message: err.message,
-        })),
+        }))
       );
 
       Object.assign(errors.value, validationErrors);
@@ -281,27 +304,41 @@ const toggleTreatment = (treatment: VeterinaryTreatment) => {
   const index = formData.treatments.indexOf(treatment.name);
   if (index > -1) {
     formData.treatments.splice(index, 1);
-  }
-  else {
+  } else {
     formData.treatments.push(treatment.name);
   }
 };
 
 const addNewTreatment = async () => {
-  if (newTreatmentName.value.trim() && !formData.treatments.includes(newTreatmentName.value.trim())) {
-    try {
-      await createTreatment(newTreatmentName.value.trim());
-      formData.treatments.push(newTreatmentName.value.trim());
-      newTreatmentName.value = '';
+  if (treatmentInputMode.value === 'medication' && selectedMedicationId.value) {
+    const medication = medications.value.find(m => m.id === selectedMedicationId.value);
+    if (medication && !formData.treatments.includes(medication.name)) {
+      formData.treatments.push(medication.name);
+      selectedMedicationId.value = undefined;
       showTreatmentInput.value = false;
     }
-    catch (error) {
-      showErrorToast({
-        title: '処方内容の作成に失敗しました',
-        message: '処方内容の作成に失敗しました',
-      });
+  } else if (treatmentInputMode.value === 'text' && newTreatmentName.value.trim()) {
+    if (!formData.treatments.includes(newTreatmentName.value.trim())) {
+      try {
+        await createTreatment(newTreatmentName.value.trim());
+        formData.treatments.push(newTreatmentName.value.trim());
+        newTreatmentName.value = "";
+        showTreatmentInput.value = false;
+      } catch (error) {
+        showErrorToast({
+          title: "処方内容の作成に失敗しました",
+          message: "処方内容の作成に失敗しました",
+        });
+      }
     }
   }
+};
+
+const cancelTreatmentInput = () => {
+  showTreatmentInput.value = false;
+  newTreatmentName.value = "";
+  selectedMedicationId.value = undefined;
+  treatmentInputMode.value = 'medication';
 };
 
 const removeTreatment = (index: number) => {
@@ -310,10 +347,10 @@ const removeTreatment = (index: number) => {
 
 const formatDateTimeLocal = (date: Date): string => {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
@@ -322,108 +359,75 @@ const parseDateTimeLocal = (dateTimeString: string): Date => {
 };
 
 const handleSubmit = async () => {
-  const result = await errorHandler.handleFormSubmission(
-    // バリデーション関数
-    async () => {
-      if (!validateForm()) {
-        // 基本バリデーションエラーをZodエラー形式で投げる
-        const validationErrors = Object.entries(errors.value).map(([field, message]) => ({
-          field,
-          message,
-        }));
-        const error = new Error('Validation failed');
-        (error as any).validationErrors = validationErrors;
-        throw error;
+  // Clear previous errors
+  submitError.value = "";
+  Object.keys(errors.value).forEach((key) => {
+    if (key !== "submit") {
+      delete errors.value[key];
+    }
+  });
+
+  // Validate form
+  if (!validateForm()) {
+    showErrorToast({
+      title: "バリデーションエラー",
+      message: "入力内容を確認してください",
+    });
+    return;
+  }
+
+  try {
+    isSubmitting.value = true;
+
+    // Create new hospital if it doesn't exist
+    const existingHospital = hospitals.value.find(
+      (h) => h.name === formData.hospitalName.trim()
+    );
+    if (!existingHospital) {
+      await createHospital(formData.hospitalName.trim());
+    }
+
+    // Create new doctor if it doesn't exist and is provided
+    if (formData.doctorName?.trim()) {
+      const existingDoctor = doctors.value.find(
+        (d) => d.name === formData.doctorName!.trim()
+      );
+      if (!existingDoctor) {
+        await createDoctor(formData.doctorName!.trim());
       }
-      // Zodスキーマバリデーション
-      VeterinaryVisitFormSchema.parse(formData);
-    },
-    // 送信関数
-    async () => {
-      // Create new hospital if it doesn't exist
-      const existingHospital = hospitals.value.find(h => h.name === formData.hospitalName.trim());
-      if (!existingHospital) {
-        await createHospital(formData.hospitalName.trim());
-      }
+    }
 
-      // Create new doctor if it doesn't exist and is provided
-      if (formData.doctorName?.trim()) {
-        const existingDoctor = doctors.value.find(d => d.name === formData.doctorName!.trim());
-        if (!existingDoctor) {
-          await createDoctor(formData.doctorName!.trim());
-        }
-      }
+    // Clean up empty strings to undefined for optional fields
+    const cleanedData: CreateVeterinaryVisitInput = {
+      catId: formData.catId,
+      visitDate: formData.visitDate,
+      hospitalName: formData.hospitalName.trim(),
+      doctorName: formData.doctorName?.trim() || undefined,
+      treatments: formData.treatments,
+      cost: formData.cost,
+      notes: formData.notes?.trim() || undefined,
+      hasBloodTest: formData.hasBloodTest,
+    };
 
-      // Clean up empty strings to undefined for optional fields
-      const cleanedData: CreateVeterinaryVisitInput = {
-        catId: formData.catId,
-        visitDate: formData.visitDate,
-        hospitalName: formData.hospitalName.trim(),
-        doctorName: formData.doctorName?.trim() || undefined,
-        treatments: formData.treatments,
-        cost: formData.cost,
-        notes: formData.notes?.trim() || undefined,
-        hasBloodTest: formData.hasBloodTest,
-      };
-
-      emit('save', cleanedData);
-      return cleanedData;
-    },
-    {
-      retryable: true,
-      successMessage: '通院記録を保存しました',
-      onValidationError: (validationErrors) => {
-        errors.value = validationErrors;
-        showErrorToast({
-          title: 'バリデーションエラー',
-          message: '入力内容を確認してください',
-        });
-      },
-      onSubmitStart: () => {
-        isSubmitting.value = true;
-        submitError.value = '';
-      },
-      onSubmitSuccess: () => {
-        retryCount.value = 0;
-      },
-      onSubmitError: (error, userMessage) => {
-        submitError.value = userMessage;
-        errors.value.submit = userMessage;
-        showErrorToast({
-          title: '通院記録の保存に失敗しました',
-          message: userMessage,
-          action: error.statusCode >= 500
-            ? {
-                label: '再試行',
-                handler: () => handleRetry(),
-              }
-            : undefined,
-        });
-      },
-      onRetry: (attempt) => {
-        retryCount.value = attempt;
-        showErrorToast({
-          title: '再試行中',
-          message: `通院記録の保存を再試行しています... (${attempt}/3)`,
-        });
-      },
-    },
-  );
-
-  // 最終的な状態更新
-  isSubmitting.value = false;
-  retryCount.value = result.retryCount;
-
-  if (!result.success && result.validationErrors) {
-    errors.value = result.validationErrors;
+    // Emit to parent - parent will handle the API call
+    // Keep isSubmitting true until parent closes the modal
+    emit("save", cleanedData);
+  } catch (error) {
+    console.error("Error preparing form data:", error);
+    submitError.value = "フォームデータの準備中にエラーが発生しました";
+    isSubmitting.value = false;
+    showErrorToast({
+      title: "エラー",
+      message: submitError.value,
+    });
   }
 };
 
 const handleRetry = async () => {
   if (retryCount.value >= 3) {
     showErrorToast({
-      title: '再試行回数の上限に達しました',
-      message: 'しばらく待ってから再度お試しください',
+      title: "再試行回数の上限に達しました",
+      message: "しばらく待ってから再度お試しください",
     });
     return;
   }
@@ -433,7 +437,7 @@ const handleRetry = async () => {
 };
 
 const handleClose = () => {
-  emit('close');
+  emit("close");
 };
 
 const handleReset = () => {
@@ -441,20 +445,19 @@ const handleReset = () => {
     formData.catId = props.visit.catId;
     formData.visitDate = new Date(props.visit.visitDate);
     formData.hospitalName = props.visit.hospital.name;
-    formData.doctorName = props.visit.doctor?.name || '';
-    formData.treatments = props.visit.treatments.map(t => t.treatment.name);
+    formData.doctorName = props.visit.doctor?.name || "";
+    formData.treatments = props.visit.treatments.map((t) => t.treatment.name);
     formData.cost = props.visit.cost;
-    formData.notes = props.visit.notes || '';
+    formData.notes = props.visit.notes || "";
     formData.hasBloodTest = props.visit.hasBloodTest;
-  }
-  else {
+  } else {
     formData.catId = props.initialData?.catId || 0;
     formData.visitDate = props.initialData?.visitDate || new Date();
-    formData.hospitalName = props.initialData?.hospitalName || '';
-    formData.doctorName = props.initialData?.doctorName || '';
+    formData.hospitalName = props.initialData?.hospitalName || "";
+    formData.doctorName = props.initialData?.doctorName || "";
     formData.treatments = props.initialData?.treatments || [];
     formData.cost = props.initialData?.cost || 0;
-    formData.notes = props.initialData?.notes || '';
+    formData.notes = props.initialData?.notes || "";
     formData.hasBloodTest = props.initialData?.hasBloodTest || false;
   }
   clearErrors();
@@ -475,22 +478,13 @@ const handleDoctorBlur = () => {
 </script>
 
 <template>
-  <div
-    v-if="isOpen"
-    class="modal-overlay"
-    @click.self="handleClose"
-  >
+  <div v-if="isOpen" class="modal-overlay" @click.self="handleClose">
     <div class="modal-content">
       <div class="modal-header">
         <h2 class="modal-title">
           {{ formTitle }}
         </h2>
-        <button
-          class="modal-close-btn"
-          @click="handleClose"
-        >
-          ×
-        </button>
+        <button class="modal-close-btn" @click="handleClose">×</button>
       </div>
 
       <form
@@ -520,9 +514,7 @@ const handleDoctorBlur = () => {
             </svg>
           </div>
           <div class="error-content">
-            <div class="error-title">
-              エラーが発生しました
-            </div>
+            <div class="error-title">エラーが発生しました</div>
             <div class="error-message">
               {{ submitError }}
             </div>
@@ -541,10 +533,7 @@ const handleDoctorBlur = () => {
 
         <!-- 猫選択 -->
         <div class="form-group">
-          <label
-            for="cat-select"
-            class="form-label"
-          >
+          <label for="cat-select" class="form-label">
             猫 <span class="required">*</span>
           </label>
           <select
@@ -556,14 +545,8 @@ const handleDoctorBlur = () => {
             aria-required="true"
             :aria-describedby="errors.catId ? 'cat-error' : undefined"
           >
-            <option value="">
-              猫を選択してください
-            </option>
-            <option
-              v-for="cat in cats"
-              :key="cat.id"
-              :value="cat.id"
-            >
+            <option value="">猫を選択してください</option>
+            <option v-for="cat in cats" :key="cat.id" :value="cat.id">
               {{ cat.name }}
             </option>
           </select>
@@ -572,15 +555,13 @@ const handleDoctorBlur = () => {
             id="cat-error"
             class="form-error"
             data-testid="cat-error"
-          >{{ errors.catId }}</span>
+            >{{ errors.catId }}</span
+          >
         </div>
 
         <!-- 診察日時 -->
         <div class="form-group">
-          <label
-            for="visit-date"
-            class="form-label"
-          >
+          <label for="visit-date" class="form-label">
             診察日時 <span class="required">*</span>
           </label>
           <input
@@ -592,22 +573,24 @@ const handleDoctorBlur = () => {
             data-testid="visit-date"
             aria-required="true"
             :aria-describedby="errors.visitDate ? 'date-error' : undefined"
-            @input="formData.visitDate = parseDateTimeLocal(($event.target as HTMLInputElement)?.value || '')"
-          >
+            @input="
+              formData.visitDate = parseDateTimeLocal(
+                ($event.target as HTMLInputElement)?.value || ''
+              )
+            "
+          />
           <span
             v-if="errors.visitDate"
             id="date-error"
             class="form-error"
             data-testid="date-error"
-          >{{ errors.visitDate }}</span>
+            >{{ errors.visitDate }}</span
+          >
         </div>
 
         <!-- 病院名 -->
         <div class="form-group">
-          <label
-            for="hospital-input"
-            class="form-label"
-          >
+          <label for="hospital-input" class="form-label">
             病院名 <span class="required">*</span>
           </label>
           <div class="autocomplete-container">
@@ -620,13 +603,15 @@ const handleDoctorBlur = () => {
               placeholder="病院名を入力してください"
               data-testid="hospital-input"
               aria-required="true"
-              :aria-describedby="errors.hospitalName ? 'hospital-error' : undefined"
+              :aria-describedby="
+                errors.hospitalName ? 'hospital-error' : undefined
+              "
               role="combobox"
               :aria-expanded="showHospitalInput && filteredHospitals.length > 0"
               aria-autocomplete="list"
               @focus="showHospitalInput = true"
               @blur="handleHospitalBlur"
-            >
+            />
             <div
               v-if="showHospitalInput && filteredHospitals.length > 0"
               class="autocomplete-dropdown"
@@ -651,15 +636,13 @@ const handleDoctorBlur = () => {
             id="hospital-error"
             class="form-error"
             data-testid="hospital-error"
-          >{{ errors.hospitalName }}</span>
+            >{{ errors.hospitalName }}</span
+          >
         </div>
 
         <!-- 先生名 -->
         <div class="form-group">
-          <label
-            for="doctor-name"
-            class="form-label"
-          >先生名</label>
+          <label for="doctor-name" class="form-label">先生名</label>
           <div class="autocomplete-container">
             <input
               id="doctor-name"
@@ -667,7 +650,7 @@ const handleDoctorBlur = () => {
               type="text"
               class="form-input"
               :class="{ 'form-input--error': errors.doctorName }"
-              placeholder="先生名を入力してください（任意）"
+              placeholder="先生の名前を入力してください（任意）"
               data-testid="doctor-input"
               :aria-describedby="errors.doctorName ? 'doctor-error' : undefined"
               role="combobox"
@@ -675,7 +658,7 @@ const handleDoctorBlur = () => {
               aria-autocomplete="list"
               @focus="showDoctorInput = true"
               @blur="handleDoctorBlur"
-            >
+            />
             <div
               v-if="showDoctorInput && filteredDoctors.length > 0"
               class="autocomplete-dropdown"
@@ -692,10 +675,7 @@ const handleDoctorBlur = () => {
                 @click="selectDoctor(doctor)"
               >
                 {{ doctor.name }}
-                <span
-                  v-if="doctor.specialty"
-                  class="doctor-specialization"
-                >
+                <span v-if="doctor.specialty" class="doctor-specialization">
                   ({{ doctor.specialty }})
                 </span>
               </button>
@@ -706,15 +686,13 @@ const handleDoctorBlur = () => {
             id="doctor-error"
             class="form-error"
             data-testid="doctor-error"
-          >{{ errors.doctorName }}</span>
+            >{{ errors.doctorName }}</span
+          >
         </div>
 
         <!-- 処方内容 -->
         <div class="form-group">
-          <label
-            id="treatments-label"
-            class="form-label"
-          >
+          <label id="treatments-label" class="form-label">
             処方内容 <span class="required">*</span>
           </label>
 
@@ -726,10 +704,7 @@ const handleDoctorBlur = () => {
             aria-labelledby="treatments-label"
             aria-describedby="selected-treatments-description"
           >
-            <div
-              id="selected-treatments-description"
-              class="sr-only"
-            >
+            <div id="selected-treatments-description" class="sr-only">
               選択済みの処方内容。削除するには×ボタンを押してください。
             </div>
             <span
@@ -754,28 +729,10 @@ const handleDoctorBlur = () => {
             class="treatment-selection"
             role="group"
             aria-labelledby="treatments-label"
-            :aria-describedby="errors.treatments ? 'treatments-error' : undefined"
+            :aria-describedby="
+              errors.treatments ? 'treatments-error' : undefined
+            "
           >
-            <div
-              class="treatment-checkboxes"
-              role="group"
-              aria-label="処方内容の選択"
-            >
-              <label
-                v-for="treatment in treatments"
-                :key="treatment.id"
-                class="treatment-checkbox-label"
-              >
-                <input
-                  type="checkbox"
-                  :data-testid="`treatment-checkbox-${treatment.id}`"
-                  :checked="formData.treatments.includes(treatment.name)"
-                  :aria-describedby="errors.treatments ? 'treatments-error' : undefined"
-                  @change="toggleTreatment(treatment)"
-                >
-                {{ treatment.name }}
-              </label>
-            </div>
             <div
               class="treatment-buttons"
               role="group"
@@ -796,6 +753,7 @@ const handleDoctorBlur = () => {
             <!-- 新規処方内容追加 -->
             <div class="new-treatment-input">
               <button
+                v-if="!showTreatmentInput"
                 type="button"
                 class="btn btn--small btn--secondary"
                 data-testid="add-treatment-button"
@@ -804,27 +762,78 @@ const handleDoctorBlur = () => {
               >
                 新規追加
               </button>
-              <input
-                v-if="showTreatmentInput"
-                v-model="newTreatmentName"
-                type="text"
-                class="form-input"
-                placeholder="新しい処方内容を入力"
-                data-testid="new-treatment-input"
-                aria-label="新しい処方内容名"
-                @keyup.enter="addNewTreatment"
-                @keyup.escape="showTreatmentInput = false; newTreatmentName = ''"
-              >
-              <button
-                v-if="showTreatmentInput"
-                type="button"
-                class="btn btn--small btn--primary"
-                data-testid="confirm-treatment-button"
-                aria-label="新しい処方内容を確定"
-                @click="addNewTreatment"
-              >
-                追加
-              </button>
+
+              <div v-if="showTreatmentInput" class="treatment-input-form">
+                <!-- 入力モード切替 -->
+                <div class="input-mode-toggle">
+                  <button
+                    type="button"
+                    class="mode-toggle-btn"
+                    :class="{ 'mode-toggle-btn--active': treatmentInputMode === 'medication' }"
+                    @click="treatmentInputMode = 'medication'"
+                  >
+                    薬から選択
+                  </button>
+                  <button
+                    type="button"
+                    class="mode-toggle-btn"
+                    :class="{ 'mode-toggle-btn--active': treatmentInputMode === 'text' }"
+                    @click="treatmentInputMode = 'text'"
+                  >
+                    テキスト入力
+                  </button>
+                </div>
+
+                <!-- 薬選択モード -->
+                <select
+                  v-if="treatmentInputMode === 'medication'"
+                  v-model="selectedMedicationId"
+                  class="form-input"
+                  data-testid="medication-select"
+                  aria-label="薬を選択"
+                >
+                  <option :value="undefined">薬を選択してください</option>
+                  <option
+                    v-for="medication in medications"
+                    :key="medication.id"
+                    :value="medication.id"
+                  >
+                    {{ medication.name }}
+                  </option>
+                </select>
+
+                <!-- テキスト入力モード -->
+                <input
+                  v-if="treatmentInputMode === 'text'"
+                  v-model="newTreatmentName"
+                  type="text"
+                  class="form-input"
+                  placeholder="新しい処方内容を入力"
+                  data-testid="new-treatment-input"
+                  aria-label="新しい処方内容名"
+                  @keyup.escape="cancelTreatmentInput"
+                />
+
+                <!-- アクションボタン -->
+                <div class="treatment-input-actions">
+                  <button
+                    type="button"
+                    class="btn btn--small btn--secondary"
+                    @click="cancelTreatmentInput"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn--small btn--primary"
+                    data-testid="confirm-treatment-button"
+                    aria-label="新しい処方内容を確定"
+                    @click="addNewTreatment"
+                  >
+                    追加
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -833,15 +842,13 @@ const handleDoctorBlur = () => {
             id="treatments-error"
             class="form-error"
             data-testid="treatments-error"
-          >{{ errors.treatments }}</span>
+            >{{ errors.treatments }}</span
+          >
         </div>
 
         <!-- 費用 -->
         <div class="form-group">
-          <label
-            for="cost-input"
-            class="form-label"
-          >
+          <label for="cost-input" class="form-label">
             費用（円） <span class="required">*</span>
           </label>
           <input
@@ -855,13 +862,14 @@ const handleDoctorBlur = () => {
             :aria-describedby="errors.cost ? 'cost-error' : undefined"
             placeholder="0"
             data-testid="cost-input"
-          >
+          />
           <span
             v-if="errors.cost"
             id="cost-error"
             class="form-error"
             data-testid="cost-error"
-          >{{ errors.cost }}</span>
+            >{{ errors.cost }}</span
+          >
         </div>
 
         <!-- 血液検査フラグ -->
@@ -873,23 +881,17 @@ const handleDoctorBlur = () => {
               class="checkbox-input"
               data-testid="blood-test-checkbox"
               aria-describedby="blood-test-description"
-            >
+            />
             <span class="checkbox-text">血液検査を実施</span>
           </label>
-          <div
-            id="blood-test-description"
-            class="sr-only"
-          >
+          <div id="blood-test-description" class="sr-only">
             この通院で血液検査を実施した場合はチェックしてください
           </div>
         </div>
 
         <!-- メモ -->
         <div class="form-group">
-          <label
-            for="notes"
-            class="form-label"
-          >メモ</label>
+          <label for="notes" class="form-label">メモ</label>
           <textarea
             id="notes"
             v-model="formData.notes"
@@ -906,7 +908,8 @@ const handleDoctorBlur = () => {
             id="notes-error"
             class="form-error"
             data-testid="notes-error"
-          >{{ errors.notes }}</span>
+            >{{ errors.notes }}</span
+          >
         </div>
 
         <div class="form-actions">
@@ -1242,27 +1245,6 @@ const handleDoctorBlur = () => {
   align-items: center;
 }
 
-.treatment-checkboxes {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.treatment-checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.treatment-checkbox-label input[type="checkbox"] {
-  width: 1rem;
-  height: 1rem;
-  cursor: pointer;
-}
-
 .treatment-tag {
   display: inline-flex;
   align-items: center;
@@ -1319,12 +1301,58 @@ const handleDoctorBlur = () => {
 
 .new-treatment-input {
   display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.treatment-input-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+}
+
+.input-mode-toggle {
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+}
+
+.mode-toggle-btn {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.mode-toggle-btn:not(:last-child) {
+  border-right: 1px solid #ddd;
+}
+
+.mode-toggle-btn:hover:not(.mode-toggle-btn--active) {
+  background: #f0f0f0;
+}
+
+.mode-toggle-btn--active {
+  background: #4caf50;
+  color: white;
+  font-weight: 500;
+}
+
+.treatment-input-actions {
+  display: flex;
   gap: 0.5rem;
-  align-items: center;
+  justify-content: flex-end;
 }
 
 .new-treatment-input .form-input {
-  flex: 1;
   margin: 0;
 }
 
@@ -1543,17 +1571,35 @@ const handleDoctorBlur = () => {
   }
 
   .new-treatment-input {
-    flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
+  }
+
+  .treatment-input-form {
+    padding: 1.25rem;
+  }
+
+  .input-mode-toggle {
+    border-radius: 8px;
+  }
+
+  .mode-toggle-btn {
+    padding: 0.875rem;
+    font-size: 1rem;
+    min-height: 48px;
   }
 
   .new-treatment-input .form-input {
     width: 100%;
     margin: 0;
+    min-height: 48px;
   }
 
-  .new-treatment-input .btn {
-    width: 100%;
+  .treatment-input-actions {
+    gap: 0.75rem;
+  }
+
+  .treatment-input-actions .btn {
+    flex: 1;
     min-height: 48px;
   }
 
@@ -1761,15 +1807,6 @@ const handleDoctorBlur = () => {
   }
 }
 </style>
-/* Screen reader only text */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
+/* Screen reader only text */ .sr-only { position: absolute; width: 1px; height:
+1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0);
+white-space: nowrap; border: 0; }

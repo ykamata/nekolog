@@ -1,13 +1,13 @@
-import { ref } from 'vue';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mount } from '@vue/test-utils';
-import VeterinaryAppointmentForm from '~/components/VeterinaryAppointmentForm.vue';
-import type { Cat } from '~/types/cat-meal';
-import type { VeterinaryAppointmentWithRelations } from '~/types/veterinary-visit';
-import { useVeterinaryMasters } from '~/composables/useVeterinaryMasters';
+import { ref } from "vue";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { mount } from "@vue/test-utils";
+import VeterinaryAppointmentForm from "~/components/VeterinaryAppointmentForm.vue";
+import type { Cat } from "~/types/cat-meal";
+import type { VeterinaryAppointmentWithRelations } from "~/types/veterinary-visit";
+import { useVeterinaryMasters } from "~/composables/useVeterinaryMasters";
 
 // Mock composables
-vi.mock('~/composables/useToast', () => ({
+vi.mock("~/composables/useToast", () => ({
   useToast: () => ({
     showToast: vi.fn(),
     success: vi.fn(),
@@ -15,16 +15,16 @@ vi.mock('~/composables/useToast', () => ({
   }),
 }));
 
-vi.mock('~/composables/useResponsive', () => ({
+vi.mock("~/composables/useResponsive", () => ({
   useResponsive: vi.fn(() => ({
-    screenSize: ref('desktop'),
+    screenSize: ref("desktop"),
     getResponsiveClasses: vi.fn(() => []),
   })),
 }));
 
 // Mock components
 const DateTimePickerMock = {
-  name: 'DateTimePicker',
+  name: "DateTimePicker",
   template: `
     <div class="datetime-picker" :data-testid="id">
       <input
@@ -43,26 +43,30 @@ const DateTimePickerMock = {
       />
     </div>
   `,
-  props: ['value', 'disabled', 'minDate', 'id'],
-  emits: ['change'],
+  props: ["value", "disabled", "minDate", "id"],
+  emits: ["change"],
   methods: {
     handleDateChange(event: Event) {
       const target = event.target as HTMLInputElement;
-      const currentTime = this.value ? new Date(this.value).toTimeString().split(' ')[0] : '00:00:00';
+      const currentTime = this.value
+        ? new Date(this.value).toTimeString().split(" ")[0]
+        : "00:00:00";
       const newDate = new Date(`${target.value}T${currentTime}`);
-      this.$emit('change', newDate);
+      this.$emit("change", newDate);
     },
     handleTimeChange(event: Event) {
       const target = event.target as HTMLInputElement;
-      const currentDate = this.value ? new Date(this.value).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+      const currentDate = this.value
+        ? new Date(this.value).toISOString().split("T")[0]
+        : new Date().toISOString().split("T")[0];
       const newDate = new Date(`${currentDate}T${target.value}:00`);
-      this.$emit('change', newDate);
+      this.$emit("change", newDate);
     },
   },
 };
 
 const VeterinaryMasterSelectorMock = {
-  name: 'VeterinaryMasterSelector',
+  name: "VeterinaryMasterSelector",
   template: `
     <div class="master-selector">
       <input
@@ -76,31 +80,31 @@ const VeterinaryMasterSelectorMock = {
     </div>
   `,
   props: [
-    'modelValue',
-    'type',
-    'items',
-    'loading',
-    'disabled',
-    'error',
-    'placeholder',
-    'id',
-    'required',
-    'selectedHospitalId',
-    'allowFreeInput',
-    'showCreateDialog',
+    "modelValue",
+    "type",
+    "items",
+    "loading",
+    "disabled",
+    "error",
+    "placeholder",
+    "id",
+    "required",
+    "selectedHospitalId",
+    "allowFreeInput",
+    "showCreateDialog",
   ],
-  emits: ['update:modelValue', 'create', 'select'],
+  emits: ["update:modelValue", "create", "select"],
 };
 
-vi.mock('~/composables/useVeterinaryMasters', () => ({
+vi.mock("~/composables/useVeterinaryMasters", () => ({
   useVeterinaryMasters: vi.fn(() => ({
     hospitals: ref([
-      { id: 1, name: 'テスト動物病院' },
-      { id: 2, name: 'サンプル病院' },
+      { id: 1, name: "テスト動物病院" },
+      { id: 2, name: "サンプル病院" },
     ]),
     doctors: ref([
-      { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科' },
-      { id: 2, name: 'サンプル先生', hospitalId: 2, specialization: '外科' },
+      { id: 1, name: "テスト先生", hospitalId: 1, specialization: "内科" },
+      { id: 2, name: "サンプル先生", hospitalId: 2, specialization: "外科" },
     ]),
     loadHospitals: vi.fn(),
     loadDoctors: vi.fn(),
@@ -109,12 +113,12 @@ vi.mock('~/composables/useVeterinaryMasters', () => ({
   })),
 }));
 
-describe('VeterinaryAppointmentForm', () => {
+describe("VeterinaryAppointmentForm", () => {
   const mockCats: Cat[] = [
     {
       id: 1,
-      name: 'テスト猫1',
-      birthdate: new Date('2020-01-01'),
+      name: "テスト猫1",
+      birthdate: new Date("2020-01-01"),
       weight: 4.5,
       photoUrl: null,
       createdAt: new Date(),
@@ -122,8 +126,8 @@ describe('VeterinaryAppointmentForm', () => {
     },
     {
       id: 2,
-      name: 'テスト猫2',
-      birthdate: new Date('2021-06-15'),
+      name: "テスト猫2",
+      birthdate: new Date("2021-06-15"),
       weight: 3.2,
       photoUrl: null,
       createdAt: new Date(),
@@ -160,35 +164,43 @@ describe('VeterinaryAppointmentForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
-  describe('フォーム表示', () => {
-    it('フォームが正しく表示される', () => {
+  describe("フォーム表示", () => {
+    it("フォームが正しく表示される", () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
         ...mountOptions,
       });
 
-      expect(wrapper.find('[data-testid="appointment-form"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="appointment-form"]').exists()).toBe(
+        true
+      );
       expect(wrapper.find('[data-testid="cat-select"]').exists()).toBe(true);
-      expect(wrapper.find('[data-testid="appointment-date"]').exists()).toBe(true);
-      expect(wrapper.find('[data-testid="hospital-input"]').exists()).toBe(true);
-      expect(wrapper.find('[data-testid="planned-treatments-textarea"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="appointment-date"]').exists()).toBe(
+        true
+      );
+      expect(wrapper.find('[data-testid="hospital-input"]').exists()).toBe(
+        true
+      );
+      expect(
+        wrapper.find('[data-testid="planned-treatments-textarea"]').exists()
+      ).toBe(true);
     });
 
-    it('猫の選択肢が正しく表示される', () => {
+    it("猫の選択肢が正しく表示される", () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
         ...mountOptions,
       });
 
       const catSelect = wrapper.find('[data-testid="cat-select"]');
-      const options = catSelect.findAll('option');
+      const options = catSelect.findAll("option");
 
       expect(options).toHaveLength(mockCats.length + 1); // +1 for placeholder
-      expect(options[1].text()).toBe('テスト猫1');
-      expect(options[2].text()).toBe('テスト猫2');
+      expect(options[1].text()).toBe("テスト猫1");
+      expect(options[2].text()).toBe("テスト猫2");
     });
 
-    it('isOpenがfalseの場合、フォームが表示されない', () => {
+    it("isOpenがfalseの場合、フォームが表示されない", () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: {
           ...defaultProps,
@@ -197,26 +209,42 @@ describe('VeterinaryAppointmentForm', () => {
         ...mountOptions,
       });
 
-      expect(wrapper.find('[data-testid="appointment-form"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="appointment-form"]').exists()).toBe(
+        false
+      );
     });
   });
 
-  describe('初期データ設定', () => {
-    it('既存の予約データでフォームが初期化される', async () => {
+  describe("初期データ設定", () => {
+    it("既存の予約データでフォームが初期化される", async () => {
       const existingAppointment: VeterinaryAppointmentWithRelations = {
         id: 1,
         catId: 1,
         appointmentDate: futureDate,
         hospitalId: 1,
         doctorId: 1,
-        plannedTreatments: '定期検診予定',
-        notes: 'テスト予約メモ',
-        status: 'SCHEDULED',
+        plannedTreatments: "定期検診予定",
+        notes: "テスト予約メモ",
+        status: "SCHEDULED",
         createdAt: new Date(),
         updatedAt: new Date(),
         cat: mockCats[0],
-        hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-        doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+        hospital: {
+          id: 1,
+          name: "テスト動物病院",
+          address: "",
+          phone: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        doctor: {
+          id: 1,
+          name: "テスト先生",
+          hospitalId: 1,
+          specialization: "内科",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       };
 
       const wrapper = mount(VeterinaryAppointmentForm, {
@@ -229,33 +257,41 @@ describe('VeterinaryAppointmentForm', () => {
 
       await wrapper.vm.$nextTick();
       // フォームの初期化を待つ
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const catSelect = wrapper.find('[data-testid="cat-select"]');
       expect(catSelect.exists()).toBe(true);
-      expect((catSelect.element as HTMLSelectElement).value).toBe('cat1');
+      expect((catSelect.element as HTMLSelectElement).value).toBe("cat1");
 
       // VeterinaryMasterSelectorの内部のinput要素を取得
       const hospitalInputs = wrapper.findAll('[data-testid="master-input"]');
       expect(hospitalInputs.length).toBeGreaterThan(0);
       const hospitalInput = hospitalInputs[0];
       expect(hospitalInput.exists()).toBe(true);
-      expect((hospitalInput.element as HTMLInputElement).value).toBe('テスト動物病院');
+      expect((hospitalInput.element as HTMLInputElement).value).toBe(
+        "テスト動物病院"
+      );
 
-      const plannedTreatmentsTextarea = wrapper.find('[data-testid="planned-treatments-textarea"]');
+      const plannedTreatmentsTextarea = wrapper.find(
+        '[data-testid="planned-treatments-textarea"]'
+      );
       expect(plannedTreatmentsTextarea.exists()).toBe(true);
-      expect((plannedTreatmentsTextarea.element as HTMLTextAreaElement).value).toBe('定期検診予定');
+      expect(
+        (plannedTreatmentsTextarea.element as HTMLTextAreaElement).value
+      ).toBe("定期検診予定");
 
       const notesTextarea = wrapper.find('[data-testid="notes-textarea"]');
       expect(notesTextarea.exists()).toBe(true);
-      expect((notesTextarea.element as HTMLTextAreaElement).value).toBe('テスト予約メモ');
+      expect((notesTextarea.element as HTMLTextAreaElement).value).toBe(
+        "テスト予約メモ"
+      );
     });
 
-    it('初期データが設定される', async () => {
+    it("初期データが設定される", async () => {
       const initialData = {
         catId: 2,
-        hospitalName: '初期病院',
-        plannedTreatments: '初期処方予定',
+        hospitalName: "初期病院",
+        plannedTreatments: "初期処方予定",
       };
 
       const wrapper = mount(VeterinaryAppointmentForm, {
@@ -268,52 +304,58 @@ describe('VeterinaryAppointmentForm', () => {
 
       await wrapper.vm.$nextTick();
       // フォームの初期化を待つ
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const catSelect = wrapper.find('[data-testid="cat-select"]');
       expect(catSelect.exists()).toBe(true);
-      expect((catSelect.element as HTMLSelectElement).value).toBe('cat2');
+      expect((catSelect.element as HTMLSelectElement).value).toBe("cat2");
 
       // VeterinaryMasterSelectorの内部のinput要素を取得
       const hospitalInputs = wrapper.findAll('[data-testid="master-input"]');
       expect(hospitalInputs.length).toBeGreaterThan(0);
       const hospitalInput = hospitalInputs[0];
       expect(hospitalInput.exists()).toBe(true);
-      expect((hospitalInput.element as HTMLInputElement).value).toBe('初期病院');
+      expect((hospitalInput.element as HTMLInputElement).value).toBe(
+        "初期病院"
+      );
 
-      const plannedTreatmentsTextarea = wrapper.find('[data-testid="planned-treatments-textarea"]');
+      const plannedTreatmentsTextarea = wrapper.find(
+        '[data-testid="planned-treatments-textarea"]'
+      );
       expect(plannedTreatmentsTextarea.exists()).toBe(true);
-      expect((plannedTreatmentsTextarea.element as HTMLTextAreaElement).value).toBe('初期処方予定');
+      expect(
+        (plannedTreatmentsTextarea.element as HTMLTextAreaElement).value
+      ).toBe("初期処方予定");
     });
   });
 
-  describe('バリデーション', () => {
-    it('必須項目が未入力の場合、エラーメッセージが表示される', async () => {
+  describe("バリデーション", () => {
+    it("必須項目が未入力の場合、エラーメッセージが表示される", async () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
       });
 
       // フォームを送信
-      await wrapper.find('.submit-button').trigger('click');
+      await wrapper.find(".submit-button").trigger("click");
       await wrapper.vm.$nextTick();
 
       // フォームが送信されないことを確認（バリデーションエラーのため）
-      expect(wrapper.emitted('save')).toBeFalsy();
+      expect(wrapper.emitted("save")).toBeFalsy();
     });
 
-    it('猫が選択されていない場合、エラーメッセージが表示される', async () => {
+    it("猫が選択されていない場合、エラーメッセージが表示される", async () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
       });
 
-      await wrapper.find('.submit-button').trigger('click');
+      await wrapper.find(".submit-button").trigger("click");
       await wrapper.vm.$nextTick();
 
       // フォームが送信されないことを確認
-      expect(wrapper.emitted('save')).toBeFalsy();
+      expect(wrapper.emitted("save")).toBeFalsy();
     });
 
-    it('病院名が未入力の場合、エラーメッセージが表示される', async () => {
+    it("病院名が未入力の場合、エラーメッセージが表示される", async () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
         ...mountOptions,
@@ -321,36 +363,40 @@ describe('VeterinaryAppointmentForm', () => {
 
       const catSelect = wrapper.find('[data-testid="cat-select"]');
       expect(catSelect.exists()).toBe(true);
-      await catSelect.setValue('cat1');
+      await catSelect.setValue("cat1");
 
       // 日付を設定（必須項目のため）
-      const dateInput = wrapper.find('[data-testid="appointment-date"] [data-testid="date-input"]');
+      const dateInput = wrapper.find(
+        '[data-testid="appointment-date"] [data-testid="date-input"]'
+      );
       if (dateInput.exists()) {
-        await dateInput.setValue(futureDate.toISOString().split('T')[0]);
+        await dateInput.setValue(futureDate.toISOString().split("T")[0]);
       }
 
       const submitButton = wrapper.find('[data-testid="submit-button"]');
       expect(submitButton.exists()).toBe(true);
-      await submitButton.trigger('click');
+      await submitButton.trigger("click");
       await wrapper.vm.$nextTick();
       // バリデーション処理を待つ
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const hospitalError = wrapper.find('[data-testid="hospital-error"]');
       expect(hospitalError.exists()).toBe(true);
-      expect(hospitalError.text()).toContain('病院名を入力してください');
+      expect(hospitalError.text()).toContain("病院名を入力してください");
     });
 
-    it('予約日時が過去の場合、エラーメッセージが表示される', async () => {
+    it("予約日時が過去の場合、エラーメッセージが表示される", async () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
       });
 
       // DateTimePickerコンポーネントが存在することを確認
-      expect(wrapper.find('[data-testid="appointment-date"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="appointment-date"]').exists()).toBe(
+        true
+      );
     });
 
-    it('予定処方内容が長すぎる場合、エラーメッセージが表示される', async () => {
+    it("予定処方内容が長すぎる場合、エラーメッセージが表示される", async () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
         ...mountOptions,
@@ -359,36 +405,44 @@ describe('VeterinaryAppointmentForm', () => {
       // 必須項目を設定
       const catSelect = wrapper.find('[data-testid="cat-select"]');
       expect(catSelect.exists()).toBe(true);
-      await catSelect.setValue('cat1');
+      await catSelect.setValue("cat1");
 
-      const dateInput = wrapper.find('[data-testid="appointment-date"] [data-testid="date-input"]');
+      const dateInput = wrapper.find(
+        '[data-testid="appointment-date"] [data-testid="date-input"]'
+      );
       if (dateInput.exists()) {
-        await dateInput.setValue(futureDate.toISOString().split('T')[0]);
+        await dateInput.setValue(futureDate.toISOString().split("T")[0]);
       }
 
       const hospitalInputs = wrapper.findAll('[data-testid="master-input"]');
       if (hospitalInputs.length > 0) {
-        await hospitalInputs[0].setValue('テスト病院');
+        await hospitalInputs[0].setValue("テスト病院");
       }
 
-      const longTreatments = 'a'.repeat(501); // 500文字制限を超える
-      const plannedTreatmentsTextarea = wrapper.find('[data-testid="planned-treatments-textarea"]');
+      const longTreatments = "a".repeat(501); // 500文字制限を超える
+      const plannedTreatmentsTextarea = wrapper.find(
+        '[data-testid="planned-treatments-textarea"]'
+      );
       expect(plannedTreatmentsTextarea.exists()).toBe(true);
       await plannedTreatmentsTextarea.setValue(longTreatments);
 
       const submitButton = wrapper.find('[data-testid="submit-button"]');
       expect(submitButton.exists()).toBe(true);
-      await submitButton.trigger('click');
+      await submitButton.trigger("click");
       await wrapper.vm.$nextTick();
       // バリデーション処理を待つ
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const treatmentsError = wrapper.find('[data-testid="planned-treatments-error"]');
+      const treatmentsError = wrapper.find(
+        '[data-testid="planned-treatments-error"]'
+      );
       expect(treatmentsError.exists()).toBe(true);
-      expect(treatmentsError.text()).toContain('予定処方内容は500文字以内で入力してください');
+      expect(treatmentsError.text()).toContain(
+        "予定処方内容は500文字以内で入力してください"
+      );
     });
 
-    it('メモが長すぎる場合、エラーメッセージが表示される', async () => {
+    it("メモが長すぎる場合、エラーメッセージが表示される", async () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
         ...mountOptions,
@@ -397,37 +451,41 @@ describe('VeterinaryAppointmentForm', () => {
       // 必須項目を設定
       const catSelect = wrapper.find('[data-testid="cat-select"]');
       expect(catSelect.exists()).toBe(true);
-      await catSelect.setValue('cat1');
+      await catSelect.setValue("cat1");
 
-      const dateInput = wrapper.find('[data-testid="appointment-date"] [data-testid="date-input"]');
+      const dateInput = wrapper.find(
+        '[data-testid="appointment-date"] [data-testid="date-input"]'
+      );
       if (dateInput.exists()) {
-        await dateInput.setValue(futureDate.toISOString().split('T')[0]);
+        await dateInput.setValue(futureDate.toISOString().split("T")[0]);
       }
 
       const hospitalInputs = wrapper.findAll('[data-testid="master-input"]');
       if (hospitalInputs.length > 0) {
-        await hospitalInputs[0].setValue('テスト病院');
+        await hospitalInputs[0].setValue("テスト病院");
       }
 
-      const longNotes = 'a'.repeat(1001); // 1000文字制限を超える
+      const longNotes = "a".repeat(1001); // 1000文字制限を超える
       const notesTextarea = wrapper.find('[data-testid="notes-textarea"]');
       expect(notesTextarea.exists()).toBe(true);
       await notesTextarea.setValue(longNotes);
 
       const submitButton = wrapper.find('[data-testid="submit-button"]');
       expect(submitButton.exists()).toBe(true);
-      await submitButton.trigger('click');
+      await submitButton.trigger("click");
       await wrapper.vm.$nextTick();
       // バリデーション処理を待つ
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const notesError = wrapper.find('[data-testid="notes-error"]');
       expect(notesError.exists()).toBe(true);
-      expect(notesError.text()).toContain('メモは1000文字以内で入力してください');
+      expect(notesError.text()).toContain(
+        "メモは1000文字以内で入力してください"
+      );
     });
   });
-  describe('フォーム送信', () => {
-    it('有効なデータでフォームが送信される', async () => {
+  describe("フォーム送信", () => {
+    it("有効なデータでフォームが送信される", async () => {
       const onSave = vi.fn();
       const wrapper = mountComponent({
         ...defaultProps,
@@ -435,46 +493,52 @@ describe('VeterinaryAppointmentForm', () => {
       });
 
       // フォームに有効なデータを入力
-      await wrapper.find('[data-testid="cat-select"]').setValue('cat1');
+      await wrapper.find('[data-testid="cat-select"]').setValue("cat1");
 
       // DateTimePickerのmocked input要素を直接操作
-      const dateTimeInput = wrapper.find('[data-testid="appointment-date"] [data-testid="date-input"]');
+      const dateTimeInput = wrapper.find(
+        '[data-testid="appointment-date"] [data-testid="date-input"]'
+      );
       expect(dateTimeInput.exists()).toBe(true);
-      await dateTimeInput.setValue(futureDate.toISOString().split('T')[0]);
+      await dateTimeInput.setValue(futureDate.toISOString().split("T")[0]);
 
       // VeterinaryMasterSelectorのmocked input要素を直接操作
       const hospitalInputs = wrapper.findAll('[data-testid="master-input"]');
       expect(hospitalInputs.length).toBeGreaterThan(0);
       const hospitalInput = hospitalInputs[0];
       expect(hospitalInput.exists()).toBe(true);
-      await hospitalInput.setValue('テスト動物病院');
+      await hospitalInput.setValue("テスト動物病院");
 
       if (hospitalInputs.length > 1) {
         const doctorInput = hospitalInputs[1];
         expect(doctorInput.exists()).toBe(true);
-        await doctorInput.setValue('テスト先生');
+        await doctorInput.setValue("テスト先生");
       }
 
-      await wrapper.find('[data-testid="planned-treatments-textarea"]').setValue('定期検診予定');
-      await wrapper.find('[data-testid="notes-textarea"]').setValue('テスト予約メモ');
+      await wrapper
+        .find('[data-testid="planned-treatments-textarea"]')
+        .setValue("定期検診予定");
+      await wrapper
+        .find('[data-testid="notes-textarea"]')
+        .setValue("テスト予約メモ");
 
       // フォームを送信
-      await wrapper.find('[data-testid="submit-button"]').trigger('click');
+      await wrapper.find('[data-testid="submit-button"]').trigger("click");
       await wrapper.vm.$nextTick();
       // フォーム送信処理を待つ
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(onSave).toHaveBeenCalledWith({
         catId: 1,
         appointmentDate: expect.any(Date),
-        hospitalName: 'テスト動物病院',
-        doctorName: 'テスト先生',
-        plannedTreatments: '定期検診予定',
-        notes: 'テスト予約メモ',
+        hospitalName: "テスト動物病院",
+        doctorName: "テスト先生",
+        plannedTreatments: "定期検診予定",
+        notes: "テスト予約メモ",
       });
     });
 
-    it('送信中はボタンが無効化される', async () => {
+    it("送信中はボタンが無効化される", async () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
       });
@@ -484,11 +548,11 @@ describe('VeterinaryAppointmentForm', () => {
       await wrapper.vm.$nextTick();
 
       const submitButton = wrapper.find('[data-testid="submit-button"]');
-      expect(submitButton.attributes('disabled')).toBeDefined();
-      expect(submitButton.text()).toContain('保存中');
+      expect(submitButton.attributes("disabled")).toBeDefined();
+      expect(submitButton.text()).toContain("保存中");
     });
 
-    it('キャンセルボタンでフォームが閉じられる', async () => {
+    it("キャンセルボタンでフォームが閉じられる", async () => {
       const onClose = vi.fn();
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: {
@@ -497,28 +561,42 @@ describe('VeterinaryAppointmentForm', () => {
         },
       });
 
-      await wrapper.find('[data-testid="cancel-button"]').trigger('click');
+      await wrapper.find('[data-testid="cancel-button"]').trigger("click");
 
       expect(onClose).toHaveBeenCalled();
     });
   });
 
-  describe('通院記録変換機能', () => {
-    it('通院記録変換ボタンが表示される', () => {
+  describe("通院記録変換機能", () => {
+    it("通院記録変換ボタンが表示される", () => {
       const existingAppointment: VeterinaryAppointmentWithRelations = {
         id: 1,
         catId: 1,
         appointmentDate: futureDate,
         hospitalId: 1,
         doctorId: 1,
-        plannedTreatments: '定期検診予定',
-        notes: 'テスト予約メモ',
-        status: 'SCHEDULED',
+        plannedTreatments: "定期検診予定",
+        notes: "テスト予約メモ",
+        status: "SCHEDULED",
         createdAt: new Date(),
         updatedAt: new Date(),
         cat: mockCats[0],
-        hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-        doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+        hospital: {
+          id: 1,
+          name: "テスト動物病院",
+          address: "",
+          phone: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        doctor: {
+          id: 1,
+          name: "テスト先生",
+          hospitalId: 1,
+          specialization: "内科",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       };
 
       const wrapper = mount(VeterinaryAppointmentForm, {
@@ -528,24 +606,40 @@ describe('VeterinaryAppointmentForm', () => {
         },
       });
 
-      expect(wrapper.find('[data-testid="convert-to-visit-button"]').exists()).toBe(true);
+      expect(
+        wrapper.find('[data-testid="convert-to-visit-button"]').exists()
+      ).toBe(true);
     });
 
-    it('通院記録変換イベントが発火される', async () => {
+    it("通院記録変換イベントが発火される", async () => {
       const existingAppointment: VeterinaryAppointmentWithRelations = {
         id: 1,
         catId: 1,
         appointmentDate: futureDate,
         hospitalId: 1,
         doctorId: 1,
-        plannedTreatments: '定期検診予定',
-        notes: 'テスト予約メモ',
-        status: 'SCHEDULED',
+        plannedTreatments: "定期検診予定",
+        notes: "テスト予約メモ",
+        status: "SCHEDULED",
         createdAt: new Date(),
         updatedAt: new Date(),
         cat: mockCats[0],
-        hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-        doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+        hospital: {
+          id: 1,
+          name: "テスト動物病院",
+          address: "",
+          phone: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        doctor: {
+          id: 1,
+          name: "テスト先生",
+          hospitalId: 1,
+          specialization: "内科",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       };
 
       const wrapper = mount(VeterinaryAppointmentForm, {
@@ -555,33 +649,55 @@ describe('VeterinaryAppointmentForm', () => {
         },
       });
 
-      await wrapper.find('[data-testid="convert-to-visit-button"]').trigger('click');
+      await wrapper
+        .find('[data-testid="convert-to-visit-button"]')
+        .trigger("click");
 
       // First click shows the confirmation dialog
-      expect(wrapper.find('[data-testid="convert-confirmation-dialog"]').exists()).toBe(true);
+      expect(
+        wrapper.find('[data-testid="convert-confirmation-dialog"]').exists()
+      ).toBe(true);
 
       // Click the confirm button to actually emit the event
-      await wrapper.find('[data-testid="convert-confirm-button"]').trigger('click');
+      await wrapper
+        .find('[data-testid="convert-confirm-button"]')
+        .trigger("click");
 
-      expect(wrapper.emitted('convertToVisit')).toBeTruthy();
-      expect(wrapper.emitted('convertToVisit')[0]).toEqual([existingAppointment.id]);
+      expect(wrapper.emitted("convertToVisit")).toBeTruthy();
+      expect(wrapper.emitted("convertToVisit")[0]).toEqual([
+        existingAppointment.id,
+      ]);
     });
 
-    it('変換確認ダイアログが表示される', async () => {
+    it("変換確認ダイアログが表示される", async () => {
       const existingAppointment: VeterinaryAppointmentWithRelations = {
         id: 1,
         catId: 1,
         appointmentDate: futureDate,
         hospitalId: 1,
         doctorId: 1,
-        plannedTreatments: '定期検診予定',
-        notes: 'テスト予約メモ',
-        status: 'SCHEDULED',
+        plannedTreatments: "定期検診予定",
+        notes: "テスト予約メモ",
+        status: "SCHEDULED",
         createdAt: new Date(),
         updatedAt: new Date(),
         cat: mockCats[0],
-        hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-        doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+        hospital: {
+          id: 1,
+          name: "テスト動物病院",
+          address: "",
+          phone: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        doctor: {
+          id: 1,
+          name: "テスト先生",
+          hospitalId: 1,
+          specialization: "内科",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       };
 
       const wrapper = mount(VeterinaryAppointmentForm, {
@@ -591,26 +707,44 @@ describe('VeterinaryAppointmentForm', () => {
         },
       });
 
-      await wrapper.find('[data-testid="convert-to-visit-button"]').trigger('click');
+      await wrapper
+        .find('[data-testid="convert-to-visit-button"]')
+        .trigger("click");
 
-      expect(wrapper.find('[data-testid="convert-confirmation-dialog"]').exists()).toBe(true);
+      expect(
+        wrapper.find('[data-testid="convert-confirmation-dialog"]').exists()
+      ).toBe(true);
     });
 
-    it('COMPLETED状態の予約では変換ボタンが表示されない', () => {
+    it("COMPLETED状態の予約では変換ボタンが表示されない", () => {
       const completedAppointment: VeterinaryAppointmentWithRelations = {
         id: 1,
         catId: 1,
         appointmentDate: futureDate,
         hospitalId: 1,
         doctorId: 1,
-        plannedTreatments: '定期検診予定',
-        notes: 'テスト予約メモ',
-        status: 'COMPLETED',
+        plannedTreatments: "定期検診予定",
+        notes: "テスト予約メモ",
+        status: "COMPLETED",
         createdAt: new Date(),
         updatedAt: new Date(),
         cat: mockCats[0],
-        hospital: { id: 1, name: 'テスト動物病院', address: '', phone: '', createdAt: new Date(), updatedAt: new Date() },
-        doctor: { id: 1, name: 'テスト先生', hospitalId: 1, specialization: '内科', createdAt: new Date(), updatedAt: new Date() },
+        hospital: {
+          id: 1,
+          name: "テスト動物病院",
+          address: "",
+          phone: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        doctor: {
+          id: 1,
+          name: "テスト先生",
+          hospitalId: 1,
+          specialization: "内科",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
       };
 
       const wrapper = mount(VeterinaryAppointmentForm, {
@@ -620,18 +754,20 @@ describe('VeterinaryAppointmentForm', () => {
         },
       });
 
-      expect(wrapper.find('[data-testid="convert-to-visit-button"]').exists()).toBe(false);
+      expect(
+        wrapper.find('[data-testid="convert-to-visit-button"]').exists()
+      ).toBe(false);
     });
   });
-  describe('マスタデータ管理', () => {
-    it('新しい病院名を入力した場合、マスタに追加される', async () => {
+  describe("マスタデータ管理", () => {
+    it("新しい病院名を入力した場合、マスタに追加される", async () => {
       const { createHospital } = useVeterinaryMasters();
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
         ...mountOptions,
       });
 
-      const newHospitalName = '新しい動物病院';
+      const newHospitalName = "新しい動物病院";
       const hospitalInputs = wrapper.findAll('[data-testid="master-input"]');
       expect(hospitalInputs.length).toBeGreaterThan(0);
       const hospitalInput = hospitalInputs[0];
@@ -641,50 +777,58 @@ describe('VeterinaryAppointmentForm', () => {
       // フォームを送信
       const catSelect = wrapper.find('[data-testid="cat-select"]');
       expect(catSelect.exists()).toBe(true);
-      await catSelect.setValue('cat1');
+      await catSelect.setValue("cat1");
 
-      const dateTimeInput = wrapper.find('[data-testid="appointment-date"] [data-testid="date-input"]');
+      const dateTimeInput = wrapper.find(
+        '[data-testid="appointment-date"] [data-testid="date-input"]'
+      );
       expect(dateTimeInput.exists()).toBe(true);
-      await dateTimeInput.setValue(futureDate.toISOString().split('T')[0]);
+      await dateTimeInput.setValue(futureDate.toISOString().split("T")[0]);
 
       const submitButton = wrapper.find('[data-testid="submit-button"]');
       expect(submitButton.exists()).toBe(true);
-      await submitButton.trigger('click');
+      await submitButton.trigger("click");
 
       expect(createHospital).toHaveBeenCalledWith({ name: newHospitalName });
     });
 
-    it('新しい先生名を入力した場合、マスタに追加される', async () => {
+    it("新しい先生の名前を入力した場合、マスタに追加される", async () => {
       const { createDoctor } = useVeterinaryMasters();
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
         ...mountOptions,
       });
 
-      const newDoctorName = '新しい先生';
+      const newDoctorName = "新しい先生";
 
       // 病院入力（hospital-inputの中のmaster-input）
-      const hospitalInput = wrapper.find('[data-testid="hospital-input"] [data-testid="master-input"]');
+      const hospitalInput = wrapper.find(
+        '[data-testid="hospital-input"] [data-testid="master-input"]'
+      );
       expect(hospitalInput.exists()).toBe(true);
-      await hospitalInput.setValue('テスト動物病院');
+      await hospitalInput.setValue("テスト動物病院");
 
       // 先生入力（doctor-inputの中のmaster-input）
-      const doctorInput = wrapper.find('[data-testid="doctor-input"] [data-testid="master-input"]');
+      const doctorInput = wrapper.find(
+        '[data-testid="doctor-input"] [data-testid="master-input"]'
+      );
       expect(doctorInput.exists()).toBe(true);
       await doctorInput.setValue(newDoctorName);
 
       // フォームを送信
       const catSelect = wrapper.find('[data-testid="cat-select"]');
       expect(catSelect.exists()).toBe(true);
-      await catSelect.setValue('cat1');
+      await catSelect.setValue("cat1");
 
-      const dateTimeInput = wrapper.find('[data-testid="appointment-date"] [data-testid="date-input"]');
+      const dateTimeInput = wrapper.find(
+        '[data-testid="appointment-date"] [data-testid="date-input"]'
+      );
       expect(dateTimeInput.exists()).toBe(true);
-      await dateTimeInput.setValue(futureDate.toISOString().split('T')[0]);
+      await dateTimeInput.setValue(futureDate.toISOString().split("T")[0]);
 
       const submitButton = wrapper.find('[data-testid="submit-button"]');
       expect(submitButton.exists()).toBe(true);
-      await submitButton.trigger('click');
+      await submitButton.trigger("click");
 
       expect(createDoctor).toHaveBeenCalledWith({
         name: newDoctorName,
@@ -693,24 +837,24 @@ describe('VeterinaryAppointmentForm', () => {
     });
   });
 
-  describe('エラーハンドリング', () => {
-    it('送信エラーが発生した場合、エラーメッセージが表示される', async () => {
+  describe("エラーハンドリング", () => {
+    it("送信エラーが発生した場合、エラーメッセージが表示される", async () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
         ...mountOptions,
       });
 
       // エラー状態をシミュレート
-      wrapper.vm.submitError = 'サーバーエラーが発生しました';
+      wrapper.vm.submitError = "サーバーエラーが発生しました";
       await wrapper.vm.$nextTick();
 
       const errorMessage = wrapper.find('[data-testid="submit-error"]');
       expect(errorMessage.exists()).toBe(true);
-      expect(errorMessage.text()).toContain('サーバーエラーが発生しました');
+      expect(errorMessage.text()).toContain("サーバーエラーが発生しました");
     });
 
-    it('リトライ機能が動作する', async () => {
-      const onSave = vi.fn().mockRejectedValue(new Error('Network error'));
+    it("リトライ機能が動作する", async () => {
+      const onSave = vi.fn().mockRejectedValue(new Error("Network error"));
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: {
           ...defaultProps,
@@ -722,18 +866,22 @@ describe('VeterinaryAppointmentForm', () => {
       // 有効なデータを入力
       const catSelect = wrapper.find('[data-testid="cat-select"]');
       expect(catSelect.exists()).toBe(true);
-      await catSelect.setValue('cat1');
+      await catSelect.setValue("cat1");
 
-      const dateTimeInput = wrapper.find('[data-testid="appointment-date"] [data-testid="date-input"]');
+      const dateTimeInput = wrapper.find(
+        '[data-testid="appointment-date"] [data-testid="date-input"]'
+      );
       expect(dateTimeInput.exists()).toBe(true);
-      await dateTimeInput.setValue(futureDate.toISOString().split('T')[0]);
+      await dateTimeInput.setValue(futureDate.toISOString().split("T")[0]);
 
-      const hospitalInput = wrapper.find('[data-testid="hospital-input"] [data-testid="master-input"]');
+      const hospitalInput = wrapper.find(
+        '[data-testid="hospital-input"] [data-testid="master-input"]'
+      );
       expect(hospitalInput.exists()).toBe(true);
-      await hospitalInput.setValue('テスト病院');
+      await hospitalInput.setValue("テスト病院");
 
       // 初回送信（失敗）
-      await wrapper.find('[data-testid="submit-button"]').trigger('click');
+      await wrapper.find('[data-testid="submit-button"]').trigger("click");
       await wrapper.vm.$nextTick();
 
       // リトライボタンが表示される
@@ -741,14 +889,14 @@ describe('VeterinaryAppointmentForm', () => {
       expect(retryButton.exists()).toBe(true);
 
       // リトライ実行
-      await retryButton.trigger('click');
+      await retryButton.trigger("click");
 
       expect(onSave).toHaveBeenCalledTimes(2);
     });
   });
 
-  describe('アクセシビリティ', () => {
-    it('フォーム要素に適切なラベルが設定されている', () => {
+  describe("アクセシビリティ", () => {
+    it("フォーム要素に適切なラベルが設定されている", () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
       });
@@ -756,10 +904,12 @@ describe('VeterinaryAppointmentForm', () => {
       expect(wrapper.find('label[for="cat-select"]').exists()).toBe(true);
       expect(wrapper.find('label[for="appointment-date"]').exists()).toBe(true);
       expect(wrapper.find('label[for="hospital-input"]').exists()).toBe(true);
-      expect(wrapper.find('label[for="planned-treatments-textarea"]').exists()).toBe(true);
+      expect(
+        wrapper.find('label[for="planned-treatments-textarea"]').exists()
+      ).toBe(true);
     });
 
-    it('エラーメッセージがaria-describedbyで関連付けられている', async () => {
+    it("エラーメッセージがaria-describedbyで関連付けられている", async () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
         ...mountOptions,
@@ -767,7 +917,7 @@ describe('VeterinaryAppointmentForm', () => {
 
       const submitButton = wrapper.find('[data-testid="submit-button"]');
       expect(submitButton.exists()).toBe(true);
-      await submitButton.trigger('click');
+      await submitButton.trigger("click");
       await wrapper.vm.$nextTick();
 
       const catSelect = wrapper.find('[data-testid="cat-select"]');
@@ -775,30 +925,42 @@ describe('VeterinaryAppointmentForm', () => {
 
       const catError = wrapper.find('[data-testid="cat-error"]');
       if (catError.exists()) {
-        expect(catSelect.attributes('aria-describedby')).toBe(catError.attributes('id'));
+        expect(catSelect.attributes("aria-describedby")).toBe(
+          catError.attributes("id")
+        );
       }
     });
 
-    it('必須項目にaria-requiredが設定されている', () => {
+    it("必須項目にaria-requiredが設定されている", () => {
       const wrapper = mount(VeterinaryAppointmentForm, {
         props: defaultProps,
       });
 
-      expect(wrapper.find('[data-testid="cat-select"]').attributes('aria-required')).toBe('true');
-      expect(wrapper.find('[data-testid="appointment-date"]').attributes('aria-required')).toBe('true');
-      expect(wrapper.find('[data-testid="hospital-input"]').attributes('aria-required')).toBe('true');
+      expect(
+        wrapper.find('[data-testid="cat-select"]').attributes("aria-required")
+      ).toBe("true");
+      expect(
+        wrapper
+          .find('[data-testid="appointment-date"]')
+          .attributes("aria-required")
+      ).toBe("true");
+      expect(
+        wrapper
+          .find('[data-testid="hospital-input"]')
+          .attributes("aria-required")
+      ).toBe("true");
     });
   });
 
-  describe('レスポンシブ対応', () => {
-    it('モバイル表示でフォームレイアウトが適切に調整される', () => {
+  describe("レスポンシブ対応", () => {
+    it("モバイル表示でフォームレイアウトが適切に調整される", () => {
       // useResponsiveのモックを一時的に変更
       const mockUseResponsive = vi.fn(() => ({
-        screenSize: ref('mobile'),
+        screenSize: ref("mobile"),
         getResponsiveClasses: vi.fn(() => []),
       }));
 
-      vi.doMock('~/composables/useResponsive', () => ({
+      vi.doMock("~/composables/useResponsive", () => ({
         useResponsive: mockUseResponsive,
       }));
 
@@ -811,17 +973,17 @@ describe('VeterinaryAppointmentForm', () => {
       expect(form.exists()).toBe(true);
       // レスポンシブクラスの確認は、実際のコンポーネントの実装に依存するため、
       // 現在はコンポーネントが正しく表示されることを確認
-      expect(form.classes()).toContain('appointment-form');
+      expect(form.classes()).toContain("appointment-form");
     });
 
-    it('タブレット表示でフォームレイアウトが適切に調整される', () => {
+    it("タブレット表示でフォームレイアウトが適切に調整される", () => {
       // useResponsiveのモックを一時的に変更
       const mockUseResponsive = vi.fn(() => ({
-        screenSize: ref('tablet'),
+        screenSize: ref("tablet"),
         getResponsiveClasses: vi.fn(() => []),
       }));
 
-      vi.doMock('~/composables/useResponsive', () => ({
+      vi.doMock("~/composables/useResponsive", () => ({
         useResponsive: mockUseResponsive,
       }));
 
@@ -834,7 +996,7 @@ describe('VeterinaryAppointmentForm', () => {
       expect(form.exists()).toBe(true);
       // レスポンシブクラスの確認は、実際のコンポーネントの実装に依存するため、
       // 現在はコンポーネントが正しく表示されることを確認
-      expect(form.classes()).toContain('appointment-form');
+      expect(form.classes()).toContain("appointment-form");
     });
   });
 });
