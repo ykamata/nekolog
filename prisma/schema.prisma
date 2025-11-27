@@ -26,6 +26,7 @@ model Cat {
   veterinaryVisits   VeterinaryVisit[]
   veterinaryAppointments VeterinaryAppointment[]
   excretionRecords   ExcretionRecord[]
+  dailyNotes         DailyNote[]
 
   @@map("cats")
 }
@@ -95,6 +96,7 @@ model Medication {
   records     MedicationRecord[]
   schedules   MedicationSchedule[]
   reminders   MedicationReminder[]
+  dailyNotes  DailyNote[]
 
   @@map("medications")
 }
@@ -305,4 +307,24 @@ model ExcretionRecord {
 enum ExcretionType {
   URINE  // おしっこ
   FECES  // うんち
+}
+
+model DailyNote {
+  id              Int      @id @default(autoincrement())
+  catId           Int
+  date            DateTime // 日付（時刻は00:00:00に正規化）
+  medicationId    Int?     // 頓服薬のID
+  emergencyMedication Boolean @default(false) // 頓服薬の投与があったか
+  memo            String?  // 特記事項・メモ
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  cat             Cat        @relation(fields: [catId], references: [id], onDelete: Cascade)
+  medication      Medication? @relation(fields: [medicationId], references: [id], onDelete: SetNull)
+
+  // 1つの猫に対して1日1レコードのユニーク制約
+  @@unique([catId, date])
+  @@index([date])
+  @@index([catId, date])
+  @@map("daily_notes")
 }

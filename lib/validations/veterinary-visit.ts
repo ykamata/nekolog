@@ -158,6 +158,12 @@ export const VeterinaryDoctorInputSchema = z.object({
     .trim()
     .optional()
     .or(z.literal('')),
+  memo: z
+    .string()
+    .max(500, 'メモは500文字以内で入力してください')
+    .trim()
+    .optional()
+    .or(z.literal('')),
 });
 
 export const VeterinaryTreatmentInputSchema = z.object({

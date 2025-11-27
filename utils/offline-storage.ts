@@ -281,6 +281,59 @@ export class OfflineStorage {
   }
 
   /**
+   * フードを更新または追加
+   */
+  updateFood(food: Food): void {
+    const index = this.data.foods.findIndex(f => f.id === food.id);
+    if (index !== -1) {
+      this.data.foods[index] = food;
+    } else {
+      this.data.foods.push(food);
+    }
+    this.saveToStorage();
+  }
+
+  /**
+   * フードを削除
+   */
+  deleteFood(foodId: number): void {
+    this.data.foods = this.data.foods.filter(food => food.id !== foodId);
+    this.saveToStorage();
+  }
+
+  /**
+   * 猫を削除
+   */
+  deleteCat(catId: number): void {
+    this.data.cats = this.data.cats.filter(cat => cat.id !== catId);
+    this.saveToStorage();
+  }
+
+  /**
+   * 薬を削除
+   */
+  deleteMedication(medicationId: number): void {
+    this.data.medications = this.data.medications.filter(med => med.id !== medicationId);
+    this.saveToStorage();
+  }
+
+  /**
+   * 食事記録を削除
+   */
+  deleteMeal(mealId: number): void {
+    this.data.meals = this.data.meals.filter(meal => meal.id !== mealId);
+    this.saveToStorage();
+  }
+
+  /**
+   * 薬投与記録を削除
+   */
+  deleteMedicationRecord(recordId: number): void {
+    this.data.medicationRecords = this.data.medicationRecords.filter(record => record.id !== recordId);
+    this.saveToStorage();
+  }
+
+  /**
    * ストレージをクリア
    */
   clear(): void {

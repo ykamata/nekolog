@@ -81,7 +81,12 @@ const fetchFoods = async () => {
   error.value = null;
 
   try {
-    const response = await $fetch<Food[]>('/api/foods');
+    const response = await $fetch<Food[]>('/api/foods', {
+      // キャッシュをバイパスして常に最新データを取得
+      headers: {
+        'Cache-Control': 'no-cache',
+      },
+    });
     foods.value = response;
   }
   catch {
@@ -113,18 +118,64 @@ const handleDelete = (food: Food) => {
 const confirmDelete = async () => {
   if (!foodToDelete.value) return;
 
+  const deletedFoodId = foodToDelete.value.id;
+
   try {
-    await $fetch(`/api/foods/${foodToDelete.value.id}`, {
-      method: 'DELETE' as any,
+    await $fetch(`/api/foods/${deletedFoodId}`, {
+      method: 'DELETE',
     });
 
     // Remove from local state
     foods.value = foods.value.filter(
-      food => food.id !== foodToDelete.value!.id,
+      food => food.id !== deletedFoodId,
     );
+
+    // Remove from local storage
+    const { OfflineStorage } = await import('~/utils/offline-storage');
+    const offlineStorage = OfflineStorage.getInstance();
+    offlineStorage.deleteFood(deletedFoodId);
+
+    // Clear any previous errors
+    error.value = null;
   }
-  catch {
-    error.value = 'フードの削除に失敗しました';
+  catch (err: any) {
+    console.error('フード削除エラー:', err);
+
+    // Extract error message with proper handling
+    let errorMessage = 'フードの削除に失敗しました';
+
+    // Check if this is a related records error (409)
+    if (err?.statusCode === 409 || err?.data?.statusCode === 409) {
+      const mealCount = err?.data?.data?.mealCount || err?.data?.mealCount;
+
+      if (mealCount) {
+        errorMessage = `このフードは${mealCount}件の食事記録で使用されています。削除する前に、関連する食事記録を削除するか、別のフードに変更してください。`;
+      } else {
+        errorMessage = err?.data?.data?.message
+          || err?.data?.message
+          || err?.statusMessage
+          || 'このフードには関連する食事記録があるため削除できません。';
+      }
+    } else {
+      // Other errors
+      errorMessage = err?.data?.data?.message
+        || err?.data?.message
+        || err?.data?.statusMessage
+        || err?.statusMessage
+        || err?.message
+        || 'フードの削除に失敗しました';
+    }
+
+    error.value = errorMessage;
+
+    // Show error in console for debugging
+    console.error('詳細なエラー情報:', {
+      statusCode: err?.statusCode,
+      statusMessage: err?.statusMessage,
+      data: err?.data,
+      message: err?.message,
+      fullError: err,
+    });
   }
   finally {
     showDeleteConfirmation.value = false;
@@ -141,12 +192,23 @@ const cancelDelete = () => {
 // Handle form submission for add
 const handleAddSubmit = async (data: FoodInput) => {
   try {
-    const newFood = await $fetch<Food>('/api/foods', {
+    const response = await $fetch<{ food: Food; message: string }>('/api/foods', {
       method: 'POST',
       body: data,
     });
 
-    foods.value.push(newFood);
+    foods.value.push(response.food);
+
+    // Update local storage
+    const { OfflineStorage } = await import('~/utils/offline-storage');
+    const offlineStorage = OfflineStorage.getInstance();
+    const newFood = {
+      ...response.food,
+      createdAt: new Date(response.food.createdAt),
+      updatedAt: new Date(response.food.updatedAt),
+    };
+    offlineStorage.updateFood(newFood);
+
     showAddModal.value = false;
   }
   catch {
@@ -159,15 +221,25 @@ const handleEditSubmit = async (data: FoodInput) => {
   if (!editingFood.value) return;
 
   try {
-    const updatedFood = await $fetch<Food>(
+    const response = await $fetch<{ food: Food; message: string }>(
       `/api/foods/${editingFood.value.id}`,
       {
-        method: 'PUT' as any,
+        method: 'PUT',
         body: data,
       },
     );
 
-    // Update local state
+    // Update local storage
+    const { OfflineStorage } = await import('~/utils/offline-storage');
+    const offlineStorage = OfflineStorage.getInstance();
+    const updatedFood = {
+      ...response.food,
+      createdAt: new Date(response.food.createdAt),
+      updatedAt: new Date(response.food.updatedAt),
+    };
+    offlineStorage.updateFood(updatedFood);
+
+    // Update local state with properly formatted data
     const index = foods.value.findIndex(
       food => food.id === editingFood.value!.id,
     );
@@ -178,7 +250,8 @@ const handleEditSubmit = async (data: FoodInput) => {
     showEditModal.value = false;
     editingFood.value = null;
   }
-  catch {
+  catch (err) {
+    console.error('フード更新エラー:', err);
     error.value = 'フードの更新に失敗しました';
   }
 };
@@ -204,10 +277,20 @@ const getDeleteMessage = (food: Food | null): string => {
 
   const usageCount = food._count?.meals || 0;
   if (usageCount > 0) {
-    return `${food.name}を削除しますか？このフードは${usageCount}回使用されています。削除すると関連する食事記録に影響する可能性があります。この操作は取り消せません。`;
+    return `${food.name}を削除しますか？
+
+このフードは${usageCount}件の食事記録で使用されています。
+
+<span class="warning-text">⚠️ 注意：関連する食事記録が存在するため、削除できません。</span>削除する前に、関連する食事記録を削除するか、別のフードに変更してください。`;
   }
 
   return `${food.name}を削除しますか？この操作は取り消せません。`;
+};
+
+// Handle sync completion
+const handleSyncComplete = async () => {
+  // Refetch foods after sync
+  await fetchFoods();
 };
 
 // Lifecycle
@@ -232,6 +315,13 @@ onMounted(() => {
 
         <!-- Header Actions -->
         <div class="header-actions">
+          <!-- Sync Button -->
+          <SyncButton
+            size="medium"
+            :show-label="true"
+            @sync-complete="handleSyncComplete"
+          />
+
           <!-- View Mode Toggle -->
           <div class="view-toggle">
             <button
@@ -267,6 +357,24 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- Error Banner -->
+    <div
+      v-if="error"
+      class="error-banner"
+    >
+      <div class="error-banner-content">
+        <span class="error-banner-icon">⚠️</span>
+        <span class="error-banner-message">{{ error }}</span>
+        <button
+          type="button"
+          class="error-banner-close"
+          @click="error = null"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+
     <!-- Loading State -->
     <div
       v-if="isLoading"
@@ -276,31 +384,6 @@ onMounted(() => {
       <p class="loading-text">
         データを読み込み中...
       </p>
-    </div>
-
-    <!-- Error State -->
-    <div
-      v-else-if="error"
-      class="error-container"
-    >
-      <div class="error-content">
-        <div class="error-icon">
-          ⚠️
-        </div>
-        <h2 class="error-title">
-          エラーが発生しました
-        </h2>
-        <p class="error-message">
-          {{ error }}
-        </p>
-        <button
-          type="button"
-          class="retry-button"
-          @click="fetchFoods"
-        >
-          再試行
-        </button>
-      </div>
     </div>
 
     <!-- Main Content -->
@@ -476,77 +559,28 @@ onMounted(() => {
     </div>
 
     <!-- Add Food Modal -->
-    <div
-      v-if="showAddModal"
-      class="modal-overlay"
-      @click="handleAddCancel"
-    >
-      <div
-        class="modal-content"
-        @click.stop
-      >
-        <div class="modal-header">
-          <h2 class="modal-title">
-            新しいフードを追加
-          </h2>
-          <button
-            type="button"
-            class="modal-close"
-            @click="handleAddCancel"
-          >
-            ✕
-          </button>
-        </div>
-        <div class="modal-body">
-          <FoodManagementForm
-            :is-open="showAddModal"
-            @close="handleAddCancel"
-            @save="handleAddSubmit"
-          />
-        </div>
-      </div>
-    </div>
+    <FoodManagementForm
+      :is-open="showAddModal"
+      @close="handleAddCancel"
+      @save="handleAddSubmit"
+    />
 
     <!-- Edit Food Modal -->
-    <div
-      v-if="showEditModal && editingFood"
-      class="modal-overlay"
-      @click="handleEditCancel"
-    >
-      <div
-        class="modal-content"
-        @click.stop
-      >
-        <div class="modal-header">
-          <h2 class="modal-title">
-            {{ editingFood.name }}を編集
-          </h2>
-          <button
-            type="button"
-            class="modal-close"
-            @click="handleEditCancel"
-          >
-            ✕
-          </button>
-        </div>
-        <div class="modal-body">
-          <FoodManagementForm
-            :food="editingFood"
-            :is-open="showEditModal"
-            @close="handleEditCancel"
-            @save="handleEditSubmit"
-            @cancel="handleEditCancel"
-          />
-        </div>
-      </div>
-    </div>
+    <FoodManagementForm
+      v-if="editingFood"
+      :food="editingFood"
+      :is-open="showEditModal"
+      @close="handleEditCancel"
+      @save="handleEditSubmit"
+      @cancel="handleEditCancel"
+    />
 
     <!-- Delete Confirmation Dialog -->
     <ConfirmationDialog
       :is-open="showDeleteConfirmation"
       :title="`${foodToDelete?.name}を削除`"
       :message="getDeleteMessage(foodToDelete)"
-      confirm-text="削除"
+      :confirm-text="(foodToDelete?._count?.meals || 0) > 0 ? '削除を試行' : '削除'"
       cancel-text="キャンセル"
       type="danger"
       @confirm="confirmDelete"
@@ -560,6 +594,65 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0;
+}
+
+/* Error Banner */
+.error-banner {
+  background: #ffebee;
+  border: 1px solid #f44336;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.error-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+}
+
+.error-banner-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.error-banner-message {
+  flex: 1;
+  color: #c62828;
+  font-weight: 500;
+}
+
+.error-banner-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(244, 67, 54, 0.1);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #c62828;
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.error-banner-close:hover {
+  background: rgba(244, 67, 54, 0.2);
+  transform: scale(1.1);
 }
 
 /* Page Header */
@@ -958,70 +1051,6 @@ onMounted(() => {
   text-align: center;
 }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  max-width: 600px;
-  width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.modal-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.modal-close {
-  width: 32px;
-  height: 32px;
-  border: none;
-  background: #f8f9fa;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-  font-size: 1.2rem;
-  transition: all 0.2s ease;
-}
-
-.modal-close:hover {
-  background: #e2e8f0;
-  color: #333;
-}
-
-.modal-body {
-  padding: 0;
-}
-
 /* Tablet Responsive */
 @media (max-width: 1024px) {
   .page-header {
@@ -1144,22 +1173,6 @@ onMounted(() => {
   .action-icon {
     font-size: 1.5rem;
   }
-
-  .modal-overlay {
-    padding: 0.5rem;
-  }
-
-  .modal-content {
-    max-height: 95vh;
-  }
-
-  .modal-header {
-    padding: 1rem;
-  }
-
-  .modal-title {
-    font-size: 1.2rem;
-  }
 }
 
 /* Small Mobile */
@@ -1210,16 +1223,6 @@ onMounted(() => {
   .action-text {
     font-size: 0.8rem;
   }
-
-  .modal-overlay {
-    padding: 0;
-  }
-
-  .modal-content {
-    border-radius: 0;
-    max-height: 100vh;
-    height: 100vh;
-  }
 }
 
 /* High contrast mode support */
@@ -1229,8 +1232,7 @@ onMounted(() => {
   .quick-actions,
   .stat-card,
   .filters-section,
-  .action-button,
-  .modal-content {
+  .action-button {
     border: 2px solid #333;
   }
 

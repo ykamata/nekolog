@@ -142,18 +142,23 @@ export const useFoodsStore = defineStore('foods', () => {
       }
 
       // Online: Create on server
-      const data = await $fetch<Food>('/api/foods', {
+      const response = await $fetch<{ food: Food; message: string }>('/api/foods', {
         method: 'POST',
         body: foodInput,
       });
 
       const newFood = {
-        ...data,
-        createdAt: new Date(data.createdAt),
-        updatedAt: new Date(data.updatedAt),
+        ...response.food,
+        createdAt: new Date(response.food.createdAt),
+        updatedAt: new Date(response.food.updatedAt),
       };
 
       foods.value.push(newFood);
+
+      // Update local storage
+      const offlineStorage = OfflineStorage.getInstance();
+      offlineStorage.updateFood(newFood);
+
       return newFood;
     }
     catch (err) {
@@ -177,21 +182,25 @@ export const useFoodsStore = defineStore('foods', () => {
       }
 
       // Online: Update on server
-      const data = await $fetch<Food>(`/api/foods/${id}`, {
+      const response = await $fetch<{ food: Food; message: string }>(`/api/foods/${id}`, {
         method: 'PUT',
         body: foodUpdate,
       });
 
       const updatedFood = {
-        ...data,
-        createdAt: new Date(data.createdAt),
-        updatedAt: new Date(data.updatedAt),
+        ...response.food,
+        createdAt: new Date(response.food.createdAt),
+        updatedAt: new Date(response.food.updatedAt),
       };
 
       const index = foods.value.findIndex(food => food.id === id);
       if (index !== -1) {
         foods.value[index] = updatedFood;
       }
+
+      // Update local storage
+      const offlineStorage = OfflineStorage.getInstance();
+      offlineStorage.updateFood(updatedFood);
 
       return updatedFood;
     }
@@ -218,9 +227,13 @@ export const useFoodsStore = defineStore('foods', () => {
       // Online: Delete on server
       await $fetch(`/api/foods/${id}`, {
         method: 'DELETE',
-      } as any);
+      });
 
       foods.value = foods.value.filter(food => food.id !== id);
+
+      // Remove from local storage
+      const offlineStorage = OfflineStorage.getInstance();
+      offlineStorage.deleteFood(id);
     }
     catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete food';

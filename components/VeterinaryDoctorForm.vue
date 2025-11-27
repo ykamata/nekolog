@@ -125,6 +125,31 @@
         <p class="mt-1 text-xs text-gray-500">例: 内科、外科、皮膚科など</p>
       </div>
 
+      <!-- メモ -->
+      <div>
+        <label
+          for="memo"
+          class="block text-sm font-medium text-gray-700 mb-1"
+        >
+          メモ
+        </label>
+        <textarea
+          id="memo"
+          v-model="formData.memo"
+          rows="4"
+          :class="[
+            'block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+            errors.memo ? 'border-red-300' : 'border-gray-300',
+          ]"
+          placeholder="先生に関するメモを入力してください"
+          @blur="validateField('memo')"
+        />
+        <p v-if="errors.memo" class="mt-1 text-sm text-red-600">
+          {{ errors.memo }}
+        </p>
+        <p class="mt-1 text-xs text-gray-500">500文字以内で入力してください</p>
+      </div>
+
       <!-- ボタン -->
       <div class="flex flex-col sm:flex-row gap-3 pt-4">
         <button
@@ -212,6 +237,7 @@ const formData = ref<VeterinaryDoctorInput>({
   name: "",
   hospitalId: undefined,
   specialty: "",
+  memo: "",
 });
 
 const errors = ref<Record<string, string>>({});
@@ -238,12 +264,14 @@ const initializeForm = () => {
       name: props.doctor.name,
       hospitalId: props.doctor.hospitalId || undefined,
       specialty: props.doctor.specialty || "",
+      memo: props.doctor.memo || "",
     };
   } else {
     formData.value = {
       name: "",
       hospitalId: props.preselectedHospitalId || undefined,
       specialty: "",
+      memo: "",
     };
   }
   errors.value = {};
@@ -304,6 +332,7 @@ const handleSubmit = async () => {
       name: formData.value.name.trim(),
       hospitalId: formData.value.hospitalId || undefined,
       specialty: formData.value.specialty?.trim() || undefined,
+      memo: formData.value.memo?.trim() || undefined,
     };
 
     emit("save", cleanedData);

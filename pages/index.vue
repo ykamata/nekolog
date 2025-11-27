@@ -94,33 +94,16 @@ const quickActions = [
   },
 ];
 
-// Features data
-const features = [
-  {
-    title: '食事記録管理',
-    description: '猫の食事内容を詳細に記録・管理できます',
-    icon: '🍽️',
-  },
-  {
-    title: 'データ可視化',
-    description: '食事データをグラフで分析・可視化できます',
-    icon: '📊',
-  },
-  {
-    title: 'オフライン対応',
-    description: 'ネットワーク外でも一定期間利用可能です',
-    icon: '📱',
-  },
-  {
-    title: 'レスポンシブ対応',
-    description: 'PC・スマートフォンの両方で快適に利用できます',
-    icon: '💻',
-  },
-];
-
 // Debug function for action clicks
 const handleActionClick = (action: any) => {
   console.log('Action clicked:', action.title, 'Link:', action.link);
+};
+
+// Handle calendar date selection
+const handleDateSelect = (data: any) => {
+  console.log('📅 日付選択:', data);
+  // ダイアログがカレンダーコンポーネント内で表示されるため、
+  // ここでは特別な処理は不要
 };
 
 // Server-side data fetching
@@ -287,28 +270,15 @@ onMounted(async () => {
       </div>
     </section>
 
-    <!-- Features Section -->
-    <section class="features-section">
+    <!-- Daily Calendar Section -->
+    <section class="calendar-section">
       <h2 class="section-title">
-        主な機能
+        ケアカレンダー
       </h2>
-      <div class="features-grid">
-        <div
-          v-for="feature in features"
-          :key="feature.title"
-          class="feature-card"
-        >
-          <div class="feature-icon">
-            {{ feature.icon }}
-          </div>
-          <h3 class="feature-title">
-            {{ feature.title }}
-          </h3>
-          <p class="feature-description">
-            {{ feature.description }}
-          </p>
-        </div>
-      </div>
+      <p class="calendar-description">
+        日々の食事、排泄、介護の記録を一目で確認できます。日付をクリックして詳細を記録しましょう。
+      </p>
+      <DailyCalendar @select-date="handleDateSelect" />
     </section>
 
     <!-- Getting Started Section -->
@@ -456,82 +426,6 @@ onMounted(async () => {
 .refresh-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.section-title {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #2c3e50;
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
-
-.feature-card {
-  background: white;
-  border: 2px solid #e9ecef;
-  border-radius: 8px;
-  padding: 1.5rem;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.feature-card:hover {
-  border-color: #007bff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
-}
-
-.feature-card.selected {
-  border-color: #007bff;
-  background: #f8f9ff;
-}
-
-.feature-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.feature-title {
-  font-size: 1.3rem;
-  font-weight: bold;
-  color: #2c3e50;
-  margin-bottom: 0.5rem;
-}
-
-.feature-description {
-  color: #6c757d;
-  line-height: 1.5;
-}
-
-.selected-feature {
-  background: #e7f3ff;
-  border: 1px solid #b3d9ff;
-  border-radius: 8px;
-  padding: 1.5rem;
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.clear-btn {
-  padding: 0.5rem 1rem;
-  background: #6c757d;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 1rem;
-}
-
-.clear-btn:hover {
-  background: #545b62;
 }
 
 .navigation-test {
@@ -827,8 +721,8 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-/* Features Section */
-.features-section {
+/* Calendar Section */
+.calendar-section {
   background: white;
   border-radius: 12px;
   padding: 2rem;
@@ -836,43 +730,11 @@ onMounted(async () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-}
-
-.feature-card {
+.calendar-description {
   text-align: center;
-  padding: 2rem 1.5rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-color: #4caf50;
-}
-
-.feature-icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.feature-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 1rem 0;
-}
-
-.feature-description {
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: #666;
-  margin: 0;
+  margin: 0 0 2rem 0;
   line-height: 1.5;
 }
 
@@ -1006,7 +868,7 @@ onMounted(async () => {
 
   .stats-section,
   .quick-actions-section,
-  .features-section,
+  .calendar-section,
   .getting-started-section {
     padding: 1.5rem;
   }
@@ -1062,7 +924,7 @@ onMounted(async () => {
 
   .stats-section,
   .quick-actions-section,
-  .features-section,
+  .calendar-section,
   .getting-started-section {
     border-radius: 0;
     margin-bottom: 1rem;
@@ -1101,19 +963,6 @@ onMounted(async () => {
 
   .action-icon {
     font-size: 1.5rem;
-  }
-
-  .features-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .feature-card {
-    padding: 1.5rem 1rem;
-  }
-
-  .feature-icon {
-    font-size: 2.5rem;
   }
 
   .getting-started-steps {
@@ -1158,7 +1007,7 @@ onMounted(async () => {
 
   .stats-section,
   .quick-actions-section,
-  .features-section,
+  .calendar-section,
   .getting-started-section {
     padding: 1rem;
   }
@@ -1183,14 +1032,6 @@ onMounted(async () => {
     display: none;
   }
 
-  .feature-card {
-    padding: 1rem;
-  }
-
-  .feature-icon {
-    font-size: 2rem;
-  }
-
   .step-number {
     width: 40px;
     height: 40px;
@@ -1203,11 +1044,10 @@ onMounted(async () => {
   .welcome-section,
   .stats-section,
   .quick-actions-section,
-  .features-section,
+  .calendar-section,
   .getting-started-section,
   .stat-card,
-  .action-card,
-  .feature-card {
+  .action-card {
     border: 2px solid #333;
   }
 
@@ -1235,7 +1075,6 @@ onMounted(async () => {
   }
 
   .action-card:hover,
-  .feature-card:hover,
   .start-button:hover {
     transform: none;
   }

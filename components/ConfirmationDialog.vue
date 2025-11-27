@@ -59,9 +59,8 @@ const handleOverlayClick = (event: Event) => {
         <p
           :id="`dialog-message-${$attrs.id || 'default'}`"
           class="confirmation-message"
-        >
-          {{ message }}
-        </p>
+          v-html="message"
+        />
       </div>
 
       <div class="confirmation-actions">
@@ -134,6 +133,12 @@ const handleOverlayClick = (event: Event) => {
   margin: 0;
   color: #666;
   line-height: 1.5;
+  white-space: pre-line;
+}
+
+.confirmation-message :deep(.warning-text) {
+  color: #d32f2f;
+  font-weight: 600;
 }
 
 .confirmation-actions {

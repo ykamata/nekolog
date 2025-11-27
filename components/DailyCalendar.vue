@@ -1,0 +1,921 @@
+<script setup lang="ts">
+import type { MonthlyCalendarData, DailyCalendarData } from '~/types/daily-calendar';
+import type { Cat } from '~/types/cat-meal';
+import DailyRecordDialog from './DailyRecordDialog.vue';
+import DayDetailDialog from './DayDetailDialog.vue';
+
+interface Props {
+  catId?: number;
+}
+
+interface Emits {
+  (e: 'selectDate', data: DailyCalendarData): void;
+}
+
+const props = defineProps<Props>();
+const emit = defineEmits<Emits>();
+
+// State
+const currentYear = ref(new Date().getFullYear());
+const currentMonth = ref(new Date().getMonth() + 1);
+const calendarData = ref<MonthlyCalendarData | null>(null);
+const isLoading = ref(false);
+const error = ref<string | null>(null);
+const cats = ref<Cat[]>([]);
+const selectedCatId = ref<number | null>(null);
+
+// Dialog state
+const showRecordDialog = ref(false);
+const showDetailDialog = ref(false);
+const selectedDate = ref('');
+const selectedDayData = ref<DailyCalendarData | null>(null);
+
+// Message state
+const message = ref('');
+const messageType = ref<'success' | 'error'>('success');
+const showMessage = ref(false);
+let messageTimeout: NodeJS.Timeout | null = null;
+
+// Computed
+const monthName = computed(() => {
+  return `${currentYear.value}年${currentMonth.value}月`;
+});
+
+const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
+
+const calendarDays = computed(() => {
+  if (!calendarData.value) return [];
+
+  const firstDay = new Date(currentYear.value, currentMonth.value - 1, 1).getDay();
+  const daysInMonth = calendarData.value.days.length;
+
+  // Add empty slots for days before the first day of the month
+  const days: (DailyCalendarData | null)[] = Array(firstDay).fill(null);
+
+  // Add actual days
+  days.push(...calendarData.value.days);
+
+  return days;
+});
+
+// Methods
+const fetchCats = async () => {
+  try {
+    const data = await $fetch<Cat[]>('/api/cats');
+    cats.value = data;
+    if (data.length > 0 && !selectedCatId.value) {
+      selectedCatId.value = data[0]?.id ?? null;
+    }
+  }
+  catch (err) {
+    console.error('猫データ取得エラー:', err);
+  }
+};
+
+const fetchCalendarData = async () => {
+  isLoading.value = true;
+  error.value = null;
+
+  try {
+    const params: Record<string, string> = {
+      year: String(currentYear.value),
+      month: String(currentMonth.value),
+    };
+
+    const catIdToUse = props.catId || selectedCatId.value;
+    if (catIdToUse) {
+      params.catId = String(catIdToUse);
+    }
+
+    const data = await $fetch<MonthlyCalendarData>('/api/daily-calendar', {
+      params,
+    });
+
+    calendarData.value = data;
+  }
+  catch (err) {
+    console.error('カレンダーデータ取得エラー:', err);
+    error.value = 'カレンダーデータの取得に失敗しました';
+  }
+  finally {
+    isLoading.value = false;
+  }
+};
+
+const goToPreviousMonth = () => {
+  if (currentMonth.value === 1) {
+    currentMonth.value = 12;
+    currentYear.value--;
+  }
+  else {
+    currentMonth.value--;
+  }
+  fetchCalendarData();
+};
+
+const goToNextMonth = () => {
+  if (currentMonth.value === 12) {
+    currentMonth.value = 1;
+    currentYear.value++;
+  }
+  else {
+    currentMonth.value++;
+  }
+  fetchCalendarData();
+};
+
+const goToToday = () => {
+  const today = new Date();
+  currentYear.value = today.getFullYear();
+  currentMonth.value = today.getMonth() + 1;
+  fetchCalendarData();
+};
+
+const handleDayClick = (day: DailyCalendarData) => {
+  selectedDate.value = day.date;
+  selectedDayData.value = day;
+  showRecordDialog.value = true;
+  emit('selectDate', day);
+};
+
+const handleDayRightClick = (event: MouseEvent, day: DailyCalendarData) => {
+  event.preventDefault();
+  selectedDate.value = day.date;
+  selectedDayData.value = day;
+  showDetailDialog.value = true;
+};
+
+const handleDialogClose = () => {
+  showRecordDialog.value = false;
+  selectedDate.value = '';
+  selectedDayData.value = null;
+};
+
+const handleDetailDialogClose = () => {
+  showDetailDialog.value = false;
+};
+
+const handleDialogRefresh = () => {
+  fetchCalendarData();
+};
+
+const handleShowMessage = (msg: string, type: 'success' | 'error') => {
+  message.value = msg;
+  messageType.value = type;
+  showMessage.value = true;
+
+  // Clear previous timeout
+  if (messageTimeout) {
+    clearTimeout(messageTimeout);
+  }
+
+  // Hide message after 5 seconds
+  messageTimeout = setTimeout(() => {
+    showMessage.value = false;
+  }, 5000);
+};
+
+const isToday = (dateStr: string) => {
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  return dateStr === todayStr;
+};
+
+// Watch catId changes
+watch(() => props.catId, () => {
+  fetchCalendarData();
+});
+
+watch(() => selectedCatId.value, () => {
+  if (selectedCatId.value) {
+    fetchCalendarData();
+  }
+});
+
+// Lifecycle
+onMounted(() => {
+  fetchCats();
+  fetchCalendarData();
+});
+</script>
+
+<template>
+  <div class="daily-calendar">
+    <!-- Calendar Header -->
+    <div class="calendar-header">
+      <div class="calendar-controls">
+        <!-- Cat Selector -->
+        <div
+          v-if="!catId"
+          class="cat-selector"
+        >
+          <label class="cat-label">猫:</label>
+          <select
+            v-model="selectedCatId"
+            class="cat-select"
+          >
+            <option
+              v-for="cat in cats"
+              :key="cat.id"
+              :value="cat.id"
+            >
+              {{ cat.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Month Navigation -->
+        <div class="calendar-nav">
+          <button
+            type="button"
+            class="nav-button"
+            @click="goToPreviousMonth"
+          >
+            ‹
+          </button>
+          <h2 class="month-title">
+            {{ monthName }}
+          </h2>
+          <button
+            type="button"
+            class="nav-button"
+            @click="goToNextMonth"
+          >
+            ›
+          </button>
+        </div>
+
+        <!-- Today Button -->
+        <button
+          type="button"
+          class="today-button"
+          @click="goToToday"
+        >
+          今日
+        </button>
+      </div>
+    </div>
+
+    <!-- Message Display -->
+    <Transition name="message-slide">
+      <div
+        v-if="showMessage"
+        class="calendar-message"
+        :class="{
+          'calendar-message--success': messageType === 'success',
+          'calendar-message--error': messageType === 'error',
+        }"
+      >
+        <span class="message-icon">{{ messageType === 'success' ? '✓' : '✕' }}</span>
+        <span class="message-text">{{ message }}</span>
+      </div>
+    </Transition>
+
+    <!-- Loading State -->
+    <div
+      v-if="isLoading"
+      class="calendar-loading"
+    >
+      <div class="loading-spinner" />
+      <p>カレンダーを読み込み中...</p>
+    </div>
+
+    <!-- Error State -->
+    <div
+      v-else-if="error"
+      class="calendar-error"
+    >
+      <p class="error-message">
+        {{ error }}
+      </p>
+      <button
+        type="button"
+        class="retry-button"
+        @click="fetchCalendarData"
+      >
+        再試行
+      </button>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div
+      v-else
+      class="calendar-content"
+    >
+      <!-- Week day headers -->
+      <div class="calendar-weekdays">
+        <div
+          v-for="day in weekDays"
+          :key="day"
+          class="weekday"
+          :class="{ 'weekday--sunday': day === '日', 'weekday--saturday': day === '土' }"
+        >
+          {{ day }}
+        </div>
+      </div>
+
+      <!-- Calendar days -->
+      <div class="calendar-grid">
+        <div
+          v-for="(day, index) in calendarDays"
+          :key="index"
+          class="calendar-day"
+          :class="{
+            'calendar-day--empty': !day,
+            'calendar-day--today': day && isToday(day.date),
+            'calendar-day--has-data': day && (day.mealCount > 0 || day.excretionCount.total > 0 || day.hasMemo || day.hasEmergencyMedication),
+          }"
+          @click="day && handleDayClick(day)"
+          @contextmenu="day && handleDayRightClick($event, day)"
+        >
+          <div
+            v-if="day"
+            class="day-content"
+          >
+            <!-- Day header with number and icons -->
+            <div class="day-header">
+              <span class="day-number">{{ new Date(day.date).getDate() }}</span>
+              <div class="day-icons">
+                <span
+                  v-if="day.hasEmergencyMedication"
+                  class="icon-badge"
+                  title="頓服薬あり"
+                >💊</span>
+                <span
+                  v-if="day.hasMemo"
+                  class="icon-badge"
+                  title="メモあり"
+                >📝</span>
+              </div>
+            </div>
+
+            <!-- Event details -->
+            <div class="day-details">
+              <!-- Total calories -->
+              <div
+                v-if="day.totalCalories > 0"
+                class="detail-row detail-calories"
+                :title="`合計カロリー: ${day.totalCalories}kcal`"
+              >
+                <span class="detail-label">🍽️</span>
+                <span class="detail-value">{{ day.totalCalories }}kcal</span>
+              </div>
+
+              <!-- Excretion times -->
+              <div
+                v-if="day.excretionTimes.urine.length > 0 || day.excretionTimes.feces.length > 0"
+                class="detail-row detail-excretion"
+              >
+                <!-- Urine times -->
+                <div
+                  v-if="day.excretionTimes.urine.length > 0"
+                  class="excretion-times"
+                  :title="`おしっこ: ${day.excretionTimes.urine.join(', ')}`"
+                >
+                  <span class="excretion-icon">💧</span>
+                  <span class="excretion-values">{{ day.excretionTimes.urine.join(', ') }}</span>
+                </div>
+
+                <!-- Feces times -->
+                <div
+                  v-if="day.excretionTimes.feces.length > 0"
+                  class="excretion-times"
+                  :title="`うんち: ${day.excretionTimes.feces.join(', ')}`"
+                >
+                  <span class="excretion-icon">💩</span>
+                  <span class="excretion-values">{{ day.excretionTimes.feces.join(', ') }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="calendar-legend">
+      <div class="legend-title">
+        凡例
+      </div>
+      <div class="legend-items">
+        <div class="legend-item">
+          <span class="legend-icon">🍽️</span>
+          <span class="legend-label">食事</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-icon">💧💩</span>
+          <span class="legend-label">排泄</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-icon">💊</span>
+          <span class="legend-label">頓服薬</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-icon">📝</span>
+          <span class="legend-label">メモ</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily Record Dialog -->
+    <DailyRecordDialog
+      :is-open="showRecordDialog"
+      :date="selectedDate"
+      :day-data="selectedDayData"
+      @close="handleDialogClose"
+      @refresh="handleDialogRefresh"
+      @show-message="handleShowMessage"
+    />
+
+    <!-- Day Detail Dialog -->
+    <DayDetailDialog
+      :is-open="showDetailDialog"
+      :date="selectedDate"
+      :day-data="selectedDayData"
+      @close="handleDetailDialogClose"
+    />
+  </div>
+</template>
+
+<style scoped>
+.daily-calendar {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Message Display */
+.calendar-message {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.calendar-message--success {
+  background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+  color: white;
+}
+
+.calendar-message--error {
+  background: linear-gradient(135deg, #f44336 0%, #e57373 100%);
+  color: white;
+}
+
+.message-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.message-text {
+  flex: 1;
+  font-size: 1rem;
+}
+
+/* Message transition */
+.message-slide-enter-active,
+.message-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.message-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-20px);
+}
+
+.message-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Calendar Header */
+.calendar-header {
+  margin-bottom: 1.5rem;
+}
+
+.calendar-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cat-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.cat-label {
+  font-weight: 600;
+  color: white;
+  font-size: 1rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.cat-select {
+  padding: 0.5rem 1rem;
+  border: 2px solid white;
+  border-radius: 6px;
+  background: white;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #667eea;
+  cursor: pointer;
+  min-width: 150px;
+  transition: all 0.2s ease;
+}
+
+.cat-select:hover {
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.cat-select:focus {
+  outline: none;
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.5);
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-button:hover {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+.month-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  min-width: 150px;
+  text-align: center;
+}
+
+.today-button {
+  padding: 0.5rem 1rem;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.today-button:hover {
+  background: #45a049;
+}
+
+/* Loading and Error States */
+.calendar-loading,
+.calendar-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #4caf50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message {
+  color: #f44336;
+  margin-bottom: 1rem;
+}
+
+.retry-button {
+  padding: 0.5rem 1rem;
+  background: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Calendar Content */
+.calendar-content {
+  margin-bottom: 1.5rem;
+}
+
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.weekday {
+  padding: 0.5rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.weekday--sunday {
+  color: #f44336;
+}
+
+.weekday--saturday {
+  color: #2196f3;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.calendar-day {
+  min-height: 100px;
+  background: #f8f9fa;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.calendar-day:not(.calendar-day--empty):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #4caf50;
+}
+
+.calendar-day--empty {
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.calendar-day--today {
+  border: 2px solid #4caf50;
+  background: #e8f5e9;
+}
+
+.calendar-day--has-data {
+  background: white;
+}
+
+.day-content {
+  padding: 0.5rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+/* Day header with number and icons */
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.25rem;
+}
+
+.day-number {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #333;
+}
+
+.day-icons {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.icon-badge {
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+/* Day details */
+.day-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  flex: 1;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  line-height: 1.2;
+}
+
+.detail-calories {
+  padding: 0.25rem 0.375rem;
+  background: #fff3e0;
+  border-radius: 4px;
+  border-left: 3px solid #ff9800;
+}
+
+.detail-label {
+  font-size: 0.875rem;
+}
+
+.detail-value {
+  font-weight: 600;
+  color: #f57c00;
+}
+
+.detail-excretion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.excretion-times {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.25rem;
+  background: #e3f2fd;
+  border-radius: 4px;
+  font-size: 0.7rem;
+}
+
+.excretion-icon {
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.excretion-values {
+  font-weight: 500;
+  color: #1976d2;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  word-break: break-all;
+}
+
+/* Legend */
+.calendar-legend {
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.legend-title {
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-icon {
+  font-size: 1rem;
+}
+
+.legend-label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .daily-calendar {
+    padding: 1rem;
+  }
+
+  .calendar-header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .calendar-nav {
+    justify-content: center;
+  }
+
+  .month-title {
+    font-size: 1.25rem;
+  }
+
+  .calendar-day {
+    min-height: 80px;
+  }
+
+  .day-content {
+    padding: 0.375rem;
+  }
+
+  .day-number {
+    font-size: 1rem;
+  }
+
+  .indicator {
+    font-size: 0.7rem;
+  }
+
+  .legend-items {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .calendar-day {
+    min-height: 60px;
+  }
+
+  .day-content {
+    padding: 0.25rem;
+  }
+
+  .day-number {
+    font-size: 0.9rem;
+  }
+
+  .event-indicators {
+    font-size: 0.65rem;
+  }
+
+  .indicator {
+    padding: 0.0625rem 0.125rem;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner {
+    animation: none;
+  }
+
+  .calendar-day:hover {
+    transform: none;
+  }
+
+  * {
+    transition: none !important;
+  }
+}
+</style>

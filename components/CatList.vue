@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import ConfirmationDialog from './ConfirmationDialog.vue';
+import CatDetailDialog from './CatDetailDialog.vue';
 import type { Cat } from '~/types/cat-meal';
 
 interface Props {
@@ -24,13 +25,30 @@ const emit = defineEmits<Emits>();
 const showDeleteConfirmation = ref(false);
 const catToDelete = ref<Cat | null>(null);
 
+// State for detail dialog
+const showDetailDialog = ref(false);
+const selectedCat = ref<Cat | null>(null);
+
 // Methods
 const handleSelectCat = (cat: Cat) => {
+  selectedCat.value = cat;
+  showDetailDialog.value = true;
   emit('select', cat);
 };
 
 const handleEditCat = (cat: Cat) => {
   emit('edit', cat);
+};
+
+const handleEditFromDetail = (cat: Cat) => {
+  showDetailDialog.value = false;
+  selectedCat.value = null;
+  emit('edit', cat);
+};
+
+const handleCloseDetail = () => {
+  showDetailDialog.value = false;
+  selectedCat.value = null;
 };
 
 const handleDeleteCat = (cat: Cat) => {
@@ -206,6 +224,14 @@ const handleImageError = (event: Event) => {
         </div>
       </div>
     </div>
+
+    <!-- Cat Detail Dialog -->
+    <CatDetailDialog
+      :is-open="showDetailDialog"
+      :cat="selectedCat"
+      @close="handleCloseDetail"
+      @edit="handleEditFromDetail"
+    />
 
     <!-- Delete Confirmation Dialog -->
     <ConfirmationDialog
