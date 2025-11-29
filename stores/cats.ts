@@ -1,8 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Cat, CatInput, CatUpdate, CatFilter } from '~/types/cat-meal';
-import { OfflineStorage } from '~/utils/offline-storage';
-import { useSync } from '~/composables/useSync';
 
 export const useCatsStore = defineStore('cats', () => {
   // State
@@ -100,17 +98,10 @@ export const useCatsStore = defineStore('cats', () => {
   };
 
   const createCat = async (catInput: CatInput): Promise<Cat> => {
-    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      // オフライン時は登録不可
-      if (!syncStatus.value.isOnline) {
-        throw new Error('オフライン時はデータの登録ができません');
-      }
-
-      // Online: Create on server
       const data = await $fetch<Cat>('/api/cats', {
         method: 'POST',
         body: catInput,
@@ -138,17 +129,10 @@ export const useCatsStore = defineStore('cats', () => {
   };
 
   const updateCat = async (id: number, catUpdate: CatUpdate): Promise<Cat> => {
-    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      // オフライン時は更新不可
-      if (!syncStatus.value.isOnline) {
-        throw new Error('オフライン時はデータの更新ができません');
-      }
-
-      // Online: Update on server
       console.log('🐱 catsStore.updateCat - Sending data:', JSON.stringify(catUpdate, null, 2));
       const response = await $fetch<{ cat: Cat; message: string }>(`/api/cats/${id}`, {
         method: 'PUT',
@@ -181,17 +165,10 @@ export const useCatsStore = defineStore('cats', () => {
   };
 
   const deleteCat = async (id: number): Promise<void> => {
-    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      // オフライン時は削除不可
-      if (!syncStatus.value.isOnline) {
-        throw new Error('オフライン時はデータの削除ができません');
-      }
-
-      // Online: Delete on server
       await $fetch(`/api/cats/${id}`, {
         method: 'DELETE',
       });
@@ -239,12 +216,6 @@ export const useCatsStore = defineStore('cats', () => {
     cats.value = cats.value.filter(cat => cat.id !== id);
   };
 
-  // Load offline data into state
-  const loadOfflineData = () => {
-    const offlineStorage = OfflineStorage.getInstance();
-    cats.value = offlineStorage.getCats();
-  };
-
   return {
     // State
     cats,
@@ -265,9 +236,8 @@ export const useCatsStore = defineStore('cats', () => {
     deleteCat,
     clearError,
     invalidateCache,
-    refreshCats, // 新しく追加
+    refreshCats,
     addCatToState,
     removeCatFromState,
-    loadOfflineData,
   };
-}); ;
+});

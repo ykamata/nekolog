@@ -126,7 +126,6 @@
             </button>
           </div>
         </div>
-        <SyncStatus />
       </div>
     </aside>
 
@@ -148,7 +147,6 @@
             >
               👤
             </button>
-            <SyncStatus />
           </div>
         </div>
       </header>

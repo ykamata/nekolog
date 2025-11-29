@@ -6,8 +6,6 @@ import type {
   MealRecordUpdate,
   MealRecordFilter,
 } from '~/types/cat-meal';
-import { OfflineStorage } from '~/utils/offline-storage';
-import { useSync } from '~/composables/useSync';
 import {
   apiCache,
   createCacheKey,
@@ -223,17 +221,10 @@ export const useMealsStore = defineStore('meals', () => {
   };
 
   const createMeal = async (mealInput: MealRecordInput): Promise<MealRecord> => {
-    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      // オフライン時は登録不可
-      if (!syncStatus.value.isOnline) {
-        throw new Error('オフライン時はデータの登録ができません');
-      }
-
-      // Online: Create on server
       const data = await $fetch<MealRecord>('/api/meals', {
         method: 'POST',
         body: mealInput,
@@ -275,17 +266,10 @@ export const useMealsStore = defineStore('meals', () => {
     id: number,
     mealUpdate: MealRecordUpdate,
   ): Promise<MealRecord> => {
-    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      // オフライン時は更新不可
-      if (!syncStatus.value.isOnline) {
-        throw new Error('オフライン時はデータの更新ができません');
-      }
-
-      // Online: Update on server
       const data = await $fetch<MealRecord>(`/api/meals/${id}`, {
         method: 'PUT',
         body: mealUpdate,
@@ -322,17 +306,10 @@ export const useMealsStore = defineStore('meals', () => {
   };
 
   const deleteMeal = async (id: number): Promise<void> => {
-    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      // オフライン時は削除不可
-      if (!syncStatus.value.isOnline) {
-        throw new Error('オフライン時はデータの削除ができません');
-      }
-
-      // Online: Delete on server
       await $fetch(`/api/meals/${id}`, {
         method: 'DELETE',
       } as any);
@@ -444,24 +421,12 @@ export const useMealsStore = defineStore('meals', () => {
     lastUpdate.value = new Date();
   };
 
-  // Load offline data into state
-  const loadOfflineData = () => {
-    const offlineStorage = OfflineStorage.getInstance();
-    meals.value = offlineStorage.getMeals();
-  };
-
   // Bulk operations
   const bulkDeleteMeals = async (ids: number[]): Promise<void> => {
-    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      // オフライン時は削除不可
-      if (!syncStatus.value.isOnline) {
-        throw new Error('オフライン時はデータの削除ができません');
-      }
-
       await $fetch('/api/meals/bulk-delete', {
         method: 'POST',
         body: { ids },
@@ -527,7 +492,6 @@ export const useMealsStore = defineStore('meals', () => {
     invalidateCache,
     addMealToState,
     removeMealFromState,
-    loadOfflineData,
     bulkDeleteMeals,
   };
 });

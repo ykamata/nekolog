@@ -130,11 +130,6 @@ const confirmDelete = async () => {
       food => food.id !== deletedFoodId,
     );
 
-    // Remove from local storage
-    const { OfflineStorage } = await import('~/utils/offline-storage');
-    const offlineStorage = OfflineStorage.getInstance();
-    offlineStorage.deleteFood(deletedFoodId);
-
     // Clear any previous errors
     error.value = null;
   }
@@ -199,16 +194,6 @@ const handleAddSubmit = async (data: FoodInput) => {
 
     foods.value.push(response.food);
 
-    // Update local storage
-    const { OfflineStorage } = await import('~/utils/offline-storage');
-    const offlineStorage = OfflineStorage.getInstance();
-    const newFood = {
-      ...response.food,
-      createdAt: new Date(response.food.createdAt),
-      updatedAt: new Date(response.food.updatedAt),
-    };
-    offlineStorage.updateFood(newFood);
-
     showAddModal.value = false;
   }
   catch {
@@ -229,17 +214,12 @@ const handleEditSubmit = async (data: FoodInput) => {
       },
     );
 
-    // Update local storage
-    const { OfflineStorage } = await import('~/utils/offline-storage');
-    const offlineStorage = OfflineStorage.getInstance();
+    // Update local state with properly formatted data
     const updatedFood = {
       ...response.food,
       createdAt: new Date(response.food.createdAt),
       updatedAt: new Date(response.food.updatedAt),
     };
-    offlineStorage.updateFood(updatedFood);
-
-    // Update local state with properly formatted data
     const index = foods.value.findIndex(
       food => food.id === editingFood.value!.id,
     );

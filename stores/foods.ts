@@ -7,8 +7,6 @@ import type {
   FoodFilter,
   FoodType,
 } from '~/types/cat-meal';
-import { OfflineStorage } from '~/utils/offline-storage';
-import { useSync } from '~/composables/useSync';
 
 export const useFoodsStore = defineStore('foods', () => {
   // State
@@ -131,17 +129,10 @@ export const useFoodsStore = defineStore('foods', () => {
   };
 
   const createFood = async (foodInput: FoodInput): Promise<Food> => {
-    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      // オフライン時は登録不可
-      if (!syncStatus.value.isOnline) {
-        throw new Error('オフライン時はデータの登録ができません');
-      }
-
-      // Online: Create on server
       const response = await $fetch<{ food: Food; message: string }>('/api/foods', {
         method: 'POST',
         body: foodInput,
@@ -155,10 +146,6 @@ export const useFoodsStore = defineStore('foods', () => {
 
       foods.value.push(newFood);
 
-      // Update local storage
-      const offlineStorage = OfflineStorage.getInstance();
-      offlineStorage.updateFood(newFood);
-
       return newFood;
     }
     catch (err) {
@@ -171,17 +158,10 @@ export const useFoodsStore = defineStore('foods', () => {
   };
 
   const updateFood = async (id: number, foodUpdate: FoodUpdate): Promise<Food> => {
-    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      // オフライン時は更新不可
-      if (!syncStatus.value.isOnline) {
-        throw new Error('オフライン時はデータの更新ができません');
-      }
-
-      // Online: Update on server
       const response = await $fetch<{ food: Food; message: string }>(`/api/foods/${id}`, {
         method: 'PUT',
         body: foodUpdate,
@@ -198,10 +178,6 @@ export const useFoodsStore = defineStore('foods', () => {
         foods.value[index] = updatedFood;
       }
 
-      // Update local storage
-      const offlineStorage = OfflineStorage.getInstance();
-      offlineStorage.updateFood(updatedFood);
-
       return updatedFood;
     }
     catch (err) {
@@ -214,26 +190,15 @@ export const useFoodsStore = defineStore('foods', () => {
   };
 
   const deleteFood = async (id: number): Promise<void> => {
-    const { syncStatus } = useSync();
     loading.value = true;
     error.value = null;
 
     try {
-      // オフライン時は削除不可
-      if (!syncStatus.value.isOnline) {
-        throw new Error('オフライン時はデータの削除ができません');
-      }
-
-      // Online: Delete on server
       await $fetch(`/api/foods/${id}`, {
         method: 'DELETE',
       });
 
       foods.value = foods.value.filter(food => food.id !== id);
-
-      // Remove from local storage
-      const offlineStorage = OfflineStorage.getInstance();
-      offlineStorage.deleteFood(id);
     }
     catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to delete food';
@@ -297,12 +262,6 @@ export const useFoodsStore = defineStore('foods', () => {
     foods.value = foods.value.filter(food => food.id !== id);
   };
 
-  // Load offline data into state
-  const loadOfflineData = () => {
-    const offlineStorage = OfflineStorage.getInstance();
-    foods.value = offlineStorage.getFoods();
-  };
-
   return {
     // State
     foods,
@@ -335,6 +294,5 @@ export const useFoodsStore = defineStore('foods', () => {
     invalidateCache,
     addFoodToState,
     removeFoodFromState,
-    loadOfflineData,
   };
 });

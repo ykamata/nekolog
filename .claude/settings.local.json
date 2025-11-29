@@ -8,7 +8,8 @@
       "mcp__serena__find_file",
       "mcp__serena__think_about_collected_information",
       "Bash(npm run typecheck:*)",
-      "Bash(cut:*)"
+      "Bash(cut:*)",
+      "Bash(rm:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

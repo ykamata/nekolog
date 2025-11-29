@@ -91,7 +91,6 @@ const componentMap: Record<string, () => Promise<any>> = {
   FoodSelector: () => import('~/components/FoodSelector.vue'),
   DateTimePicker: () => import('~/components/DateTimePicker.vue'),
   ConfirmationDialog: () => import('~/components/ConfirmationDialog.vue'),
-  SyncStatus: () => import('~/components/SyncStatus.vue'),
   VirtualScroll: () => import('~/components/VirtualScroll.vue'),
   LoadingStates: () => import('~/components/LoadingStates.vue'),
 };
