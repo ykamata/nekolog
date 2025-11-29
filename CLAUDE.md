@@ -55,15 +55,12 @@ npm run test:e2e:debug           # Debug E2E tests
 ### Database Management
 
 ```bash
-npm run db:generate              # Generate Prisma client (SQLite)
-npm run db:generate:mysql        # Generate Prisma client (MySQL)
+npm run db:generate              # Generate Prisma client
 npm run db:migrate               # Run database migrations (development)
-npm run db:migrate:prod          # Deploy migrations to production (MySQL)
+npm run db:migrate:prod          # Deploy migrations to production
 npm run db:push                  # Push schema changes to database
-npm run db:studio                # Open Prisma Studio (SQLite)
-npm run db:studio:mysql          # Open Prisma Studio (MySQL)
+npm run db:studio                # Open Prisma Studio
 npm run db:seed                  # Seed database with test data
-npm run db:seed:mysql            # Seed MySQL database
 npm run db:reset                 # Reset database and run migrations
 ```
 
@@ -220,9 +217,8 @@ nekolog/
 ### Database Layer
 
 - **Prisma ORM**: Type-safe database access and migrations
-- **SQLite**: Development database (file: `./dev.db`)
-- **MySQL 8.0**: Production database (Docker container)
-- **Multi-schema support**: `schema.prisma` (SQLite) and `schema.mysql.prisma` (MySQL)
+- **MySQL 8.0**: Database (Docker container for local development and production)
+- **Schema**: `schema.prisma` (MySQL)
 - **Integer IDs**: All models use auto-incrementing integer primary keys
 
 ### Core Data Models
@@ -346,9 +342,9 @@ export default defineEventHandler(async (event) => {
 ### Required Environment Variables
 
 ```env
-# Database
-DATABASE_URL="file:./dev.db"                    # SQLite (development)
-# DATABASE_URL="mysql://user:pass@localhost:3306/nekolog"  # MySQL (production)
+# Database (MySQL via Docker)
+DATABASE_URL="mysql://ykamata:ykamata@localhost:3306/nekolog"  # Local development
+# DATABASE_URL="mysql://user:pass@mysql:3306/nekolog"  # Docker container (production)
 
 # Authentication
 JWT_SECRET="your-super-secret-jwt-key"

@@ -1,12 +1,12 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Production Prisma schema file for MySQL
+// Use this schema for production deployments
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -55,7 +55,7 @@ model MealRecord {
   quantity  Float    // in grams
   calories  Float    // calculated or manual
   mealTime  DateTime
-  notes     String?
+  notes     String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -89,8 +89,8 @@ model Medication {
   id          Int      @id @default(autoincrement())
   name        String
   type        MedicationType
-  description String?
-  dosage      String?  // 投与量の説明
+  description String?  @db.Text
+  dosage      String?  @db.Text // 投与量の説明
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -109,7 +109,7 @@ model MedicationRecord {
   quantity     Int      // 投与個数
   administeredAt DateTime
   status       MedicationStatus @default(PENDING)
-  notes        String?
+  notes        String?  @db.Text
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -124,7 +124,7 @@ model MedicationSchedule {
   catId        Int
   medicationId Int
   frequency    String   // "daily", "twice_daily", "weekly", etc.
-  times        String   // JSON array of times: ["08:00", "20:00"]
+  times        String   @db.Text // JSON array of times: ["08:00", "20:00"]
   startDate    DateTime
   endDate      DateTime?
   isActive     Boolean  @default(true)
@@ -182,7 +182,7 @@ model VeterinaryVisit {
   hospitalId   Int
   doctorId     Int?
   cost         Float
-  notes        String?
+  notes        String?  @db.Text
   hasBloodTest Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -201,8 +201,8 @@ model VeterinaryAppointment {
   appointmentDate   DateTime
   hospitalId        Int
   doctorId          Int?
-  plannedTreatments String?
-  notes             String?
+  plannedTreatments String?          @db.Text
+  notes             String?          @db.Text
   status            AppointmentStatus @default(SCHEDULED)
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
@@ -217,9 +217,9 @@ model VeterinaryAppointment {
 model VeterinaryHospital {
   id        Int      @id @default(autoincrement())
   name      String   @unique
-  address   String?
+  address   String?  @db.Text
   phone     String?
-  memo      String?
+  memo      String?  @db.Text
   userId    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -237,8 +237,8 @@ model VeterinaryDoctor {
   id           Int     @id @default(autoincrement())
   name         String  @unique
   hospitalId   Int?
-  specialty    String?
-  memo         String?
+  specialty    String? @db.Text
+  memo         String? @db.Text
   userId       Int
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -256,7 +256,7 @@ model VeterinaryTreatment {
   id          Int      @id @default(autoincrement())
   name        String   @unique
   category    String?
-  description String?
+  description String?  @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -288,7 +288,7 @@ model ExcretionRecord {
   catId      Int
   type       ExcretionType
   recordedAt DateTime
-  notes      String?
+  notes      String?       @db.Text
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
 
@@ -322,7 +322,7 @@ model DailyNote {
   date            DateTime // 日付（時刻は00:00:00に正規化）
   medicationId    Int?     // 頓服薬のID
   emergencyMedication Boolean @default(false) // 頓服薬の投与があったか
-  memo            String?  // 特記事項・メモ
+  memo            String?  @db.Text // 特記事項・メモ
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -341,7 +341,7 @@ model CatHealthSignal {
   catId     Int
   date      DateTime          // 日付（時刻は00:00:00に正規化）
   color     HealthSignalColor // シグナルカラー
-  note      String?           // 補足メモ
+  note      String?           @db.Text // 補足メモ
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
 
