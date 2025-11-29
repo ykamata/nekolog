@@ -2,6 +2,8 @@
  * Daily Calendar data models for cat care management
  */
 
+import type { HealthSignalColor } from '@prisma/client';
+
 // Core entity interfaces
 export interface DailyNote {
   id: number;
@@ -52,6 +54,10 @@ export interface DailyCalendarData {
   // Flags
   hasEmergencyMedication: boolean;
   hasMemo: boolean;
+
+  // Health signal
+  signalColor?: HealthSignalColor | null;
+  signalNote?: string | null;
 }
 
 // Calendar month data

@@ -31,6 +31,17 @@ export default defineEventHandler(async (event) => {
       },
     });
 
+    // Get health signals for the month
+    const healthSignals = await prisma.catHealthSignal.findMany({
+      where: {
+        ...(catId ? { catId } : {}),
+        date: {
+          gte: startDate,
+          lte: endDate,
+        },
+      },
+    });
+
     // Get meal counts per day
     const mealCounts = await prisma.mealRecord.groupBy({
       by: ['catId'],
@@ -92,6 +103,13 @@ export default defineEventHandler(async (event) => {
         return noteDate.toISOString().split('T')[0] === dateStr;
       });
 
+      // Find health signal for this date
+      const healthSignal = healthSignals.find((signal: { date: Date, catId: number }) => {
+        const signalDate = new Date(signal.date);
+        return signalDate.toISOString().split('T')[0] === dateStr &&
+               (!catId || signal.catId === catId);
+      });
+
       // Get meals for this day
       const dayMeals = mealRecords.filter((meal) => {
         const mealDate = new Date(meal.mealTime);
@@ -149,6 +167,8 @@ export default defineEventHandler(async (event) => {
         },
         hasEmergencyMedication: dailyNote?.emergencyMedication || false,
         hasMemo: Boolean(dailyNote?.memo),
+        signalColor: healthSignal?.color || null,
+        signalNote: healthSignal?.note || null,
       });
     }
 

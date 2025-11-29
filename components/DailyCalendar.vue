@@ -181,6 +181,20 @@ const isToday = (dateStr: string) => {
   return dateStr === todayStr;
 };
 
+const getSignalColorClass = (color?: string | null) => {
+  if (!color) return '';
+  switch (color) {
+    case 'GREEN':
+      return 'signal-green';
+    case 'YELLOW':
+      return 'signal-yellow';
+    case 'RED':
+      return 'signal-red';
+    default:
+      return '';
+  }
+};
+
 // Watch catId changes
 watch(() => props.catId, () => {
   fetchCalendarData();
@@ -324,6 +338,7 @@ onMounted(() => {
             'calendar-day--empty': !day,
             'calendar-day--today': day && isToday(day.date),
             'calendar-day--has-data': day && (day.mealCount > 0 || day.excretionCount.total > 0 || day.hasMemo || day.hasEmergencyMedication),
+            [getSignalColorClass(day?.signalColor)]: day && day.signalColor,
           }"
           @click="day && handleDayClick(day)"
           @contextmenu="day && handleDayRightClick($event, day)"
@@ -413,6 +428,24 @@ onMounted(() => {
         <div class="legend-item">
           <span class="legend-icon">📝</span>
           <span class="legend-label">メモ</span>
+        </div>
+      </div>
+      <div class="legend-separator" />
+      <div class="legend-subtitle">
+        健康シグナル
+      </div>
+      <div class="legend-items">
+        <div class="legend-item">
+          <span class="legend-color-box signal-green-box" />
+          <span class="legend-label">正常</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color-box signal-yellow-box" />
+          <span class="legend-label">注意</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color-box signal-red-box" />
+          <span class="legend-label">警告</span>
         </div>
       </div>
     </div>
@@ -711,6 +744,37 @@ onMounted(() => {
   background: white;
 }
 
+/* Health Signal Colors */
+.calendar-day.signal-green {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(129, 199, 132, 0.1) 100%);
+  border-color: #4caf50;
+}
+
+.calendar-day.signal-green.calendar-day--has-data {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, white 100%);
+  border-left: 4px solid #4caf50;
+}
+
+.calendar-day.signal-yellow {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 224, 130, 0.15) 100%);
+  border-color: #ffc107;
+}
+
+.calendar-day.signal-yellow.calendar-day--has-data {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, white 100%);
+  border-left: 4px solid #ffc107;
+}
+
+.calendar-day.signal-red {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(239, 154, 154, 0.15) 100%);
+  border-color: #f44336;
+}
+
+.calendar-day.signal-red.calendar-day--has-data {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.15) 0%, white 100%);
+  border-left: 4px solid #f44336;
+}
+
 .day-content {
   padding: 0.5rem;
   height: 100%;
@@ -819,6 +883,20 @@ onMounted(() => {
   font-size: 0.9rem;
 }
 
+.legend-subtitle {
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 0.5rem;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.legend-separator {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 0.75rem 0;
+}
+
 .legend-items {
   display: flex;
   flex-wrap: wrap;
@@ -833,6 +911,28 @@ onMounted(() => {
 
 .legend-icon {
   font-size: 1rem;
+}
+
+.legend-color-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.signal-green-box {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(129, 199, 132, 0.2) 100%);
+  border-color: #4caf50;
+}
+
+.signal-yellow-box {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.4) 0%, rgba(255, 224, 130, 0.3) 100%);
+  border-color: #ffc107;
+}
+
+.signal-red-box {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.4) 0%, rgba(239, 154, 154, 0.3) 100%);
+  border-color: #f44336;
 }
 
 .legend-label {

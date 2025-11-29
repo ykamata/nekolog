@@ -27,6 +27,7 @@ model Cat {
   veterinaryAppointments VeterinaryAppointment[]
   excretionRecords   ExcretionRecord[]
   dailyNotes         DailyNote[]
+  healthSignals      CatHealthSignal[]
 
   @@map("cats")
 }
@@ -309,6 +310,12 @@ enum ExcretionType {
   FECES  // うんち
 }
 
+enum HealthSignalColor {
+  GREEN   // 正常
+  YELLOW  // 注意
+  RED     // 警告
+}
+
 model DailyNote {
   id              Int      @id @default(autoincrement())
   catId           Int
@@ -327,4 +334,22 @@ model DailyNote {
   @@index([date])
   @@index([catId, date])
   @@map("daily_notes")
+}
+
+model CatHealthSignal {
+  id        Int               @id @default(autoincrement())
+  catId     Int
+  date      DateTime          // 日付（時刻は00:00:00に正規化）
+  color     HealthSignalColor // シグナルカラー
+  note      String?           @db.Text // 補足メモ
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  cat       Cat               @relation(fields: [catId], references: [id], onDelete: Cascade)
+
+  // 1つの猫に対して1日1レコードのユニーク制約
+  @@unique([catId, date])
+  @@index([catId, date])
+  @@index([date])
+  @@map("cat_health_signals")
 }

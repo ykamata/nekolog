@@ -19,7 +19,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 // State
-const activeTab = ref<'meal' | 'excretion' | 'medication' | 'memo'>('meal');
+const activeTab = ref<'meal' | 'excretion' | 'medication' | 'memo' | 'signal'>('meal');
 const cats = ref<Cat[]>([]);
 const foods = ref<Food[]>([]);
 const medications = ref<Medication[]>([]);
@@ -28,6 +28,10 @@ const selectedCatId = ref<number | null>(null);
 // Daily note form
 const selectedMedicationId = ref<number | null>(null);
 const memo = ref('');
+
+// Health signal form
+const signalColor = ref<'GREEN' | 'YELLOW' | 'RED' | null>(null);
+const signalNote = ref('');
 
 // Meal form
 const mealFoodId = ref<number | null>(null);
@@ -121,6 +125,10 @@ const loadDayData = () => {
     selectedMedicationId.value = null;
     memo.value = '';
   }
+
+  // Load health signal data
+  signalColor.value = props.dayData.signalColor || null;
+  signalNote.value = props.dayData.signalNote || '';
 
   // Set default time to current time
   const now = new Date();
@@ -291,6 +299,42 @@ const saveMemo = async () => {
   }
 };
 
+const saveHealthSignal = async () => {
+  if (!selectedCatId.value) {
+    emit('showMessage', '猫を選択してください', 'error');
+    return;
+  }
+
+  if (!signalColor.value) {
+    emit('showMessage', 'シグナルカラーを選択してください', 'error');
+    return;
+  }
+
+  isSaving.value = true;
+  try {
+    await $fetch('/api/health-signals', {
+      method: 'POST',
+      body: {
+        catId: selectedCatId.value,
+        date: props.date,
+        color: signalColor.value,
+        note: signalNote.value || null,
+      },
+    });
+
+    emit('showMessage', '健康シグナルを保存しました', 'success');
+    emit('refresh');
+    emit('close');
+  }
+  catch (err) {
+    console.error('健康シグナル保存エラー:', err);
+    emit('showMessage', '健康シグナルの保存に失敗しました', 'error');
+  }
+  finally {
+    isSaving.value = false;
+  }
+};
+
 // Watch props changes
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
@@ -381,6 +425,14 @@ watch(() => props.dayData, () => {
               @click="activeTab = 'memo'"
             >
               📝 メモ
+            </button>
+            <button
+              type="button"
+              class="tab"
+              :class="{ 'tab--active': activeTab === 'signal' }"
+              @click="activeTab = 'signal'"
+            >
+              🚦 健康シグナル
             </button>
           </div>
 
@@ -593,6 +645,73 @@ watch(() => props.dayData, () => {
                   @click="saveMemo"
                 >
                   {{ isSaving ? '保存中...' : 'メモを保存' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Health Signal Tab -->
+            <div
+              v-if="activeTab === 'signal'"
+              class="tab-panel"
+            >
+              <div class="form-group">
+                <label class="form-label">健康シグナルカラー *</label>
+                <div class="signal-color-buttons">
+                  <button
+                    type="button"
+                    class="signal-button signal-button--green"
+                    :class="{ 'signal-button--active': signalColor === 'GREEN' }"
+                    @click="signalColor = 'GREEN'"
+                  >
+                    <span class="signal-icon">🟢</span>
+                    <span class="signal-text">正常</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="signal-button signal-button--yellow"
+                    :class="{ 'signal-button--active': signalColor === 'YELLOW' }"
+                    @click="signalColor = 'YELLOW'"
+                  >
+                    <span class="signal-icon">🟡</span>
+                    <span class="signal-text">注意</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="signal-button signal-button--red"
+                    :class="{ 'signal-button--active': signalColor === 'RED' }"
+                    @click="signalColor = 'RED'"
+                  >
+                    <span class="signal-icon">🔴</span>
+                    <span class="signal-text">警告</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">補足メモ</label>
+                <textarea
+                  v-model="signalNote"
+                  class="form-textarea"
+                  rows="4"
+                  placeholder="気になる症状や詳細を記録してください..."
+                />
+              </div>
+
+              <div class="form-actions">
+                <button
+                  type="button"
+                  class="btn btn--secondary"
+                  @click="handleClose"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="button"
+                  class="btn btn--primary"
+                  :disabled="isSaving || !signalColor"
+                  @click="saveHealthSignal"
+                >
+                  {{ isSaving ? '保存中...' : '健康シグナルを保存' }}
                 </button>
               </div>
             </div>
@@ -827,6 +946,89 @@ watch(() => props.dayData, () => {
   width: 20px;
   height: 20px;
   cursor: pointer;
+}
+
+/* Signal Color Buttons */
+.signal-color-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.signal-button {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.25rem 1rem;
+  border: 3px solid transparent;
+  border-radius: 12px;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.signal-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.signal-button--green {
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+.signal-button--green:hover {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: #4caf50;
+}
+
+.signal-button--green.signal-button--active {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(129, 199, 132, 0.15) 100%);
+  border-color: #4caf50;
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
+}
+
+.signal-button--yellow {
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.signal-button--yellow:hover {
+  background: rgba(255, 193, 7, 0.15);
+  border-color: #ffc107;
+}
+
+.signal-button--yellow.signal-button--active {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.25) 0%, rgba(255, 224, 130, 0.2) 100%);
+  border-color: #ffc107;
+  box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.1);
+}
+
+.signal-button--red {
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+.signal-button--red:hover {
+  background: rgba(244, 67, 54, 0.1);
+  border-color: #f44336;
+}
+
+.signal-button--red.signal-button--active {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(239, 154, 154, 0.15) 100%);
+  border-color: #f44336;
+  box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.1);
+}
+
+.signal-icon {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.signal-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
 }
 
 .checkbox-text {
