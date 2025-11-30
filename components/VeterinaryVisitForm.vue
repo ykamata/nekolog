@@ -380,11 +380,11 @@ const handleSubmit = async () => {
     isSubmitting.value = true;
 
     // Create new hospital if it doesn't exist
-    const existingHospital = hospitals.value.find(
+    let hospital = hospitals.value.find(
       (h) => h.name === formData.hospitalName.trim()
     );
-    if (!existingHospital) {
-      await createHospital(formData.hospitalName.trim());
+    if (!hospital) {
+      hospital = await createHospital(formData.hospitalName.trim());
     }
 
     // Create new doctor if it doesn't exist and is provided
@@ -393,7 +393,8 @@ const handleSubmit = async () => {
         (d) => d.name === formData.doctorName!.trim()
       );
       if (!existingDoctor) {
-        await createDoctor(formData.doctorName!.trim());
+        // Pass hospital ID when creating a new doctor
+        await createDoctor(formData.doctorName!.trim(), hospital.id);
       }
     }
 
@@ -465,15 +466,17 @@ const handleReset = () => {
 };
 
 const handleHospitalBlur = () => {
-  nextTick(() => {
+  // Delay to allow click events to fire first
+  setTimeout(() => {
     showHospitalInput.value = false;
-  });
+  }, 200);
 };
 
 const handleDoctorBlur = () => {
-  nextTick(() => {
+  // Delay to allow click events to fire first
+  setTimeout(() => {
     showDoctorInput.value = false;
-  });
+  }, 200);
 };
 </script>
 
@@ -601,6 +604,7 @@ const handleDoctorBlur = () => {
               class="form-input"
               :class="{ 'form-input--error': errors.hospitalName }"
               placeholder="病院名を入力してください"
+              autocomplete="off"
               data-testid="hospital-input"
               aria-required="true"
               :aria-describedby="
@@ -651,6 +655,7 @@ const handleDoctorBlur = () => {
               class="form-input"
               :class="{ 'form-input--error': errors.doctorName }"
               placeholder="先生の名前を入力してください（任意）"
+              autocomplete="off"
               data-testid="doctor-input"
               :aria-describedby="errors.doctorName ? 'doctor-error' : undefined"
               role="combobox"
@@ -809,6 +814,7 @@ const handleDoctorBlur = () => {
                   type="text"
                   class="form-input"
                   placeholder="新しい処方内容を入力"
+                  autocomplete="off"
                   data-testid="new-treatment-input"
                   aria-label="新しい処方内容名"
                   @keyup.escape="cancelTreatmentInput"

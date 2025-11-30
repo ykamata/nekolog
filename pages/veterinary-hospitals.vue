@@ -45,9 +45,9 @@
       <!-- フォームモーダル -->
       <div
         v-if="showForm"
-        class="fixed inset-0 z-50 overflow-y-auto"
+        class="fixed inset-0 z-[150] overflow-y-auto"
       >
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 sm:ml-[280px]">
           <!-- オーバーレイ -->
           <div
             class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
@@ -95,18 +95,24 @@
       <!-- 詳細モーダル -->
       <div
         v-if="showDetail"
-        class="fixed inset-0 z-50 overflow-y-auto"
+        class="fixed inset-0 z-[150] overflow-y-auto"
       >
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0 sm:ml-[280px]">
           <!-- オーバーレイ -->
           <div
             class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
             @click="handleCloseDetail"
           />
 
+          <!-- 中央配置のためのスペーサー (デスクトップ用) -->
+          <span
+            class="hidden sm:inline-block sm:align-middle sm:h-screen"
+            aria-hidden="true"
+          >&#8203;</span>
+
           <!-- モーダルコンテンツ -->
           <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 max-h-[calc(100vh-8rem)] overflow-y-auto">
               <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-medium text-gray-900">
                   病院詳細

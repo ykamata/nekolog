@@ -208,7 +208,7 @@
 
                       <p
                         v-if="hospital.memo"
-                        class="text-sm text-gray-600 line-clamp-2"
+                        class="text-sm text-gray-600 line-clamp-2 whitespace-pre-wrap"
                       >
                         {{ hospital.memo }}
                       </p>
@@ -360,7 +360,7 @@
 
             <p
               v-if="hospital.memo"
-              class="text-sm text-gray-600 line-clamp-3"
+              class="text-sm text-gray-600 line-clamp-3 whitespace-pre-wrap"
             >
               {{ hospital.memo }}
             </p>
