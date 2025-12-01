@@ -37,34 +37,6 @@
         class="chart-canvas"
       />
     </div>
-
-    <!-- Debug Info (Development only) -->
-    <div
-      v-if="isDevelopment"
-      class="debug-info"
-    >
-      <h4>デバッグ情報</h4>
-      <p>データ件数: {{ analytics?.dailyCalories?.length || 0 }}</p>
-      <p>チャート表示モード: {{ analyticsStore.chartDisplayMode }}</p>
-      <p>ChartData存在: {{ !!analyticsStore.chartData }}</p>
-      <p>ChartDataタイプ: {{ analyticsStore.chartData?.chartType || 'N/A' }}</p>
-      <p>DailyCaloriesByFoodType件数: {{ analyticsStore.chartData?.dailyCaloriesByFoodType?.length || 0 }}</p>
-      <p>チャート初期化済み: {{ isChartInitialized }}</p>
-      <p>Canvas要素: {{ !!chartCanvas }}</p>
-      <p>Canvas DOM存在: {{ chartCanvas ? 'あり' : 'なし' }}</p>
-      <p>Canvas幅: {{ chartCanvas?.width || 'N/A' }}</p>
-      <p>Canvas高さ: {{ chartCanvas?.height || 'N/A' }}</p>
-      <p>Canvas表示幅: {{ chartCanvas?.clientWidth || 'N/A' }}</p>
-      <p>Canvas表示高さ: {{ chartCanvas?.clientHeight || 'N/A' }}</p>
-      <p>Canvas style display: {{ chartCanvas?.style?.display || 'N/A' }}</p>
-      <p>Chart.jsインスタンス: {{ !!chart }}</p>
-      <p>ローディング中: {{ loading }}</p>
-      <p>エラー: {{ error || 'なし' }}</p>
-      <p>Cat ID: {{ props.catId }}</p>
-      <p>Period Days: {{ props.periodDays }}</p>
-      <p>作成中: {{ isCreatingChart }}</p>
-      <p>作成ID: {{ chartCreationId }}</p>
-    </div>
   </div>
 </template>
 
@@ -128,16 +100,6 @@ const analyticsStore = useAnalyticsStore();
 
 // チャート表示モードを監視
 const chartDisplayMode = computed(() => analyticsStore.chartDisplayMode);
-
-// Development mode check
-const isDevelopment = computed(() => {
-  try {
-    return process.env.NODE_ENV === 'development' || import.meta.dev;
-  }
-  catch {
-    return false;
-  }
-});
 
 // Fetch analytics data with retry
 const fetchData = async (retryCount = 0) => {

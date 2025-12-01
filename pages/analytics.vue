@@ -47,10 +47,6 @@ const chartFilters = ref<ChartFilters>({
 // Analytics Store
 const analyticsStore = useAnalyticsStore();
 
-// Development mode check
-// const $dev = computed(() => import.meta.dev);
-const $dev = undefined;
-
 // Chart container references
 const chartContainerRef = ref<HTMLElement>();
 
@@ -68,29 +64,19 @@ const selectedPeriodDays = computed(() => {
 const fetchCats = async () => {
   // Client-side only
   if (!import.meta.client) {
-    console.log('Analytics page: サーバーサイドではスキップ');
     return;
   }
 
-  console.log('Analytics page: fetchCats開始');
   isLoading.value = true;
   error.value = null;
 
   try {
-    console.log('Analytics page: API呼び出し開始 - /api/cats');
     const response = await $fetch<Cat[]>('/api/cats');
-    console.log('Analytics page: 猫データ取得成功', {
-      count: response.length,
-      cats: response,
-      isArray: Array.isArray(response),
-      firstCat: response[0],
-    });
     cats.value = response;
 
     // Set first cat as default if available
     if (cats.value.length > 0 && !chartFilters.value.catId) {
       chartFilters.value.catId = cats.value[0]?.id;
-      console.log('Analytics page: デフォルト猫を設定', { catId: chartFilters.value.catId });
       // Analytics storeにも設定
       if (chartFilters.value.catId) {
         analyticsStore.setSelectedCat(chartFilters.value.catId);
@@ -98,33 +84,19 @@ const fetchCats = async () => {
 
       // 初期データを取得
       try {
-        console.log('Analytics page: 初期データ取得開始');
         await analyticsStore.fetchAnalytics({
           catId: chartFilters.value.catId,
           startDate: chartFilters.value.dateRange.start,
           endDate: chartFilters.value.dateRange.end,
         });
-        console.log('Analytics page: 初期データ取得成功');
       }
       catch (err) {
         console.error('Analytics page: 初期データ取得失敗:', err);
       }
     }
-    else {
-      console.log('Analytics page: 猫データが空またはcatIdが既に設定済み', {
-        catsLength: cats.value.length,
-        catId: chartFilters.value.catId,
-      });
-    }
   }
   catch (err) {
     console.error('Analytics page: fetchCats失敗:', err);
-    console.error('エラー詳細:', {
-      message: err instanceof Error ? err.message : 'Unknown error',
-      stack: err instanceof Error ? err.stack : undefined,
-      type: typeof err,
-      err,
-    });
     error.value = 'データの取得に失敗しました';
   }
   finally {
@@ -134,7 +106,6 @@ const fetchCats = async () => {
 
 // Handle chart filters change
 const handleFiltersChange = async (filters: ChartFilters) => {
-  console.log('Analytics page: フィルター変更', filters);
   chartFilters.value = { ...filters };
 
   // Analytics storeに設定を反映
@@ -146,11 +117,6 @@ const handleFiltersChange = async (filters: ChartFilters) => {
   // チャートタイプの変換と設定
   const displayMode = filters.chartType === 'stacked-bar' ? 'bar' : 'line';
   analyticsStore.setChartDisplayMode(displayMode);
-
-  console.log('Analytics page: チャート表示モード設定', {
-    chartType: filters.chartType,
-    displayMode,
-  });
 
   // データを再取得
   if (filters.catId) {
@@ -173,21 +139,8 @@ let intersectionObserver: IntersectionObserver | null = null;
 
 // Lifecycle
 onMounted(async () => {
-  console.log('Analytics page: onMounted開始');
-  console.log('Analytics page: 初期状態', {
-    catsLength: cats.value.length,
-    isLoading: isLoading.value,
-    error: error.value,
-    selectedCatId: chartFilters.value.catId,
-  });
-
   try {
-    console.log('Analytics page: fetchCats呼び出し前');
     await fetchCats();
-    console.log('Analytics page: fetchCats呼び出し後', {
-      catsLength: cats.value.length,
-      selectedCatId: chartFilters.value.catId,
-    });
 
     // 初期期間を設定
     analyticsStore.setDateRange(chartFilters.value.dateRange.start, chartFilters.value.dateRange.end);
@@ -197,7 +150,7 @@ onMounted(async () => {
     analyticsStore.startAutoRefresh(60000);
   }
   catch (err) {
-
+    // エラーは fetchCats 内で処理済み
   }
 
   // タッチデバイスの検出とレスポンシブ対応
@@ -320,23 +273,6 @@ onUnmounted(() => {
         >
           再試行
         </button>
-      </div>
-    </div>
-
-    <!-- Debug Info (Development only) -->
-    <div
-      v-if="$dev"
-      class="debug-info bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4"
-    >
-      <h3 class="text-sm font-medium text-yellow-800 mb-2">
-        デバッグ情報
-      </h3>
-      <div class="text-xs text-yellow-700 space-y-1">
-        <div>isLoading: {{ isLoading }}</div>
-        <div>error: {{ error }}</div>
-        <div>cats.length: {{ cats.length }}</div>
-        <div>chartFilters: {{ JSON.stringify(chartFilters, null, 2) }}</div>
-        <div>selectedPeriodDays: {{ selectedPeriodDays }}</div>
       </div>
     </div>
 
