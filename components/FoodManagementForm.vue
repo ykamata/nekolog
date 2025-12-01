@@ -632,6 +632,8 @@ onUnmounted(() => {
 
 .modal-close-btn:hover {
   color: #333;
+  background: #f8fff8;
+  border-color: #4caf50;
 }
 
 .food-form {
@@ -715,7 +717,8 @@ onUnmounted(() => {
 }
 
 .suggestion-item:hover {
-  background-color: #f5f5f5;
+  background-color: #f8fff8;
+  border-color: #4caf50;
 }
 
 .suggestion-item:focus {

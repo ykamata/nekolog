@@ -1290,7 +1290,8 @@ const prevPage = () => {
 }
 
 .table-row:hover {
-  background-color: #f8f9fa;
+  background-color: #f8fff8;
+  border-color: #4caf50;
 }
 
 .table-row:last-child {

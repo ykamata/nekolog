@@ -2,6 +2,7 @@
 import type { Cat } from '~/types/cat-meal';
 import type {
   VeterinaryVisitWithRelations,
+  VeterinaryAppointmentWithRelations,
   CreateVeterinaryVisitInput,
   GetVeterinaryVisitsParams,
 } from '~/types/veterinary-visit';
@@ -20,6 +21,7 @@ definePageMeta({
 // State
 const cats = ref<Cat[]>([]);
 const visits = ref<VeterinaryVisitWithRelations[]>([]);
+const appointments = ref<VeterinaryAppointmentWithRelations[]>([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 
@@ -62,15 +64,37 @@ const filteredVisits = computed(() => {
   return visits.value.filter(visit => visit.catId === selectedCatId.value);
 });
 
+// Fetch appointments
+const fetchAppointments = async () => {
+  try {
+    const queryParams: any = {
+      catId: selectedCatId.value || undefined,
+      limit: 100,
+    };
+
+    const response = await $fetch<{ appointments: VeterinaryAppointmentWithRelations[] }>('/api/veterinary-appointments', {
+      query: queryParams,
+    });
+
+    appointments.value = response.appointments;
+    return response;
+  }
+  catch (err) {
+    console.error('Failed to fetch appointments:', err);
+    throw err;
+  }
+};
+
 // Fetch initial data
 const fetchInitialData = async () => {
   isLoading.value = true;
   error.value = null;
 
   try {
-    const [catsResponse, visitsResponse] = await Promise.all([
+    const [catsResponse, visitsResponse, appointmentsResponse] = await Promise.all([
       $fetch<Cat[]>('/api/cats'),
       fetchVisits(),
+      fetchAppointments(),
     ]);
 
     cats.value = catsResponse;
@@ -160,8 +184,11 @@ const handleViewModeChange = (mode: 'calendar' | 'list') => {
 // Handle cat filter change
 const handleCatFilterChange = async (catId: number | undefined) => {
   selectedCatId.value = catId;
-  await fetchVisits();
-  await fetchVisitStats();
+  await Promise.all([
+    fetchVisits(),
+    fetchAppointments(),
+    fetchVisitStats(),
+  ]);
 };
 
 // Handle add visit
@@ -222,13 +249,13 @@ const cancelDelete = () => {
 // Handle form submission for add
 const handleAddSubmit = async (data: CreateVeterinaryVisitInput) => {
   try {
-    const newVisit = await $fetch<VeterinaryVisitWithRelations>('/api/veterinary-visits', {
+    const response = await $fetch<{ visit: VeterinaryVisitWithRelations; message: string }>('/api/veterinary-visits', {
       method: 'POST',
       body: data,
     });
 
     // Add to local state
-    visits.value.unshift(newVisit);
+    visits.value.unshift(response.visit);
 
     // Refresh stats
     await fetchVisitStats();
@@ -247,7 +274,7 @@ const handleEditSubmit = async (data: CreateVeterinaryVisitInput) => {
   if (!editingVisit.value) return;
 
   try {
-    const updatedVisit = await $fetch<VeterinaryVisitWithRelations>(`/api/veterinary-visits/${editingVisit.value.id}`, {
+    const response = await $fetch<{ visit: VeterinaryVisitWithRelations; message: string }>(`/api/veterinary-visits/${editingVisit.value.id}`, {
       method: 'PUT' as any,
       body: data,
     });
@@ -255,7 +282,7 @@ const handleEditSubmit = async (data: CreateVeterinaryVisitInput) => {
     // Update local state
     const index = visits.value.findIndex(v => v.id === editingVisit.value!.id);
     if (index !== -1) {
-      visits.value[index] = updatedVisit;
+      visits.value[index] = response.visit;
     }
 
     // Refresh stats
@@ -341,7 +368,10 @@ const getEditFormData = (): Partial<CreateVeterinaryVisitInput> => {
     visitDate: editingVisit.value.visitDate,
     hospitalName: editingVisit.value.hospital.name,
     doctorName: editingVisit.value.doctor?.name,
-    treatments: editingVisit.value.treatments.map(t => t.treatment.name),
+    treatments: editingVisit.value.treatments.map(t => {
+      // APIから返されるデータは既にflattenされている
+      return (t as any).treatment ? (t as any).treatment.name : t.name;
+    }),
     cost: editingVisit.value.cost,
     notes: editingVisit.value.notes || undefined,
     hasBloodTest: editingVisit.value.hasBloodTest,
@@ -396,9 +426,9 @@ onMounted(() => {
           <!-- Cat Filter -->
           <div class="cat-filter">
             <select
-              v-model="selectedCatId"
+              :value="selectedCatId ?? ''"
               class="cat-select"
-              @change="handleCatFilterChange(selectedCatId)"
+              @change="handleCatFilterChange(($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : undefined)"
             >
               <option value="">
                 すべての猫
@@ -593,8 +623,10 @@ onMounted(() => {
       >
         <VeterinaryVisitCalendar
           :visits="filteredVisits"
+          :appointments="appointments"
           :cats="cats"
           :selected-cat-id="selectedCatId"
+          :show-appointments="true"
           @date-selected="handleDateSelected"
           @visit-create="handleRecordCreate"
           @appointment-create="handleAddAppointment"
@@ -968,6 +1000,11 @@ onMounted(() => {
 
 .view-button--active {
   background: #4caf50;
+  color: white;
+}
+
+.view-button--active:hover {
+  background: #45a049;
   color: white;
 }
 

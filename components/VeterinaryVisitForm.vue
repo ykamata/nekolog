@@ -73,6 +73,7 @@ const showTreatmentInput = ref(false);
 const newTreatmentName = ref("");
 const treatmentInputMode = ref<'medication' | 'text'>('medication');
 const selectedMedicationId = ref<number | undefined>(undefined);
+const selectedHospitalId = ref<number | null>(null);
 
 const { error: showErrorToast } = useToast();
 const {
@@ -102,12 +103,16 @@ watch(
       formData.visitDate = new Date(visit.visitDate);
       formData.hospitalName = visit.hospital.name;
       formData.doctorName = visit.doctor?.name || "";
-      formData.treatments = visit.treatments.map(
-        (t) => t.treatment?.name || "Unknown Treatment"
-      );
+      formData.treatments = visit.treatments.map((t) => {
+        // APIから返されるデータは既にflattenされている
+        return (t as any).treatment ? (t as any).treatment.name : t.name;
+      });
       formData.cost = visit.cost;
       formData.notes = visit.notes || "";
       formData.hasBloodTest = visit.hasBloodTest;
+
+      // 編集モード時は病院IDを設定
+      selectedHospitalId.value = visit.hospital.id;
     } else {
       // Reset form for new visit
       formData.catId = props.initialData?.catId || 0;
@@ -118,6 +123,9 @@ watch(
       formData.cost = props.initialData?.cost || 0;
       formData.notes = props.initialData?.notes || "";
       formData.hasBloodTest = props.initialData?.hasBloodTest || false;
+
+      // 新規作成時は病院IDをクリア
+      selectedHospitalId.value = null;
     }
     clearErrors();
   },
@@ -244,11 +252,20 @@ const filteredHospitals = computed(() => {
 });
 
 const filteredDoctors = computed(() => {
-  if (!formData.doctorName) return doctors.value || [];
+  // 病院が選択されていない場合は空の配列を返す
+  if (!selectedHospitalId.value) return [];
+
   return (
-    doctors.value?.filter((d) =>
-      d.name.toLowerCase().includes((formData.doctorName || "").toLowerCase())
-    ) || []
+    doctors.value?.filter((d) => {
+      // 選択された病院に所属する先生のみ
+      if (d.hospitalId !== selectedHospitalId.value) return false;
+
+      // 名前による検索フィルター
+      if (formData.doctorName) {
+        return d.name.toLowerCase().includes((formData.doctorName || "").toLowerCase());
+      }
+      return true;
+    }) || []
   );
 });
 
@@ -286,6 +303,11 @@ const validateForm = (): boolean => {
 
 const selectHospital = (hospital: VeterinaryHospital) => {
   formData.hospitalName = hospital.name;
+  selectedHospitalId.value = hospital.id;
+
+  // 病院変更時は先生の選択をクリア
+  formData.doctorName = "";
+
   showHospitalInput.value = false;
 };
 
@@ -469,6 +491,16 @@ const handleHospitalBlur = () => {
   // Delay to allow click events to fire first
   setTimeout(() => {
     showHospitalInput.value = false;
+
+    // 病院名が手入力で変更された場合、選択された病院との整合性をチェック
+    if (selectedHospitalId.value) {
+      const selectedHospital = hospitals.value?.find((h) => h.id === selectedHospitalId.value);
+      if (selectedHospital && selectedHospital.name !== formData.hospitalName) {
+        // 病院名が変更された場合、選択をクリア
+        selectedHospitalId.value = null;
+        formData.doctorName = "";
+      }
+    }
   }, 200);
 };
 
@@ -654,7 +686,8 @@ const handleDoctorBlur = () => {
               type="text"
               class="form-input"
               :class="{ 'form-input--error': errors.doctorName }"
-              placeholder="先生の名前を入力してください（任意）"
+              :placeholder="selectedHospitalId ? '先生の名前を入力してください（任意）' : '先に病院を選択してください'"
+              :disabled="!selectedHospitalId"
               autocomplete="off"
               data-testid="doctor-input"
               :aria-describedby="errors.doctorName ? 'doctor-error' : undefined"
@@ -698,7 +731,7 @@ const handleDoctorBlur = () => {
         <!-- 処方内容 -->
         <div class="form-group">
           <label id="treatments-label" class="form-label">
-            処方内容 <span class="required">*</span>
+            処方内容
           </label>
 
           <!-- 選択済み処方内容 -->
@@ -1091,6 +1124,8 @@ const handleDoctorBlur = () => {
 
 .modal-close-btn:hover {
   color: #333;
+  background: #f8fff8;
+  border-color: #4caf50;
 }
 
 .veterinary-visit-form {
@@ -1230,7 +1265,8 @@ const handleDoctorBlur = () => {
 }
 
 .autocomplete-item:hover {
-  background-color: #f5f5f5;
+  background-color: #f8fff8;
+  border-color: #4caf50;
 }
 
 .doctor-specialization {
@@ -1301,7 +1337,7 @@ const handleDoctorBlur = () => {
 }
 
 .treatment-btn:hover {
-  background-color: #f0f0f0;
+  background-color: #f8fff8;
   border-color: #4caf50;
 }
 
@@ -1343,7 +1379,8 @@ const handleDoctorBlur = () => {
 }
 
 .mode-toggle-btn:hover:not(.mode-toggle-btn--active) {
-  background: #f0f0f0;
+  background: #f8fff8;
+  border-color: #4caf50;
 }
 
 .mode-toggle-btn--active {

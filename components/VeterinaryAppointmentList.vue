@@ -711,7 +711,8 @@ onUnmounted(() => {
 
 .appointment-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  border-color: #cbd5e0;
+  border-color: #4caf50;
+  background: #f8fff8;
 }
 
 .appointment-card--past {
@@ -812,7 +813,8 @@ onUnmounted(() => {
 }
 
 .status-option:hover {
-  background: #f8f9fa;
+  background: #f8fff8;
+  border-color: #4caf50;
 }
 
 .status-option--active {
@@ -867,6 +869,8 @@ onUnmounted(() => {
 .info-value {
   color: #333;
   flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .card-actions {
@@ -904,6 +908,7 @@ onUnmounted(() => {
 .action-button--convert:hover {
   background: #fde68a;
   border-color: #d97706;
+  transition: all 0.2s ease;
 }
 
 .action-button--edit {
@@ -915,6 +920,7 @@ onUnmounted(() => {
 .action-button--edit:hover {
   background: #bae6fd;
   border-color: #0369a1;
+  transition: all 0.2s ease;
 }
 
 .action-button--delete {
@@ -926,6 +932,7 @@ onUnmounted(() => {
 .action-button--delete:hover {
   background: #fecaca;
   border-color: #dc2626;
+  transition: all 0.2s ease;
 }
 
 /* Tablet responsive */

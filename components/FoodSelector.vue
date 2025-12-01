@@ -30,7 +30,7 @@ const emit = defineEmits<Emits>();
 
 // State
 const searchQuery = ref("");
-const selectedType = ref<FoodType | null>(null);
+const selectedType = ref<FoodType | "">(""as FoodType | "");
 const isDropdownOpen = ref(false);
 const recentSelections = ref<number[]>([]);
 
@@ -53,7 +53,7 @@ const filteredFoods = computed(() => {
   }
 
   // Filter by type
-  if (selectedType.value) {
+  if (selectedType.value !== "") {
     filtered = filtered.filter((food) => food.type === selectedType.value);
   }
 
@@ -76,7 +76,7 @@ const recentFoods = computed(() => {
 });
 
 const foodTypeOptions = computed(() => [
-  { value: null, label: "すべて" },
+  { value: "", label: "すべて" },
   { value: FoodType.DRY, label: "ドライフード" },
   { value: FoodType.WET, label: "ウェットフード" },
 ]);
@@ -105,9 +105,9 @@ const handleSearchInput = (event: Event) => {
   emit("search", target.value);
 };
 
-const handleTypeFilter = (type: FoodType | null) => {
+const handleTypeFilter = (type: FoodType | "") => {
   selectedType.value = type;
-  emit("filter", type);
+  emit("filter", type === "" ? null : type);
 };
 
 const toggleDropdown = () => {
@@ -203,7 +203,7 @@ watch(
           :disabled="disabled"
           @change="
             handleTypeFilter(
-              (($event.target as HTMLSelectElement).value as FoodType) || null
+              ($event.target as HTMLSelectElement).value as FoodType | ''
             )
           "
         >
@@ -266,7 +266,7 @@ watch(
       <div v-else class="dropdown-content">
         <!-- Recent Selections -->
         <div
-          v-if="recentFoods.length > 0 && !searchQuery && !selectedType"
+          v-if="recentFoods.length > 0 && !searchQuery && selectedType === ''"
           class="recent-section"
         >
           <div class="section-header">最近選択したフード</div>
@@ -557,7 +557,8 @@ watch(
 }
 
 .food-item:hover {
-  background-color: #f5f5f5;
+  background-color: #f8fff8;
+  border-color: #4caf50;
 }
 
 .food-item--selected {

@@ -25,6 +25,8 @@ interface Props {
 interface Emits {
   (e: 'dateSelected', date: Date, events: CalendarEventData[]): void;
   (e: 'visitCreate', date: Date): void;
+  (e: 'visitEdit', visit: VeterinaryVisitWithRelations): void;
+  (e: 'visitDelete', visit: VeterinaryVisitWithRelations): void;
   (e: 'appointmentCreate', date: Date): void;
   (e: 'monthChanged', year: number, month: number): void;
   (e: 'catFilterChanged', catId: number | null): void;
@@ -62,6 +64,7 @@ const appointmentFilter = ref(props.showAppointments);
 // Detail modal state
 const editingEventId = ref<number | null>(null);
 const editingNotes = ref('');
+const selectedEventForDetail = ref<CalendarVisitData | null>(null);
 
 // レスポンシブ対応
 const { screenSize, getResponsiveClasses } = useResponsive();
@@ -134,6 +137,7 @@ const getEventsForDate = (date: Date): CalendarEventData[] => {
       hasBloodTest: visit.hasBloodTest,
       notes: visit.notes,
       type: 'visit',
+      fullData: visit, // 完全なデータを保持
     } as CalendarVisitData);
   });
 
@@ -265,6 +269,37 @@ const closeDetailModal = () => {
   showDetailModal.value = false;
   editingEventId.value = null;
   editingNotes.value = '';
+  selectedEventForDetail.value = null;
+};
+
+const showEventDetail = (event: CalendarEventData) => {
+  if (event.type === 'visit') {
+    selectedEventForDetail.value = event as CalendarVisitData;
+  }
+};
+
+const closeEventDetail = () => {
+  selectedEventForDetail.value = null;
+};
+
+const handleEditVisit = (event: CalendarEventData) => {
+  if (event.type === 'visit') {
+    const visitData = event as CalendarVisitData;
+    if (visitData.fullData) {
+      emit('visitEdit', visitData.fullData);
+      closeDetailModal();
+    }
+  }
+};
+
+const handleDeleteVisit = (event: CalendarEventData) => {
+  if (event.type === 'visit') {
+    const visitData = event as CalendarVisitData;
+    if (visitData.fullData) {
+      emit('visitDelete', visitData.fullData);
+      closeDetailModal();
+    }
+  }
 };
 
 const startEditingNotes = (event: CalendarEventData) => {
@@ -365,7 +400,7 @@ const getDayClasses = (day: CalendarDay): string[] => {
   return classes;
 };
 
-// 日付のイベント表示用のドットを取得
+// 日付のイベント表示用の情報を取得
 const getEventDots = (day: CalendarDay) => {
   const dots: EventDot[] = [];
 
@@ -378,20 +413,32 @@ const getEventDots = (day: CalendarDay) => {
     catGroups.get(event.catId)!.push(event);
   });
 
-  // 各猫のイベントに対してドットを生成
+  // 各猫のイベントに対して情報を生成
   catGroups.forEach((events, catId) => {
     const cat = props.cats.find(c => c.id === catId);
     const hasVisit = events.some(e => e.type === 'visit');
     const hasAppointment = events.some(e => e.type === 'appointment');
     const hasBloodTest = events.some(e => e.type === 'visit' && (e as CalendarVisitData).hasBloodTest);
 
+    // 最初のイベントの時間を取得
+    const firstEvent = events[0];
+    const eventDate = firstEvent.type === 'visit'
+      ? (firstEvent as CalendarVisitData).visitDate
+      : (firstEvent as CalendarAppointmentData).appointmentDate;
+    const timeStr = eventDate.toLocaleTimeString('ja-JP', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
     dots.push({
       catId,
       catName: cat?.name || '不明',
+      catPhotoUrl: cat?.photoUrl || null,
       hasVisit,
       hasAppointment,
       hasBloodTest,
       eventCount: events.length,
+      time: timeStr,
     });
   });
 
@@ -465,10 +512,12 @@ interface CalendarDay {
 interface EventDot {
   catId: number;
   catName: string;
+  catPhotoUrl: string | null;
   hasVisit: boolean;
   hasAppointment: boolean;
   hasBloodTest: boolean;
   eventCount: number;
+  time: string;
 }
 
 // Watch for prop changes
@@ -787,53 +836,46 @@ watch(screenSize, (newSize) => {
               {{ day.date.getDate() }}
             </div>
 
-            <!-- 通院記録マーク -->
-            <div
-              v-if="day.hasVisits"
-              :data-testid="`visit-mark-${getVisitId(day)}`"
-              class="visit-mark"
-              aria-label="通院記録あり"
-            />
-
-            <!-- 血液検査マーク -->
-            <div
-              v-if="day.hasBloodTest"
-              :data-testid="`blood-test-mark-${getVisitId(day)}`"
-              class="blood-test-mark"
-              aria-label="血液検査実施"
-            />
-
-            <!-- 予約マーク -->
-            <div
-              v-if="day.hasAppointments"
-              :data-testid="`appointment-mark-${getAppointmentId(day)}`"
-              class="appointment-mark"
-              aria-label="予約あり"
-            />
-
-            <!-- Event Dots -->
+            <!-- Event Indicators (時刻と猫アイコンのみ) -->
             <div
               v-if="day.events.length > 0"
               :id="`events-${day.date.toISOString().split('T')[0]}`"
-              class="event-dots"
+              class="event-indicators"
               role="group"
               :aria-label="`${day.date.toLocaleDateString('ja-JP')}のイベント`"
             >
               <div
                 v-for="dot in getEventDots(day)"
                 :key="dot.catId"
-                class="event-dot"
+                class="event-indicator"
                 :class="{
-                  'event-dot--visit': dot.hasVisit,
-                  'event-dot--appointment': dot.hasAppointment,
-                  'event-dot--blood-test': dot.hasBloodTest,
+                  'event-indicator--visit': dot.hasVisit,
+                  'event-indicator--appointment': dot.hasAppointment,
                 }"
-                :title="`${dot.catName}: ${dot.eventCount}件`"
-                :aria-label="`${dot.catName}: ${dot.eventCount}件のイベント`"
-              />
+                :title="`${dot.catName}: ${dot.time}${dot.hasBloodTest ? ' (血液検査)' : ''}`"
+                :aria-label="`${dot.catName}: ${dot.time}${dot.hasBloodTest ? ' (血液検査)' : ''}`"
+              >
+                <div class="event-cat-info">
+                  <div
+                    v-if="dot.catPhotoUrl"
+                    class="cat-photo"
+                    :style="{ backgroundImage: `url(${dot.catPhotoUrl})` }"
+                  />
+                  <span
+                    v-else
+                    class="cat-icon-placeholder"
+                  >🐱</span>
+                  <span class="event-time">{{ dot.time }}</span>
+                  <span
+                    v-if="dot.hasBloodTest"
+                    class="blood-test-badge"
+                    title="血液検査"
+                  >🩸</span>
+                </div>
+              </div>
               <div
                 v-if="day.events.length > 3"
-                class="event-dot event-dot--more"
+                class="event-indicator event-indicator--more"
                 :title="`他 ${day.events.length - 3}件`"
                 :aria-label="`他 ${day.events.length - 3}件のイベント`"
               >
@@ -984,6 +1026,29 @@ watch(screenSize, (newSize) => {
                 <div class="event-time">
                   {{ formatEventTime(event) }}
                 </div>
+                <div
+                  v-if="event.type === 'visit'"
+                  class="event-actions"
+                >
+                  <button
+                    class="detail-btn"
+                    @click="showEventDetail(event)"
+                  >
+                    詳細
+                  </button>
+                  <button
+                    class="edit-btn"
+                    @click="handleEditVisit(event)"
+                  >
+                    編集
+                  </button>
+                  <button
+                    class="delete-btn"
+                    @click="handleDeleteVisit(event)"
+                  >
+                    削除
+                  </button>
+                </div>
               </div>
 
               <div class="event-details">
@@ -1000,20 +1065,6 @@ watch(screenSize, (newSize) => {
                   </span>
                 </div>
 
-                <!-- 通院記録の場合の追加情報 -->
-                <div
-                  v-if="event.type === 'visit'"
-                  class="visit-extras"
-                >
-                  <div
-                    v-if="(event as CalendarVisitData).hasBloodTest"
-                    class="blood-test-indicator"
-                    data-testid="blood-test-indicator"
-                  >
-                    🩸 血液検査実施
-                  </div>
-                </div>
-
                 <!-- メモ表示・編集 -->
                 <div class="event-notes">
                   <div
@@ -1025,6 +1076,14 @@ watch(screenSize, (newSize) => {
                       class="notes-content"
                     >
                       <strong>メモ:</strong>
+                      <span
+                        v-if="event.type === 'visit' && (event as CalendarVisitData).hasBloodTest"
+                        class="blood-test-indicator-inline"
+                        data-testid="blood-test-indicator"
+                        title="血液検査実施"
+                      >
+                        🩸
+                      </span>
                       <p>{{ event.notes }}</p>
                     </div>
                     <div
@@ -1080,6 +1139,92 @@ watch(screenSize, (newSize) => {
                         保存
                       </button>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 個別記録の詳細表示（インライン） -->
+              <div
+                v-if="selectedEventForDetail && selectedEventForDetail.id === event.id && event.type === 'visit' && (event as CalendarVisitData).fullData"
+                class="visit-detail-section"
+              >
+                <div class="detail-header">
+                  <h4>通院記録の詳細</h4>
+                  <button
+                    class="close-detail-btn"
+                    @click="closeEventDetail"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div class="detail-content">
+                  <div class="detail-row">
+                    <div class="detail-label">猫</div>
+                    <div class="detail-value">{{ selectedEventForDetail.catName }}</div>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-label">診察日時</div>
+                    <div class="detail-value">{{ new Date(selectedEventForDetail.fullData.visitDate).toLocaleString('ja-JP') }}</div>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-label">病院</div>
+                    <div class="detail-value">{{ selectedEventForDetail.fullData.hospital.name }}</div>
+                  </div>
+                  <div
+                    v-if="selectedEventForDetail.fullData.doctor"
+                    class="detail-row"
+                  >
+                    <div class="detail-label">担当医</div>
+                    <div class="detail-value">{{ selectedEventForDetail.fullData.doctor.name }}</div>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-label">血液検査</div>
+                    <div class="detail-value">{{ selectedEventForDetail.fullData.hasBloodTest ? 'あり 🩸' : 'なし' }}</div>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-label">診察料</div>
+                    <div class="detail-value">¥{{ selectedEventForDetail.fullData.cost.toLocaleString() }}</div>
+                  </div>
+                  <div
+                    v-if="selectedEventForDetail.fullData.treatments && selectedEventForDetail.fullData.treatments.length > 0"
+                    class="detail-row"
+                  >
+                    <div class="detail-label">治療内容</div>
+                    <div class="detail-value">
+                      <ul class="treatment-list">
+                        <li
+                          v-for="treatment in selectedEventForDetail.fullData.treatments"
+                          :key="treatment.id"
+                        >
+                          {{ treatment.name }}
+                          <span
+                            v-if="treatment.description"
+                            class="treatment-desc"
+                          >({{ treatment.description }})</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div
+                    v-if="selectedEventForDetail.fullData.prescriptionDetails"
+                    class="detail-row"
+                  >
+                    <div class="detail-label">処方内容</div>
+                    <div class="detail-value detail-value--multiline">{{ selectedEventForDetail.fullData.prescriptionDetails }}</div>
+                  </div>
+                  <div
+                    v-if="selectedEventForDetail.fullData.diagnosis"
+                    class="detail-row"
+                  >
+                    <div class="detail-label">診断内容</div>
+                    <div class="detail-value detail-value--multiline">{{ selectedEventForDetail.fullData.diagnosis }}</div>
+                  </div>
+                  <div
+                    v-if="selectedEventForDetail.fullData.notes"
+                    class="detail-row"
+                  >
+                    <div class="detail-label">メモ</div>
+                    <div class="detail-value detail-value--multiline">{{ selectedEventForDetail.fullData.notes }}</div>
                   </div>
                 </div>
               </div>
@@ -1168,7 +1313,7 @@ watch(screenSize, (newSize) => {
 }
 
 .nav-btn:hover {
-  background-color: #f0f0f0;
+  background-color: #f8fff8;
   border-color: #4caf50;
 }
 
@@ -1268,7 +1413,8 @@ watch(screenSize, (newSize) => {
 }
 
 .toggle-btn:hover {
-  background-color: #f0f0f0;
+  background-color: #f8fff8;
+  border-color: #4caf50;
 }
 
 .toggle-btn--active {
@@ -1278,6 +1424,7 @@ watch(screenSize, (newSize) => {
 
 .toggle-btn--active:hover {
   background-color: #388e3c;
+  color: white;
 }
 
 .toggle-icon {
@@ -1408,7 +1555,8 @@ watch(screenSize, (newSize) => {
 }
 
 .calendar-day:hover {
-  background-color: #f5f5f5;
+  background-color: #f8fff8;
+  border-color: #4caf50;
 }
 
 .calendar-day:focus {
@@ -1544,6 +1692,12 @@ watch(screenSize, (newSize) => {
   margin-top: 0.25rem;
 }
 
+.blood-test-indicator-inline {
+  margin-left: 0.5rem;
+  font-size: 1rem;
+  cursor: help;
+}
+
 /* Mobile layout styles */
 .veterinary-calendar.mobile-layout {
   font-size: 0.875rem;
@@ -1671,13 +1825,29 @@ watch(screenSize, (newSize) => {
     margin-bottom: 0.5rem;
   }
 
-  .event-dots {
+  .event-indicators {
     gap: 0.375rem;
   }
 
-  .event-dot {
-    width: 0.75rem;
-    height: 0.75rem;
+  .event-indicator {
+    font-size: 0.75rem;
+  }
+
+  .cat-photo {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .cat-icon-placeholder {
+    font-size: 0.875rem;
+  }
+
+  .event-time {
+    font-size: 0.65rem;
+  }
+
+  .event-badge-blood-test {
+    font-size: 0.75rem;
   }
 
   .calendar-instructions {
@@ -1783,14 +1953,29 @@ watch(screenSize, (newSize) => {
     font-size: 1.1rem;
   }
 
-  .event-dots {
-    flex-wrap: wrap;
-    max-width: 100%;
+  .event-indicators {
+    gap: 0.5rem;
   }
 
-  .event-dot {
-    width: 1rem;
-    height: 1rem;
+  .event-indicator {
+    font-size: 0.875rem;
+  }
+
+  .cat-photo {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .cat-icon-placeholder {
+    font-size: 1rem;
+  }
+
+  .event-time {
+    font-size: 0.75rem;
+  }
+
+  .event-badge-blood-test {
+    font-size: 0.875rem;
   }
 
   .detail-modal {
@@ -1822,7 +2007,8 @@ watch(screenSize, (newSize) => {
 }
 
 .calendar-day--other-month:hover {
-  background-color: #f0f0f0;
+  background-color: #f8fff8;
+  border-color: #4caf50;
 }
 
 .calendar-day--today {
@@ -1858,37 +2044,66 @@ watch(screenSize, (newSize) => {
   margin-bottom: 0.25rem;
 }
 
-.event-dots {
+.event-indicators {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 0.25rem;
   margin-top: auto;
 }
 
-.event-dot {
-  width: 0.5rem;
-  height: 0.5rem;
+.event-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.625rem;
+  line-height: 1;
+}
+
+.event-cat-info {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding-bottom: 1px;
+}
+
+/* 通院記録の下線（緑） */
+.event-indicator--visit .event-cat-info {
+  border-bottom: 2px solid #4caf50;
+}
+
+/* 予約の下線（青） */
+.event-indicator--appointment .event-cat-info {
+  border-bottom: 2px solid #2196f3;
+}
+
+.cat-photo {
+  width: 1rem;
+  height: 1rem;
   border-radius: 50%;
-  background-color: #ddd;
-  position: relative;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
 }
 
-.event-dot--visit {
-  background-color: #4caf50;
+.cat-icon-placeholder {
+  font-size: 0.75rem;
+  flex-shrink: 0;
 }
 
-.event-dot--appointment {
-  background-color: #2196f3;
+.event-time {
+  color: #666;
+  font-size: 0.55rem;
+  font-weight: 400;
+  white-space: nowrap;
 }
 
-.event-dot--blood-test {
-  background-color: #f44336;
-  box-shadow: 0 0 0 1px white, 0 0 0 2px #f44336;
+.blood-test-badge {
+  font-size: 0.625rem;
+  margin-left: 0.125rem;
+  flex-shrink: 0;
 }
 
-.event-dot--more {
-  width: auto;
-  height: auto;
+.event-indicator--more {
   padding: 0.125rem 0.25rem;
   background-color: #666;
   color: white;
@@ -1896,6 +2111,7 @@ watch(screenSize, (newSize) => {
   font-weight: 500;
   border-radius: 0.25rem;
   line-height: 1;
+  justify-content: center;
 }
 
 .calendar-instructions {
@@ -2104,7 +2320,7 @@ watch(screenSize, (newSize) => {
 }
 
 .edit-notes-btn:hover {
-  background-color: #f0f0f0;
+  background-color: #f8fff8;
   border-color: #4caf50;
 }
 
@@ -2140,6 +2356,145 @@ watch(screenSize, (newSize) => {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
+}
+
+.visit-detail-section {
+  margin-top: 1rem;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  overflow: hidden;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background-color: #4caf50;
+  color: white;
+}
+
+.detail-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.close-detail-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.close-detail-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.detail-content {
+  padding: 1.5rem;
+}
+
+.detail-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.9rem;
+}
+
+.detail-value {
+  color: #1f2937;
+  font-size: 0.95rem;
+}
+
+.detail-value--multiline {
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.treatment-list {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.treatment-list li {
+  margin-bottom: 0.5rem;
+}
+
+.treatment-desc {
+  color: #6b7280;
+  font-size: 0.85rem;
+  margin-left: 0.5rem;
+}
+
+.event-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.detail-btn,
+.edit-btn,
+.delete-btn {
+  padding: 0.375rem 0.75rem;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.detail-btn {
+  background-color: #4caf50;
+}
+
+.detail-btn:hover {
+  background-color: #45a049;
+}
+
+.edit-btn {
+  background-color: #2196f3;
+}
+
+.edit-btn:hover {
+  background-color: #1976d2;
+}
+
+.delete-btn {
+  background-color: #f44336;
+}
+
+.delete-btn:hover {
+  background-color: #d32f2f;
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
 }
 
 .modal-footer {
@@ -2393,18 +2748,33 @@ watch(screenSize, (newSize) => {
     text-align: center;
   }
 
-  .event-dots {
-    justify-content: center;
+  .event-indicators {
     gap: 0.25rem;
     margin-top: auto;
   }
 
-  .event-dot {
-    width: 0.75rem;
-    height: 0.75rem;
+  .event-indicator {
+    font-size: 0.7rem;
   }
 
-  .event-dot--more {
+  .cat-photo {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+
+  .cat-icon-placeholder {
+    font-size: 0.875rem;
+  }
+
+  .event-time {
+    font-size: 0.6rem;
+  }
+
+  .event-badge-blood-test {
+    font-size: 0.7rem;
+  }
+
+  .event-indicator--more {
     padding: 0.25rem 0.375rem;
     font-size: 0.7rem;
     border-radius: 0.375rem;
@@ -2615,9 +2985,25 @@ watch(screenSize, (newSize) => {
     font-size: 0.9rem;
   }
 
-  .event-dot {
-    width: 0.625rem;
-    height: 0.625rem;
+  .event-indicator {
+    font-size: 0.65rem;
+  }
+
+  .cat-photo {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .cat-icon-placeholder {
+    font-size: 0.75rem;
+  }
+
+  .event-time {
+    font-size: 0.55rem;
+  }
+
+  .event-badge-blood-test {
+    font-size: 0.65rem;
   }
 
   .instruction-text {
@@ -2706,9 +3092,13 @@ watch(screenSize, (newSize) => {
   }
 
   /* Improve touch targets for small elements */
-  .event-dot {
-    min-width: 12px;
-    min-height: 12px;
+  .event-indicator {
+    min-height: 14px;
+  }
+
+  .cat-photo {
+    min-width: 14px;
+    min-height: 14px;
   }
 }
 

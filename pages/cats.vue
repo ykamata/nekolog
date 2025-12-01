@@ -171,16 +171,6 @@ onMounted(() => {
             </button>
           </div>
 
-          <!-- Refresh Button -->
-          <button
-            type="button"
-            class="refresh-button"
-            title="データを更新"
-            @click="() => fetchCats(true)"
-          >
-            <span class="refresh-icon">🔄</span>
-          </button>
-
           <!-- Add Button -->
           <button
             type="button"
@@ -353,7 +343,7 @@ onMounted(() => {
 .page-header {
   background: white;
   border-radius: 12px;
-  padding: 2rem;
+  padding: 1rem 2rem 2rem 2rem;
   margin-bottom: 2rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -421,6 +411,11 @@ onMounted(() => {
   color: white;
 }
 
+.view-button--active:hover {
+  background: #45a049;
+  color: white;
+}
+
 .view-button:not(:last-child) {
   border-right: 1px solid #e2e8f0;
 }
@@ -447,29 +442,6 @@ onMounted(() => {
   background: #45a049;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-}
-
-.refresh-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: #f8f9fa;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.refresh-button:hover {
-  background: #e8f5e9;
-  border-color: #4caf50;
-  transform: rotate(180deg);
-}
-
-.refresh-icon {
-  font-size: 1.1rem;
 }
 
 .add-icon {
@@ -761,15 +733,6 @@ onMounted(() => {
 
   .add-text {
     display: none;
-  }
-
-  .refresh-button {
-    width: 36px;
-    height: 36px;
-  }
-
-  .refresh-icon {
-    font-size: 1rem;
   }
 
   .stats-summary {

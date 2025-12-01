@@ -385,6 +385,11 @@ onMounted(() => {
   color: white;
 }
 
+.view-button--active:hover {
+  background: #45a049;
+  color: white;
+}
+
 .view-button:not(:last-child) {
   border-right: 1px solid #e2e8f0;
 }

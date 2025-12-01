@@ -478,6 +478,8 @@ const handleReset = () => {
 
 .modal-close-btn:hover {
   color: #333;
+  background: #f8fff8;
+  border-color: #4caf50;
 }
 
 .medication-form {

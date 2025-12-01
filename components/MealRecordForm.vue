@@ -656,6 +656,7 @@ defineExpose({
 
 .mode-button--active:hover:not(:disabled) {
   background: #45a049;
+  color: white;
 }
 
 .mode-button:disabled {

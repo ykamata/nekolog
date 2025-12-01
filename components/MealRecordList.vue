@@ -41,8 +41,12 @@ const filter = ref<MealRecordFilter>({
   offset: 0,
 });
 
+// Selected date range shortcut (for styling active state)
+const selectedDateRange = ref<number>(-1); // -1 = all, 0 = today, 1 = yesterday, etc.
+
 // Date range shortcuts
 const dateRangeShortcuts = [
+  { label: 'すべて', days: -1 },
   { label: '今日', days: 0 },
   { label: '昨日', days: 1 },
   { label: '過去3日', days: 3 },
@@ -135,6 +139,7 @@ const clearFilters = async () => {
     limit: 20,
     offset: 0,
   };
+  selectedDateRange.value = -1; // Reset to "all"
   await fetchMealRecords(true);
   emit('filter-change', filter.value);
 };
@@ -145,58 +150,67 @@ const handleCatFilter = async (catId: number | undefined) => {
 };
 
 const handleDateRangeShortcut = async (days: number) => {
-  const now = new Date();
-  if (days === 0) {
-    // Today
-    filter.value.startDate = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    );
-    filter.value.endDate = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-    );
-  }
-  else if (days === 1) {
-    // Yesterday
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    filter.value.startDate = new Date(
-      yesterday.getFullYear(),
-      yesterday.getMonth(),
-      yesterday.getDate(),
-    );
-    filter.value.endDate = new Date(
-      yesterday.getFullYear(),
-      yesterday.getMonth(),
-      yesterday.getDate(),
-      23,
-      59,
-      59,
-    );
+  selectedDateRange.value = days;
+
+  if (days === -1) {
+    // All - clear date filters
+    filter.value.startDate = undefined;
+    filter.value.endDate = undefined;
   }
   else {
-    // Past N days
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - days);
-    filter.value.startDate = new Date(
-      startDate.getFullYear(),
-      startDate.getMonth(),
-      startDate.getDate(),
-    );
-    filter.value.endDate = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-    );
+    const now = new Date();
+    if (days === 0) {
+      // Today
+      filter.value.startDate = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+      );
+      filter.value.endDate = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+      );
+    }
+    else if (days === 1) {
+      // Yesterday
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      filter.value.startDate = new Date(
+        yesterday.getFullYear(),
+        yesterday.getMonth(),
+        yesterday.getDate(),
+      );
+      filter.value.endDate = new Date(
+        yesterday.getFullYear(),
+        yesterday.getMonth(),
+        yesterday.getDate(),
+        23,
+        59,
+        59,
+      );
+    }
+    else {
+      // Past N days
+      const startDate = new Date(now);
+      startDate.setDate(startDate.getDate() - days);
+      filter.value.startDate = new Date(
+        startDate.getFullYear(),
+        startDate.getMonth(),
+        startDate.getDate(),
+      );
+      filter.value.endDate = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+      );
+    }
   }
   await applyFilter();
 };
@@ -318,6 +332,7 @@ watch(
             :key="shortcut.label"
             type="button"
             class="filter-button"
+            :class="{ 'filter-button--active': selectedDateRange === shortcut.days }"
             @click="handleDateRangeShortcut(shortcut.days)"
           >
             {{ shortcut.label }}
@@ -718,6 +733,12 @@ watch(
 .filter-button--active {
   border-color: #4caf50;
   background: #4caf50;
+  color: white;
+}
+
+.filter-button--active:hover {
+  background: #45a049;
+  border-color: #45a049;
   color: white;
 }
 

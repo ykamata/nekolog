@@ -347,12 +347,13 @@ const clearFilters = () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  padding-bottom: 1rem;
+  padding: 0 1rem 1rem 1rem;
   border-bottom: 2px solid #e0e0e0;
 }
 
 .food-list__title {
   margin: 0;
+  padding: 0.5rem 0;
   font-size: 1.5rem;
   font-weight: 600;
   color: #333;
@@ -430,7 +431,8 @@ const clearFilters = () => {
 }
 
 .sort-order-btn:hover {
-  background-color: #f5f5f5;
+  background-color: #f8fff8;
+  border-color: #4caf50;
 }
 
 .sort-order-btn--desc {
