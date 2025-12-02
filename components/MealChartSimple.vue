@@ -368,12 +368,55 @@ const getLineChartConfig = () => {
     throw new Error('Analytics data is not available');
   }
 
-  const dailyCalories = analytics.value.dailyCalories;
-  const labels = dailyCalories.map((item) => {
-    const date = new Date(item.date);
-    return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
-  });
-  const data = dailyCalories.map(item => Number(item.calories) || 0);
+  // 期間の開始日と終了日を取得
+  const startDate = new Date(Date.now() - props.periodDays * 24 * 60 * 60 * 1000);
+  const endDate = new Date();
+
+  // 日付を YYYY/MM/DD 形式にフォーマット
+  const formatDateKey = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}/${month}/${day}`;
+  };
+
+  // analyticsStoreのchartDataからdailyCaloriesByFoodTypeを取得
+  const dailyCaloriesByFoodType = analyticsStore.chartData?.dailyCaloriesByFoodType;
+
+  // データをMapに格納（日付をキーとして）
+  const caloriesMap = new Map<string, number>();
+
+  if (dailyCaloriesByFoodType && Array.isArray(dailyCaloriesByFoodType)) {
+    // dailyCaloriesByFoodTypeが利用可能な場合
+    dailyCaloriesByFoodType.forEach((item: any) => {
+      caloriesMap.set(item.date, Number(item.totalCalories) || 0);
+    });
+  }
+  else {
+    // フォールバック: dailyCaloriesから日付ごとに合算
+    const dailyCalories = analytics.value.dailyCalories;
+    dailyCalories.forEach((item) => {
+      const dateKey = item.date;
+      const currentTotal = caloriesMap.get(dateKey) || 0;
+      caloriesMap.set(dateKey, currentTotal + Number(item.calories));
+    });
+  }
+
+  // 期間内のすべての日付を生成（データがない日も0として含める）
+  const labels: string[] = [];
+  const data: number[] = [];
+
+  const currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    const dateKey = formatDateKey(currentDate);
+    const displayLabel = currentDate.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+
+    labels.push(displayLabel);
+    data.push(caloriesMap.get(dateKey) || 0);
+
+    // 次の日へ
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
 
   return {
     type: 'line' as const,
@@ -391,6 +434,7 @@ const getLineChartConfig = () => {
         pointHoverRadius: 5,
         pointBackgroundColor: 'rgb(59, 130, 246)',
         pointBorderColor: 'rgb(59, 130, 246)',
+        spanGaps: false,
       }],
     },
     options: getCommonChartOptions('線グラフ'),
