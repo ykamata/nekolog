@@ -33,6 +33,8 @@
       :style="{ display: error ? 'none' : 'block' }"
     >
       <canvas
+        :id="`meal-chart-simple-${props.catId || 'default'}-${canvasKey}`"
+        :key="`chart-canvas-${canvasKey}`"
         ref="chartCanvas"
         class="chart-canvas"
       />
@@ -94,6 +96,9 @@ const analytics = ref<MealAnalytics | null>(null);
 // チャート作成の競合を防ぐためのフラグ
 const isCreatingChart = ref(false);
 const chartCreationId = ref(0);
+
+// キャンバス再作成用のキー
+const canvasKey = ref(0);
 
 // Analytics Store
 const analyticsStore = useAnalyticsStore();
@@ -494,6 +499,9 @@ const destroyChartSafely = async () => {
     }
   }
 
+  // キャンバスキーを更新して要素を再作成
+  canvasKey.value++;
+
   // 少し待機してDOM操作を完了させる
   await nextTick();
 };
@@ -558,16 +566,26 @@ watch(chartDisplayMode, async (newMode, oldMode) => {
 
 // Lifecycle
 onMounted(async () => {
+  console.log('MealChartSimple: onMounted', { catId: props.catId });
+
   if (!props.catId) {
     error.value = 'Cat ID is required';
     return;
   }
 
+  // チャートをリセット
+  canvasKey.value = 0;
+  chartCreationId.value = 0;
+  isCreatingChart.value = false;
+  isChartInitialized.value = false;
+  chart.value = undefined;
+
   // まずデータを取得
   await fetchData();
 });
 
-onUnmounted(() => {
+
+onBeforeUnmount(() => {
   // タイムアウトをクリア
   if (chartModeChangeTimeout.value) {
     clearTimeout(chartModeChangeTimeout.value);
@@ -575,9 +593,23 @@ onUnmounted(() => {
 
   // 作成IDを更新して進行中の処理をキャンセル
   chartCreationId.value++;
+  isCreatingChart.value = false;
 
   // チャートを破棄
   destroyChart();
+});
+
+onUnmounted(() => {
+  // 念のため再度クリーンアップ
+  if (chart.value) {
+    try {
+      chart.value.destroy();
+    }
+    catch (err) {
+      console.error('MealChartSimple: 最終クリーンアップエラー:', err);
+    }
+    chart.value = undefined;
+  }
 });
 </script>
 

@@ -5,8 +5,8 @@ import { z } from 'zod';
  */
 
 // Enum schema for HealthSignalColor
-export const healthSignalColorSchema = z.enum(['GREEN', 'YELLOW', 'RED'], {
-  errorMap: () => ({ message: 'シグナルカラーはGREEN、YELLOW、REDのいずれかである必要があります' }),
+export const healthSignalColorSchema = z.enum(['GREEN', 'YELLOW', 'RED', 'PRISMATIC'], {
+  errorMap: () => ({ message: 'シグナルカラーはGREEN、YELLOW、RED、PRISMATICのいずれかである必要があります' }),
 });
 
 // Create health signal schema

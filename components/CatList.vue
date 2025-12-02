@@ -257,7 +257,7 @@ const handleImageError = (event: Event) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
-  padding-bottom: 1rem;
+  padding: 0 1rem 1rem 1rem;
   border-bottom: 2px solid #e0e0e0;
 }
 

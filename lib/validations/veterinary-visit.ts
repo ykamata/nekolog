@@ -189,7 +189,7 @@ export const VeterinaryTreatmentInputSchema = z.object({
 // Input validation schemas for main entities
 export const VeterinaryVisitInputSchema = z.object({
   catId: z.coerce.number().int().positive(),
-  visitDate: z.date({
+  visitDate: z.coerce.date({
     errorMap: () => ({ message: '診察日時を入力してください' }),
   }),
   hospitalName: z
@@ -201,12 +201,13 @@ export const VeterinaryVisitInputSchema = z.object({
     .string()
     .max(50, '先生名は50文字以内で入力してください')
     .trim()
-    .optional()
-    .or(z.literal('')),
+    .transform(val => val || undefined)
+    .optional(),
   treatments: z
     .array(z.string().min(1, '処方内容を入力してください'))
-    .min(1, '処方内容を少なくとも1つ選択してください')
-    .max(20, '処方内容は20個まで選択できます'),
+    .max(20, '処方内容は20個まで選択できます')
+    .optional()
+    .default([]),
   cost: z
     .number()
     .min(0, '費用は0以上で入力してください')
@@ -215,15 +216,15 @@ export const VeterinaryVisitInputSchema = z.object({
     .string()
     .max(1000, 'メモは1000文字以内で入力してください')
     .trim()
-    .optional()
-    .or(z.literal('')),
+    .transform(val => val || undefined)
+    .optional(),
   hasBloodTest: z.boolean().default(false),
 });
 
 export const VeterinaryAppointmentInputSchema = z.object({
   catId: z.coerce.number().int().positive(),
   appointmentDate: z
-    .date({
+    .coerce.date({
       errorMap: () => ({ message: '予約日時を入力してください' }),
     })
     .refine(date => date > new Date(), {
@@ -238,20 +239,20 @@ export const VeterinaryAppointmentInputSchema = z.object({
     .string()
     .max(50, '先生名は50文字以内で入力してください')
     .trim()
-    .optional()
-    .or(z.literal('')),
+    .transform(val => val || undefined)
+    .optional(),
   plannedTreatments: z
     .string()
     .max(500, '予定処方内容は500文字以内で入力してください')
     .trim()
-    .optional()
-    .or(z.literal('')),
+    .transform(val => val || undefined)
+    .optional(),
   notes: z
     .string()
     .max(1000, 'メモは1000文字以内で入力してください')
     .trim()
-    .optional()
-    .or(z.literal('')),
+    .transform(val => val || undefined)
+    .optional(),
 });
 
 // Update validation schemas
@@ -369,8 +370,9 @@ export const VeterinaryVisitFormSchema = z.object({
     .optional(),
   treatments: z
     .array(z.string().min(1, '処方内容を入力してください'))
-    .min(1, '処方内容を少なくとも1つ選択してください')
-    .max(20, '処方内容は20個まで選択できます'),
+    .max(20, '処方内容は20個まで選択できます')
+    .optional()
+    .default([]),
   cost: z
     .number()
     .min(0, '費用は0以上で入力してください')

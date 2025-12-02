@@ -1633,6 +1633,10 @@ watch(lastUpdateTime, (newTime) => {
 onMounted(async () => {
   console.log('MealChart: onMounted開始', { catId: props.catId, periodDays: props.periodDays });
 
+  // チャート状態をリセット
+  canvasKey.value = 0;
+  retryCount.value = 0;
+
   // Chart.jsの初期化を待つ
   await nextTick();
 
@@ -1752,6 +1756,9 @@ onMounted(async () => {
       cleanupInterval();
       cleanupEventListeners();
       destroyChart(); // useChart composableのdestroyChart関数を使用
+
+      // Canvas要素を完全にリセット
+      canvasKey.value++;
     });
   }
 });

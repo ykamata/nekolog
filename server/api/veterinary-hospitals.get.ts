@@ -22,8 +22,8 @@ export default defineEventHandler(async (event) => {
     if (searchQuery?.trim()) {
       const searchTerm = searchQuery.trim();
       whereCondition.OR = [
-        { name: { contains: searchTerm, mode: 'insensitive' } },
-        { address: { contains: searchTerm, mode: 'insensitive' } },
+        { name: { contains: searchTerm } },
+        { address: { contains: searchTerm } },
         { phone: { contains: searchTerm } },
       ];
     }

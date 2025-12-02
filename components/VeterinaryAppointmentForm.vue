@@ -54,20 +54,21 @@ const loadingDoctors = ref(false);
 // 選択された病院のID（先生フィルタリング用）
 const selectedHospitalId = ref<number | null>(null);
 
-// 全マスタアイテム（病院と先生を統合）
-const allMasterItems = computed(() => {
-  const hospitalItems = hospitals.value.map(hospital => ({
+// 病院マスタアイテム
+const hospitalMasterItems = computed(() => {
+  return hospitals.value.map(hospital => ({
     id: hospital.id,
     name: hospital.name,
   }));
+});
 
-  const doctorItems = doctors.value.map(doctor => ({
+// 先生マスタアイテム
+const doctorMasterItems = computed(() => {
+  return doctors.value.map(doctor => ({
     id: doctor.id,
     name: doctor.name,
     hospitalId: doctor.hospitalId || undefined,
   }));
-
-  return [...hospitalItems, ...doctorItems];
 });
 
 // 統一エラーハンドラーの初期化
@@ -162,10 +163,13 @@ const fetchMasterData = async () => {
   const result = await errorHandler.handleDataFetch(
     async () => {
       const [hospitalsResponse, doctorsResponse] = await Promise.all([
-        $fetch<VeterinaryHospital[]>('/api/veterinary-hospitals'),
-        $fetch<VeterinaryDoctor[]>('/api/veterinary-doctors'),
+        $fetch<{ hospitals: VeterinaryHospital[] }>('/api/veterinary-hospitals'),
+        $fetch<{ doctors: VeterinaryDoctor[] }>('/api/veterinary-doctors'),
       ]);
-      return { hospitals: hospitalsResponse, doctors: doctorsResponse };
+      return {
+        hospitals: hospitalsResponse.hospitals,
+        doctors: doctorsResponse.doctors
+      };
     },
     {
       retryable: true,
@@ -643,7 +647,7 @@ onMounted(() => {
             id="hospital-input"
             v-model="formData.hospitalName"
             type="hospital"
-            :items="allMasterItems"
+            :items="hospitalMasterItems"
             :loading="loadingHospitals"
             :disabled="isSubmitting"
             :error="errors.hospitalName"
@@ -677,7 +681,7 @@ onMounted(() => {
             id="doctor-input"
             :model-value="formData.doctorName || ''"
             type="doctor"
-            :items="allMasterItems"
+            :items="doctorMasterItems"
             :selected-hospital-id="selectedHospitalId"
             :loading="loadingDoctors"
             :disabled="isSubmitting"

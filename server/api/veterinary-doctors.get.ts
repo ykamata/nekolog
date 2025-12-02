@@ -21,14 +21,17 @@ export default defineEventHandler(async (event) => {
     };
 
     if (hospitalId?.trim()) {
-      whereCondition.hospitalId = hospitalId.trim();
+      const parsedHospitalId = parseInt(hospitalId.trim());
+      if (!isNaN(parsedHospitalId)) {
+        whereCondition.hospitalId = parsedHospitalId;
+      }
     }
 
     if (searchQuery?.trim()) {
       const searchTerm = searchQuery.trim();
       whereCondition.OR = [
-        { name: { contains: searchTerm, mode: 'insensitive' } },
-        { specialty: { contains: searchTerm, mode: 'insensitive' } },
+        { name: { contains: searchTerm } },
+        { specialty: { contains: searchTerm } },
       ];
     }
 

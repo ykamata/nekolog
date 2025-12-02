@@ -28,6 +28,48 @@ const formattedWeekday = computed(() => {
   return `(${weekdays[d.getDay()]})`;
 });
 
+const signalColorText = computed(() => {
+  if (!props.dayData?.signalColor) return '';
+  switch (props.dayData.signalColor) {
+    case 'GREEN':
+      return '正常';
+    case 'YELLOW':
+      return '注意';
+    case 'RED':
+      return '警告';
+    default:
+      return '';
+  }
+});
+
+const signalColorIcon = computed(() => {
+  if (!props.dayData?.signalColor) return '';
+  switch (props.dayData.signalColor) {
+    case 'GREEN':
+      return '🟢';
+    case 'YELLOW':
+      return '🟡';
+    case 'RED':
+      return '🔴';
+    default:
+      return '';
+  }
+});
+
+const signalColorClass = computed(() => {
+  if (!props.dayData?.signalColor) return '';
+  switch (props.dayData.signalColor) {
+    case 'GREEN':
+      return 'signal-color--green';
+    case 'YELLOW':
+      return 'signal-color--yellow';
+    case 'RED':
+      return 'signal-color--red';
+    default:
+      return '';
+  }
+});
+
 // Methods
 const handleClose = () => {
   emit('close');
@@ -66,7 +108,7 @@ const handleBackdropClick = (event: MouseEvent) => {
           <!-- Content -->
           <div class="modal-content">
             <div
-              v-if="!dayData || (dayData.mealCount === 0 && dayData.excretionCount.total === 0 && !dayData.hasEmergencyMedication && !dayData.hasMemo)"
+              v-if="!dayData || (dayData.mealCount === 0 && dayData.excretionCount.total === 0 && !dayData.hasEmergencyMedication && !dayData.hasMemo && !dayData.signalColor)"
               class="no-data"
             >
               <p>この日の記録はありません</p>
@@ -167,6 +209,34 @@ const handleBackdropClick = (event: MouseEvent) => {
                 <div class="section-content">
                   <div class="memo-text">
                     {{ dayData.dailyNote.memo }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Health Signal Section -->
+              <div
+                v-if="dayData.signalColor"
+                class="detail-section signal-section"
+                :class="signalColorClass"
+              >
+                <div class="section-header">
+                  <span class="section-icon">🚦</span>
+                  <h3 class="section-title">健康シグナル</h3>
+                </div>
+                <div class="section-content">
+                  <div class="detail-item">
+                    <span class="detail-label">状態:</span>
+                    <span class="detail-value signal-value">
+                      <span class="signal-icon">{{ signalColorIcon }}</span>
+                      <span class="signal-text">{{ signalColorText }}</span>
+                    </span>
+                  </div>
+                  <div
+                    v-if="dayData.signalNote"
+                    class="detail-item signal-note-item"
+                  >
+                    <span class="detail-label">補足メモ:</span>
+                    <div class="signal-note-text">{{ dayData.signalNote }}</div>
                   </div>
                 </div>
               </div>
@@ -406,5 +476,58 @@ const handleBackdropClick = (event: MouseEvent) => {
 .modal-enter-from .modal-container,
 .modal-leave-to .modal-container {
   transform: scale(0.9);
+}
+
+/* Health Signal Styles */
+.signal-section {
+  position: relative;
+  overflow: hidden;
+}
+
+.signal-section.signal-color--green {
+  border-left-color: #4caf50;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.08) 0%, rgba(129, 199, 132, 0.05) 100%);
+}
+
+.signal-section.signal-color--yellow {
+  border-left-color: #ffc107;
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 224, 130, 0.05) 100%);
+}
+
+.signal-section.signal-color--red {
+  border-left-color: #f44336;
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.08) 0%, rgba(239, 154, 154, 0.05) 100%);
+}
+
+.signal-value {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.signal-icon {
+  font-size: 1.25rem;
+}
+
+.signal-text {
+  font-weight: 600;
+}
+
+.signal-note-item {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.signal-note-text {
+  background: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  color: #333;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  font-size: 0.95rem;
+  border: 1px solid #e2e8f0;
+  width: 100%;
+  margin-top: 0.25rem;
 }
 </style>

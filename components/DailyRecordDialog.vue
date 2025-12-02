@@ -30,7 +30,7 @@ const selectedMedicationId = ref<number | null>(null);
 const memo = ref('');
 
 // Health signal form
-const signalColor = ref<'GREEN' | 'YELLOW' | 'RED' | null>(null);
+const signalColor = ref<'GREEN' | 'YELLOW' | 'RED' | 'PRISMATIC' | null>(null);
 const signalNote = ref('');
 
 // Meal form
@@ -659,6 +659,15 @@ watch(() => props.dayData, () => {
                 <div class="signal-color-buttons">
                   <button
                     type="button"
+                    class="signal-button signal-button--prismatic"
+                    :class="{ 'signal-button--active': signalColor === 'PRISMATIC' }"
+                    @click="signalColor = 'PRISMATIC'"
+                  >
+                    <span class="signal-icon">✨</span>
+                    <span class="signal-text">最高</span>
+                  </button>
+                  <button
+                    type="button"
                     class="signal-button signal-button--green"
                     :class="{ 'signal-button--active': signalColor === 'GREEN' }"
                     @click="signalColor = 'GREEN'"
@@ -973,6 +982,77 @@ watch(() => props.dayData, () => {
 .signal-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Prismatic Button */
+@keyframes rainbow-flow-button {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.signal-button--prismatic {
+  border: 3px solid transparent;
+  border-image: linear-gradient(
+    90deg,
+    #ff0000,
+    #ff9a00,
+    #d0de21,
+    #4fdc4a,
+    #3fdad8,
+    #2fc9e2,
+    #1c7fee,
+    #5f15f2,
+    #ba0cf8,
+    #fb07d9,
+    #ff0000
+  ) 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.signal-button--prismatic:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.1) 0%,
+    rgba(255, 154, 0, 0.1) 14%,
+    rgba(208, 222, 33, 0.1) 28%,
+    rgba(79, 220, 74, 0.1) 42%,
+    rgba(47, 201, 226, 0.1) 56%,
+    rgba(95, 21, 242, 0.1) 70%,
+    rgba(186, 12, 248, 0.1) 84%,
+    rgba(255, 0, 0, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: rainbow-flow-button 3s ease infinite;
+  box-shadow: 0 4px 20px rgba(186, 12, 248, 0.3);
+}
+
+.signal-button--prismatic.signal-button--active {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.2) 0%,
+    rgba(255, 154, 0, 0.2) 10%,
+    rgba(208, 222, 33, 0.2) 20%,
+    rgba(79, 220, 74, 0.2) 30%,
+    rgba(63, 218, 216, 0.2) 40%,
+    rgba(47, 201, 226, 0.2) 50%,
+    rgba(28, 127, 238, 0.2) 60%,
+    rgba(95, 21, 242, 0.2) 70%,
+    rgba(186, 12, 248, 0.2) 80%,
+    rgba(251, 7, 217, 0.2) 90%,
+    rgba(255, 0, 0, 0.2) 100%
+  );
+  background-size: 200% 100%;
+  animation: rainbow-flow-button 3s ease infinite;
+  box-shadow: 0 0 0 4px rgba(186, 12, 248, 0.2),
+              0 0 20px rgba(186, 12, 248, 0.3);
 }
 
 .signal-button--green {

@@ -9,7 +9,9 @@
       "mcp__serena__think_about_collected_information",
       "Bash(npm run typecheck:*)",
       "Bash(cut:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(done)",
+      "Bash(find:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

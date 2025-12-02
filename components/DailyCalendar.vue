@@ -190,6 +190,8 @@ const getSignalColorClass = (color?: string | null) => {
       return 'signal-yellow';
     case 'RED':
       return 'signal-red';
+    case 'PRISMATIC':
+      return 'signal-prismatic';
     default:
       return '';
   }
@@ -435,6 +437,10 @@ onMounted(() => {
         健康シグナル
       </div>
       <div class="legend-items">
+        <div class="legend-item">
+          <span class="legend-color-box signal-prismatic-box" />
+          <span class="legend-label">最高✨</span>
+        </div>
         <div class="legend-item">
           <span class="legend-color-box signal-green-box" />
           <span class="legend-label">正常</span>
@@ -775,6 +781,133 @@ onMounted(() => {
   border-left: 4px solid #f44336;
 }
 
+/* Prismatic - Rainbow Gradient Animation */
+@keyframes rainbow-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes prismatic-shimmer {
+  0% {
+    opacity: 0.8;
+    transform: translateX(-100%);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.8;
+    transform: translateX(100%);
+  }
+}
+
+.calendar-day.signal-prismatic {
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.3) 0%,
+    rgba(255, 154, 0, 0.3) 10%,
+    rgba(208, 222, 33, 0.3) 20%,
+    rgba(79, 220, 74, 0.3) 30%,
+    rgba(63, 218, 216, 0.3) 40%,
+    rgba(47, 201, 226, 0.3) 50%,
+    rgba(28, 127, 238, 0.3) 60%,
+    rgba(95, 21, 242, 0.3) 70%,
+    rgba(186, 12, 248, 0.3) 80%,
+    rgba(251, 7, 217, 0.3) 90%,
+    rgba(255, 0, 0, 0.3) 100%
+  );
+  background-size: 200% 200%;
+  animation: rainbow-flow 3s ease infinite;
+  border: 2px solid transparent;
+  border-image: linear-gradient(
+    90deg,
+    #ff0000,
+    #ff9a00,
+    #d0de21,
+    #4fdc4a,
+    #3fdad8,
+    #2fc9e2,
+    #1c7fee,
+    #5f15f2,
+    #ba0cf8,
+    #fb07d9,
+    #ff0000
+  ) 1;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5),
+              0 0 25px rgba(186, 12, 248, 0.3),
+              inset 0 0 20px rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+}
+
+.calendar-day.signal-prismatic::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.4) 45%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0.4) 55%,
+    transparent 100%
+  );
+  animation: prismatic-shimmer 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.calendar-day.signal-prismatic.calendar-day--has-data {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.15) 0%,
+    rgba(255, 154, 0, 0.15) 10%,
+    rgba(208, 222, 33, 0.15) 20%,
+    rgba(79, 220, 74, 0.15) 30%,
+    rgba(63, 218, 216, 0.15) 40%,
+    rgba(47, 201, 226, 0.15) 50%,
+    rgba(28, 127, 238, 0.15) 60%,
+    rgba(95, 21, 242, 0.15) 70%,
+    rgba(186, 12, 248, 0.15) 80%,
+    rgba(251, 7, 217, 0.15) 90%,
+    rgba(255, 0, 0, 0.15) 100%
+  ),
+  white;
+  background-size: 200% 200%, 100% 100%;
+  animation: rainbow-flow 3s ease infinite;
+  border-left: 4px solid;
+  border-image: linear-gradient(
+    180deg,
+    #ff0000,
+    #ff9a00,
+    #d0de21,
+    #4fdc4a,
+    #3fdad8,
+    #2fc9e2,
+    #1c7fee,
+    #5f15f2,
+    #ba0cf8,
+    #fb07d9
+  ) 1;
+}
+
+.calendar-day.signal-prismatic:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.6),
+              0 0 35px rgba(186, 12, 248, 0.5),
+              0 8px 16px rgba(0, 0, 0, 0.2),
+              inset 0 0 25px rgba(255, 255, 255, 0.3);
+}
+
 .day-content {
   padding: 0.5rem;
   height: 100%;
@@ -918,6 +1051,34 @@ onMounted(() => {
   height: 20px;
   border-radius: 4px;
   border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.signal-prismatic-box {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.4) 0%,
+    rgba(255, 154, 0, 0.4) 14%,
+    rgba(208, 222, 33, 0.4) 28%,
+    rgba(79, 220, 74, 0.4) 42%,
+    rgba(47, 201, 226, 0.4) 56%,
+    rgba(95, 21, 242, 0.4) 70%,
+    rgba(186, 12, 248, 0.4) 84%,
+    rgba(255, 0, 0, 0.4) 100%
+  );
+  background-size: 200% 100%;
+  animation: rainbow-flow 3s ease infinite;
+  border: 1px solid;
+  border-image: linear-gradient(
+    90deg,
+    #ff0000,
+    #ff9a00,
+    #d0de21,
+    #4fdc4a,
+    #2fc9e2,
+    #5f15f2,
+    #ba0cf8,
+    #ff0000
+  ) 1;
 }
 
 .signal-green-box {

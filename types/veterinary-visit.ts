@@ -150,6 +150,7 @@ export interface CalendarVisitData {
   hasBloodTest: boolean;
   notes?: string;
   type: 'visit';
+  fullData?: VeterinaryVisitWithRelations; // 詳細表示用の完全なデータ
 }
 
 export interface CalendarAppointmentData {

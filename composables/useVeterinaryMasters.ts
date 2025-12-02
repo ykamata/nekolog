@@ -7,12 +7,12 @@ export const useVeterinaryMasters = () => {
 
   const createHospital = async (name: string): Promise<VeterinaryHospital> => {
     try {
-      const newHospital = await $fetch<VeterinaryHospital>('/api/veterinary-hospitals', {
+      const response = await $fetch<{ hospital: VeterinaryHospital }>('/api/veterinary-hospitals', {
         method: 'POST',
         body: { name },
       });
-      hospitals.value.push(newHospital);
-      return newHospital;
+      hospitals.value.push(response.hospital);
+      return response.hospital;
     }
     catch (error) {
       console.error('Failed to create hospital:', error);
@@ -20,14 +20,14 @@ export const useVeterinaryMasters = () => {
     }
   };
 
-  const createDoctor = async (name: string): Promise<VeterinaryDoctor> => {
+  const createDoctor = async (name: string, hospitalId?: number): Promise<VeterinaryDoctor> => {
     try {
-      const newDoctor = await $fetch<VeterinaryDoctor>('/api/veterinary-doctors', {
+      const response = await $fetch<{ doctor: VeterinaryDoctor }>('/api/veterinary-doctors', {
         method: 'POST',
-        body: { name },
+        body: { name, hospitalId },
       });
-      doctors.value.push(newDoctor);
-      return newDoctor;
+      doctors.value.push(response.doctor);
+      return response.doctor;
     }
     catch (error) {
       console.error('Failed to create doctor:', error);
@@ -37,12 +37,12 @@ export const useVeterinaryMasters = () => {
 
   const createTreatment = async (name: string): Promise<VeterinaryTreatment> => {
     try {
-      const newTreatment = await $fetch<VeterinaryTreatment>('/api/veterinary-treatments', {
+      const response = await $fetch<{ treatment: VeterinaryTreatment }>('/api/veterinary-treatments', {
         method: 'POST',
         body: { name },
       });
-      treatments.value.push(newTreatment);
-      return newTreatment;
+      treatments.value.push(response.treatment);
+      return response.treatment;
     }
     catch (error) {
       console.error('Failed to create treatment:', error);
