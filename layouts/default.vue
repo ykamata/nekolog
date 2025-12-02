@@ -108,15 +108,6 @@
           <span class="nav-icon">📊</span>
           <span class="nav-text">データ分析</span>
         </NuxtLink>
-
-        <NuxtLink
-          to="/charts"
-          class="nav-item"
-          :class="{ 'nav-item--active': $route.path === '/charts' }"
-        >
-          <span class="nav-icon">📈</span>
-          <span class="nav-text">詳細チャート</span>
-        </NuxtLink>
       </nav>
 
       <!-- User Info & Logout (Desktop) -->
@@ -211,15 +202,6 @@
       >
         <span class="nav-icon">📊</span>
         <span class="nav-text">分析</span>
-      </NuxtLink>
-
-      <NuxtLink
-        to="/charts"
-        class="bottom-nav-item"
-        :class="{ 'bottom-nav-item--active': $route.path === '/charts' }"
-      >
-        <span class="nav-icon">📈</span>
-        <span class="nav-text">チャート</span>
       </NuxtLink>
     </nav>
   </div>

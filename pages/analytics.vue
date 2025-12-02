@@ -374,191 +374,6 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-
-        <!-- Summary Cards -->
-        <div
-          v-if="chartFilters.catId"
-          class="summary-section"
-          role="region"
-          aria-labelledby="summary-title"
-        >
-          <h3
-            id="summary-title"
-            class="summary-title"
-          >
-            データサマリー
-          </h3>
-          <div class="summary-grid">
-            <div
-              class="summary-card"
-              role="article"
-              aria-labelledby="analysis-target-label"
-            >
-              <div
-                class="summary-icon"
-                aria-hidden="true"
-              >
-                📊
-              </div>
-              <div class="summary-content">
-                <div
-                  id="analysis-target-label"
-                  class="summary-label"
-                >
-                  分析対象
-                </div>
-                <div
-                  class="summary-value"
-                  aria-label="分析対象: {{ selectedCat?.name }}"
-                >
-                  {{ selectedCat?.name }}
-                </div>
-              </div>
-            </div>
-            <div
-              class="summary-card"
-              role="article"
-              aria-labelledby="period-label"
-            >
-              <div
-                class="summary-icon"
-                aria-hidden="true"
-              >
-                📅
-              </div>
-              <div class="summary-content">
-                <div
-                  id="period-label"
-                  class="summary-label"
-                >
-                  期間
-                </div>
-                <div
-                  class="summary-value"
-                  aria-label="期間: {{ selectedPeriodDays }}日間"
-                >
-                  {{ selectedPeriodDays }}日間
-                </div>
-              </div>
-            </div>
-            <div
-              class="summary-card"
-              role="article"
-              aria-labelledby="weight-label"
-            >
-              <div
-                class="summary-icon"
-                aria-hidden="true"
-              >
-                ⚖️
-              </div>
-              <div class="summary-content">
-                <div
-                  id="weight-label"
-                  class="summary-label"
-                >
-                  体重
-                </div>
-                <div
-                  class="summary-value"
-                  :aria-label="`体重: ${selectedCat?.weight ? `${selectedCat.weight}キログラム` : '未記録'}`"
-                >
-                  {{ selectedCat?.weight ? `${selectedCat.weight}kg` : "未記録" }}
-                </div>
-              </div>
-            </div>
-            <div
-              class="summary-card"
-              role="article"
-              aria-labelledby="chart-type-label"
-            >
-              <div
-                class="summary-icon"
-                aria-hidden="true"
-              >
-                📈
-              </div>
-              <div class="summary-content">
-                <div
-                  id="chart-type-label"
-                  class="summary-label"
-                >
-                  表示形式
-                </div>
-                <div
-                  class="summary-value"
-                  :aria-label="`表示形式: ${chartFilters.chartType === 'line' ? '線グラフ' : '積み上げ棒グラフ'}`"
-                >
-                  {{ chartFilters.chartType === 'line' ? '線グラフ' : '積み上げ棒グラフ' }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Quick Actions -->
-        <div
-          class="quick-actions"
-          role="region"
-          aria-labelledby="quick-actions-title"
-        >
-          <h3
-            id="quick-actions-title"
-            class="quick-actions-title"
-          >
-            関連機能
-          </h3>
-          <div
-            class="action-buttons"
-            role="navigation"
-            aria-label="関連機能へのナビゲーション"
-          >
-            <NuxtLink
-              to="/meals/record"
-              class="action-button action-button--primary"
-              aria-label="食事を記録するページに移動"
-            >
-              <span
-                class="action-icon"
-                aria-hidden="true"
-              >📝</span>
-              <span class="action-text">食事を記録</span>
-            </NuxtLink>
-            <NuxtLink
-              to="/meals/history"
-              class="action-button"
-              aria-label="食事履歴ページに移動"
-            >
-              <span
-                class="action-icon"
-                aria-hidden="true"
-              >📋</span>
-              <span class="action-text">食事履歴</span>
-            </NuxtLink>
-            <NuxtLink
-              to="/cats"
-              class="action-button"
-              aria-label="猫の管理ページに移動"
-            >
-              <span
-                class="action-icon"
-                aria-hidden="true"
-              >🐱</span>
-              <span class="action-text">猫の管理</span>
-            </NuxtLink>
-            <NuxtLink
-              to="/foods"
-              class="action-button"
-              aria-label="フード管理ページに移動"
-            >
-              <span
-                class="action-icon"
-                aria-hidden="true"
-              >🥫</span>
-              <span class="action-text">フード管理</span>
-            </NuxtLink>
-          </div>
-        </div>
       </ErrorBoundary>
     </div>
   </div>
@@ -754,20 +569,6 @@ onUnmounted(() => {
   min-height: 500px;
 }
 
-.summary-section {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.quick-actions {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
 /* No cat selected state */
 .no-cat-selected {
   display: flex;
@@ -804,127 +605,6 @@ onUnmounted(() => {
   position: relative;
 }
 
-.summary-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 1.5rem 0;
-  text-align: center;
-}
-
-.summary-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.summary-card {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-  transition: all 0.2s ease;
-}
-
-.summary-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.summary-icon {
-  font-size: 2rem;
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #e8f5e9;
-  border-radius: 50%;
-}
-
-.summary-content {
-  flex: 1;
-}
-
-.summary-label {
-  font-size: 0.9rem;
-  color: #666;
-  margin-bottom: 0.25rem;
-}
-
-.summary-value {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #333;
-}
-
-/* Quick Actions */
-.quick-actions {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.quick-actions-title {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #333;
-  margin: 0 0 1.5rem 0;
-  text-align: center;
-}
-
-.action-buttons {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 1rem;
-}
-
-.action-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1.5rem;
-  background: #f8f9fa;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  text-decoration: none;
-  color: #333;
-  transition: all 0.2s ease;
-}
-
-.action-button:hover {
-  background: #e8f5e9;
-  border-color: #4caf50;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
-}
-
-.action-button--primary {
-  background: #4caf50;
-  border-color: #4caf50;
-  color: white;
-}
-
-.action-button--primary:hover {
-  background: #45a049;
-  border-color: #45a049;
-}
-
-.action-icon {
-  font-size: 2rem;
-}
-
-.action-text {
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-align: center;
-}
-
 /* Enhanced Tablet Responsive */
 @media (max-width: 1024px) {
   .analytics-page {
@@ -941,9 +621,7 @@ onUnmounted(() => {
   }
 
   .filters-section,
-  .chart-section,
-  .summary-section,
-  .quick-actions {
+  .chart-section {
     padding: 1.5rem;
   }
 
@@ -953,15 +631,6 @@ onUnmounted(() => {
 
   .chart-container {
     min-height: 350px;
-  }
-
-  .summary-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-
-  .action-buttons {
-    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -1001,9 +670,7 @@ onUnmounted(() => {
   }
 
   .filters-section,
-  .chart-section,
-  .summary-section,
-  .quick-actions {
+  .chart-section {
     border-radius: 0;
     margin: 0;
     padding: 1.5rem 1rem;
@@ -1036,37 +703,6 @@ onUnmounted(() => {
     margin: 1rem 0;
   }
 
-  .summary-grid {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  .summary-card {
-    padding: 1rem;
-    /* タッチフィードバックの改善 */
-    transition: all 0.2s ease;
-  }
-
-  .summary-card:active {
-    background-color: #f1f5f9;
-    transform: scale(0.98);
-  }
-
-  .action-buttons {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-
-  .action-button {
-    padding: 1rem;
-    /* タッチターゲットサイズの確保 */
-    min-height: 80px;
-  }
-
-  .action-icon {
-    font-size: 1.5rem;
-  }
-
   .loading-container,
   .error-container,
   .empty-state {
@@ -1095,9 +731,7 @@ onUnmounted(() => {
   }
 
   .filters-section,
-  .chart-section,
-  .summary-section,
-  .quick-actions {
+  .chart-section {
     padding: 1rem;
   }
 
@@ -1159,76 +793,6 @@ onUnmounted(() => {
     overflow: hidden;
   }
 
-  .summary-section {
-    padding: 1rem;
-  }
-
-  .summary-title {
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-  }
-
-  .summary-grid {
-    gap: 0.5rem;
-  }
-
-  .summary-card {
-    padding: 0.75rem;
-    flex-direction: column;
-    text-align: center;
-    /* タッチフィードバックの改善 */
-    transition: all 0.2s ease;
-  }
-
-  .summary-card:active {
-    transform: scale(0.98);
-    background-color: #f1f5f9;
-  }
-
-  .summary-icon {
-    font-size: 1.5rem;
-    width: 40px;
-    height: 40px;
-    margin-bottom: 0.5rem;
-  }
-
-  .summary-label {
-    font-size: 0.8rem;
-  }
-
-  .summary-value {
-    font-size: 1rem;
-  }
-
-  .quick-actions-title {
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-  }
-
-  .action-buttons {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-
-  .action-button {
-    flex-direction: row;
-    justify-content: flex-start;
-    padding: 0.75rem;
-    /* タッチターゲットサイズの確保 */
-    min-height: 56px;
-    gap: 0.75rem;
-  }
-
-  .action-icon {
-    font-size: 1.25rem;
-    flex-shrink: 0;
-  }
-
-  .action-text {
-    font-size: 0.9rem;
-    text-align: left;
-  }
-
   .loading-container,
   .error-container,
   .empty-state {
@@ -1254,11 +818,7 @@ onUnmounted(() => {
 @media (prefers-contrast: high) {
   .page-header,
   .filters-section,
-  .chart-section,
-  .summary-section,
-  .quick-actions,
-  .summary-card,
-  .action-button {
+  .chart-section {
     border: 2px solid #333;
   }
 
@@ -1268,8 +828,7 @@ onUnmounted(() => {
   }
 
   .cat-button--active,
-  .period-button--active,
-  .action-button--primary {
+  .period-button--active {
     background: #000;
     color: #fff;
   }
@@ -1278,33 +837,9 @@ onUnmounted(() => {
 /* Enhanced Touch Device Optimization */
 @media (hover: none) and (pointer: coarse) {
   /* タッチデバイス専用のスタイル */
-  .summary-card:hover,
-  .action-button:hover {
-    /* ホバー効果を無効化 */
-    background: inherit;
-    border-color: inherit;
-    color: inherit;
-    transform: none;
-    box-shadow: inherit;
-  }
-
-  .summary-card:active,
-  .action-button:active {
-    /* タッチフィードバック */
-    transform: scale(0.98);
-    opacity: 0.8;
-  }
-
   .retry-button:active,
   .empty-action:active {
     transform: scale(0.98);
-  }
-
-  /* タッチターゲットサイズの確保 */
-  .summary-card,
-  .action-button {
-    min-height: 44px;
-    min-width: 44px;
   }
 
   /* タッチスクロールの改善 */
@@ -1312,17 +847,9 @@ onUnmounted(() => {
     -webkit-overflow-scrolling: touch;
     scroll-behavior: smooth;
   }
-
-  /* タッチ操作の遅延を削除 */
-  .summary-card,
-  .action-button {
-    touch-action: manipulation;
-  }
 }
 
 /* Enhanced Focus and Accessibility */
-.summary-card:focus,
-.action-button:focus,
 .retry-button:focus,
 .empty-action:focus {
   outline: 2px solid var(--analytics-accent);
@@ -1351,18 +878,8 @@ onUnmounted(() => {
 @media (prefers-contrast: high) {
   .page-header,
   .filters-section,
-  .chart-section,
-  .summary-section,
-  .quick-actions,
-  .summary-card,
-  .action-button {
+  .chart-section {
     border: 2px solid currentColor;
-  }
-
-  .summary-card:hover,
-  .action-button:hover {
-    background: ButtonHighlight;
-    color: ButtonText;
   }
 }
 
@@ -1374,10 +891,8 @@ onUnmounted(() => {
 
   .retry-button:hover,
   .empty-action:hover,
-  .action-button:hover,
   .cat-button,
-  .period-button,
-  .summary-card {
+  .period-button {
     transform: none !important;
     transition: none !important;
   }
@@ -1415,18 +930,14 @@ onUnmounted(() => {
 
   .page-header,
   .filters-section,
-  .chart-section,
-  .summary-section,
-  .quick-actions {
+  .chart-section {
     background: var(--analytics-bg-primary);
     color: var(--analytics-text-primary);
     border-color: var(--analytics-border);
   }
 
-  .summary-card,
   .cat-button,
-  .period-button,
-  .action-button {
+  .period-button {
     background: var(--analytics-bg-secondary);
     color: var(--analytics-text-primary);
     border-color: var(--analytics-border);
@@ -1437,17 +948,11 @@ onUnmounted(() => {
     background: var(--analytics-accent);
     border-color: var(--analytics-accent);
   }
-
-  .action-button--primary {
-    background: var(--analytics-accent);
-    border-color: var(--analytics-accent);
-  }
 }
 
 /* Print styles */
 @media print {
-  .filters-section,
-  .quick-actions {
+  .filters-section {
     display: none;
   }
 
@@ -1456,8 +961,7 @@ onUnmounted(() => {
   }
 
   .page-header,
-  .chart-section,
-  .summary-section {
+  .chart-section {
     box-shadow: none;
     border: 1px solid #ccc;
   }
@@ -1469,37 +973,15 @@ onUnmounted(() => {
   transform: translateZ(0); /* GPU加速 */
 }
 
-.summary-grid,
-.action-buttons {
-  contain: layout;
-}
-
 /* スクロール性能の向上 */
 .analytics-page {
   will-change: scroll-position;
   transform: translateZ(0);
 }
 
-/* GPU加速の有効化 */
-.action-button,
-.summary-card {
-  will-change: transform;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform: translateZ(0);
-}
-
 /* レイアウトシフトの防止 */
-.chart-container,
-.summary-grid,
-.action-buttons {
+.chart-container {
   min-height: fit-content;
-}
-
-/* 画像とアイコンの最適化 */
-.summary-icon,
-.action-icon {
-  font-display: swap;
 }
 
 /* Critical rendering path optimization */
@@ -1525,8 +1007,7 @@ onUnmounted(() => {
 
 /* タッチデバイス用のスタイル */
 .touch-device .cat-button,
-.touch-device .period-button,
-.touch-device .action-button {
+.touch-device .period-button {
   -webkit-tap-highlight-color: rgba(76, 175, 80, 0.2);
 }
 

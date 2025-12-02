@@ -39,6 +39,37 @@
         class="chart-canvas"
       />
     </div>
+
+    <!-- Chart Summary -->
+    <div
+      v-if="analytics && !loading && !error"
+      class="chart-summary"
+    >
+      <div class="summary-card">
+        <h4 class="summary-title">
+          総カロリー
+        </h4>
+        <p class="summary-value">
+          {{ totalCalories.toFixed(1) }} kcal
+        </p>
+      </div>
+      <div class="summary-card">
+        <h4 class="summary-title">
+          1日平均
+        </h4>
+        <p class="summary-value">
+          {{ averageCaloriesPerDay.toFixed(1) }} kcal
+        </p>
+      </div>
+      <div class="summary-card">
+        <h4 class="summary-title">
+          週平均
+        </h4>
+        <p class="summary-value">
+          {{ (analytics?.weeklyAverage || 0).toFixed(1) }} kcal
+        </p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -105,6 +136,22 @@ const analyticsStore = useAnalyticsStore();
 
 // チャート表示モードを監視
 const chartDisplayMode = computed(() => analyticsStore.chartDisplayMode);
+
+// Computed properties for summary
+const totalCalories = computed(() => {
+  if (!analytics.value?.dailyCalories) return 0;
+  return analytics.value.dailyCalories.reduce(
+    (sum, item) => sum + Number(item.calories),
+    0,
+  );
+});
+
+const averageCaloriesPerDay = computed(() => {
+  if (!analytics.value?.dailyCalories || analytics.value.dailyCalories.length === 0) {
+    return 0;
+  }
+  return totalCalories.value / analytics.value.dailyCalories.length;
+});
 
 // Fetch analytics data with retry
 const fetchData = async (retryCount = 0) => {
@@ -687,5 +734,91 @@ onUnmounted(() => {
 
 .debug-info p {
   margin: 0.25rem 0;
+}
+
+.chart-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.summary-card {
+  padding: 1rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.summary-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.summary-value {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* タブレット対応 */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .chart-summary {
+    gap: 0.75rem;
+  }
+
+  .summary-card {
+    padding: 0.875rem;
+  }
+
+  .summary-title {
+    font-size: 0.8125rem;
+  }
+
+  .summary-value {
+    font-size: 1.375rem;
+  }
+}
+
+/* モバイル対応 */
+@media (max-width: 768px) {
+  .chart-summary {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .summary-card {
+    padding: 0.75rem;
+  }
+
+  .summary-title {
+    font-size: 0.75rem;
+  }
+
+  .summary-value {
+    font-size: 1.25rem;
+  }
+}
+
+/* 小さなモバイル画面対応 */
+@media (max-width: 480px) {
+  .chart-summary {
+    gap: 0.5rem;
+  }
+
+  .summary-card {
+    padding: 0.625rem;
+  }
+
+  .summary-title {
+    font-size: 0.75rem;
+  }
+
+  .summary-value {
+    font-size: 1.125rem;
+  }
 }
 </style>
