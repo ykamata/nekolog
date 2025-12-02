@@ -6,16 +6,14 @@
 
     <!-- プリセットボタン -->
     <div class="preset-buttons mb-4">
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div class="preset-grid">
         <button
           v-for="preset in presets"
           :key="preset.key"
           type="button"
           :class="[
-            'px-3 py-2 text-sm font-medium rounded-md border transition-colors',
-            selectedPreset === preset.key
-              ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50',
+            'preset-button',
+            selectedPreset === preset.key ? 'preset-button--active' : '',
           ]"
           @click="selectPreset(preset.key)"
         >
@@ -38,7 +36,7 @@
             id="start-date"
             v-model="startDateInput"
             type="date"
-            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm"
             :max="endDateInput"
             @change="handleDateChange"
           >
@@ -54,7 +52,7 @@
             id="end-date"
             v-model="endDateInput"
             type="date"
-            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm"
             :min="startDateInput"
             :max="todayString"
             @change="handleDateChange"
@@ -289,30 +287,85 @@ const updateUrlParams = (range: DateRange, preset: string) => {
   @apply w-full;
 }
 
-.preset-buttons button {
-  @apply transition-all duration-200;
+/* プリセットボタングリッド */
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
 }
 
-.preset-buttons button:hover {
-  @apply transform scale-105;
+.preset-button {
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  background: white;
+  color: #374151;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.preset-button:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  transform: translateY(-1px);
+}
+
+.preset-button--active {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.preset-button--active:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+/* カスタム日付入力 */
+.custom-range input[type="date"] {
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.custom-range input[type="date"]:hover {
+  border-color: #10b981;
+}
+
+/* タブレット対応 */
+@media (max-width: 1024px) and (min-width: 641px) {
+  .preset-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+  }
+
+  .preset-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
 }
 
 /* モバイル対応 */
 @media (max-width: 640px) {
+  .preset-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+
+  .preset-button {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+
   .date-range-picker input[type="date"] {
-    @apply text-base; /* iOSでのズーム防止 */
+    font-size: 1rem; /* iOSでのズーム防止 */
   }
 
   .preset-buttons {
-    @apply mb-3;
-  }
-
-  .preset-buttons .grid {
-    @apply grid-cols-2 gap-1;
-  }
-
-  .preset-buttons button {
-    @apply px-2 py-1 text-xs;
+    margin-bottom: 0.75rem;
   }
 }
 </style>

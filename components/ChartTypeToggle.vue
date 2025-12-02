@@ -6,24 +6,22 @@
 
     <div class="toggle-container">
       <!-- デスクトップ用：横並びボタン -->
-      <div class="hidden sm:flex rounded-lg border border-gray-300 bg-gray-50 p-1">
+      <div class="hidden sm:flex toggle-buttons">
         <button
           v-for="type in chartTypes"
           :key="type.value"
           type="button"
           :class="[
-            'flex-1 flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md transition-all duration-200',
-            selectedType === type.value
-              ? 'bg-white text-blue-600 shadow-sm border border-blue-200'
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
+            'toggle-btn',
+            selectedType === type.value ? 'toggle-btn--active' : '',
           ]"
           @click="selectType(type.value)"
         >
           <span
-            class="w-4 h-4 mr-2"
+            class="toggle-btn__icon"
             v-html="type.icon"
           />
-          {{ type.label }}
+          <span class="toggle-btn__label">{{ type.label }}</span>
         </button>
       </div>
 
@@ -31,7 +29,7 @@
       <div class="sm:hidden">
         <select
           v-model="selectedType"
-          class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
+          class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-base"
           @change="handleMobileChange"
         >
           <option
@@ -145,50 +143,104 @@ const updateUrlParams = () => {
 
 <style scoped>
 .chart-type-toggle {
-  @apply w-full;
+  width: 100%;
 }
 
-.toggle-container button {
-  @apply transition-all duration-200 ease-in-out;
+/* トグルボタンコンテナ */
+.toggle-buttons {
+  display: flex;
+  gap: 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
 }
 
-.toggle-container button:hover {
-  @apply transform scale-105;
+/* トグルボタン */
+.toggle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  background: white;
+  color: #4b5563;
+  border: none;
+  border-right: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
-/* アクティブボタンのアニメーション */
-.toggle-container button.active {
-  @apply animate-pulse;
+.toggle-btn:last-child {
+  border-right: none;
 }
 
-/* フォーカス状態のスタイル */
-.toggle-container button:focus {
-  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+.toggle-btn:hover:not(.toggle-btn--active) {
+  background: #f9fafb;
+  color: #1f2937;
+}
+
+.toggle-btn--active {
+  background: #10b981;
+  color: white;
+  font-weight: 600;
+}
+
+.toggle-btn__icon {
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toggle-btn__label {
+  line-height: 1;
+}
+
+/* フォーカス状態 */
+.toggle-btn:focus {
+  outline: none;
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* セレクトボックス（モバイル） */
+.toggle-container select {
+  transition: all 0.2s ease;
 }
 
 .toggle-container select:focus {
-  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  outline: none;
+  ring: 2px;
+  ring-color: #10b981;
+  ring-offset: 2px;
 }
 
 /* モバイル対応 */
 @media (max-width: 640px) {
   .toggle-container select {
-    @apply text-base; /* iOSでのズーム防止 */
+    font-size: 1rem; /* iOSでのズーム防止 */
   }
 }
 
-/* ダークモード対応（将来的な拡張用） */
-@media (prefers-color-scheme: dark) {
-  .toggle-container {
-    @apply border-gray-600 bg-gray-800;
+/* タブレット対応 */
+@media (max-width: 1024px) and (min-width: 641px) {
+  .toggle-btn {
+    padding: 0.5rem 0.875rem;
+    font-size: 0.75rem;
+    gap: 0.25rem;
   }
 
-  .toggle-container button {
-    @apply text-gray-300;
-  }
-
-  .toggle-container button:hover {
-    @apply text-white bg-gray-700;
+  .toggle-btn__icon {
+    width: 0.875rem;
+    height: 0.875rem;
   }
 }
 </style>

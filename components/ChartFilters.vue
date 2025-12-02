@@ -51,22 +51,22 @@
 
     <!-- デスクトップ用：横並びレイアウト -->
     <div class="hidden sm:block">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div class="lg:col-span-1">
+      <div class="filters-grid">
+        <div class="filter-item">
           <CatSelectionFilter
             v-model="selectedCatId"
             @change="handleCatChange"
           />
         </div>
 
-        <div class="lg:col-span-1">
+        <div class="filter-item">
           <DateRangePicker
             v-model="dateRange"
             @change="handleDateRangeChange"
           />
         </div>
 
-        <div class="lg:col-span-1">
+        <div class="filter-item">
           <ChartTypeToggle
             v-model="chartType"
             @change="handleChartTypeChange"
@@ -76,49 +76,50 @@
     </div>
 
     <!-- フィルター適用状況の表示 -->
-    <div class="mt-4 flex flex-wrap gap-2">
+    <div class="filter-tags">
       <span
         v-if="selectedCatId"
-        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+        class="filter-tag filter-tag--removable"
       >
-        猫: {{ selectedCatName }}
+        <span class="filter-tag__label">猫: {{ selectedCatName }}</span>
         <button
           type="button"
-          class="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-blue-400 hover:text-blue-600"
+          class="filter-tag__remove"
           @click="clearCatFilter"
+          aria-label="猫フィルターを削除"
         >
           <svg
-            class="w-3 h-3"
-            fill="currentColor"
-            viewBox="0 0 20 20"
+            class="w-3.5 h-3.5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
           >
             <path
-              fill-rule="evenodd"
-              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-              clip-rule="evenodd"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
             />
           </svg>
         </button>
       </span>
 
-      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+      <span class="filter-tag filter-tag--period">
         期間: {{ formatDateRange }}
       </span>
 
-      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+      <span class="filter-tag filter-tag--chart">
         {{ chartTypeLabel }}
       </span>
-    </div>
 
-    <!-- リセットボタン -->
-    <div class="mt-4">
+      <!-- リセットボタン -->
       <button
         type="button"
-        class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        class="reset-button"
         @click="resetFilters"
       >
         <svg
-          class="w-4 h-4 mr-2"
+          class="w-4 h-4"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -130,7 +131,7 @@
             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
           />
         </svg>
-        フィルターをリセット
+        <span>リセット</span>
       </button>
     </div>
   </div>
@@ -277,22 +278,153 @@ const emitChange = () => {
   @apply w-full;
 }
 
+/* フィルターグリッドレイアウト */
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* 子要素の overflow を防ぐ */
+}
+
+/* 大画面での最適化 */
+@media (min-width: 1024px) {
+  .filters-grid {
+    grid-template-columns: minmax(200px, 1fr) minmax(400px, 2fr) minmax(300px, 1.5fr);
+    gap: 2rem;
+  }
+}
+
+/* 中画面での最適化 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* フィルタータグ */
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.filter-tag--removable {
+  background: #d1fae5;
+  color: #065f46;
+  padding-right: 0.5rem;
+}
+
+.filter-tag--period {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.filter-tag--chart {
+  background: #e9d5ff;
+  color: #6b21a8;
+}
+
+.filter-tag__label {
+  line-height: 1;
+}
+
+.filter-tag__remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 9999px;
+  color: #059669;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.filter-tag__remove:hover {
+  background: rgba(5, 150, 105, 0.1);
+  color: #047857;
+}
+
+/* リセットボタン */
+.reset-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6b7280;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: auto;
+}
+
+.reset-button:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.reset-button:active {
+  transform: scale(0.98);
+}
+
 /* アニメーション */
 .chart-filters button {
-  @apply transition-all duration-200;
-}
-
-.chart-filters button:hover {
-  @apply transform scale-105;
-}
-
-/* フィルタータグのアニメーション */
-.chart-filters span {
-  @apply transition-all duration-200;
+  transition: all 0.2s ease;
 }
 
 /* モバイルフィルターパネルのアニメーション */
 .chart-filters > div:first-child > div:last-child {
-  @apply transition-all duration-300 ease-in-out;
+  transition: all 0.3s ease-in-out;
+}
+
+/* モバイル対応 */
+@media (max-width: 640px) {
+  .filter-tags {
+    gap: 0.375rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+
+  .filter-tag {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.625rem;
+  }
+
+  .reset-button {
+    width: 100%;
+    justify-content: center;
+    margin-left: 0;
+    margin-top: 0.25rem;
+  }
 }
 </style>
