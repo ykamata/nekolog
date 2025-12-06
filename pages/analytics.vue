@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Cat } from '~/types/cat-meal';
+import type { Cat, MealAnalytics } from '~/types/cat-meal';
 
 // Chart filters type definition
 interface DateRange {
@@ -33,6 +33,8 @@ definePageMeta({
 const cats = ref<Cat[]>([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
+const summaryAnalytics30Days = ref<MealAnalytics | null>(null);
+const hasFetchedSummary = ref(false);
 
 // Chart filters state
 const chartFilters = ref<ChartFilters>({
@@ -60,6 +62,38 @@ const selectedPeriodDays = computed(() => {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
+const formatLocalDateTime = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
+const fetchSummary30DaysOnce = async (catId?: number) => {
+  if (hasFetchedSummary.value || !catId) return;
+
+  const end = new Date();
+  const start = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  try {
+    const response = await $fetch<{ analytics: MealAnalytics }>('/api/meals/analytics', {
+      params: {
+        catId,
+        startDate: formatLocalDateTime(start),
+        endDate: formatLocalDateTime(end),
+      },
+    });
+    summaryAnalytics30Days.value = response.analytics;
+    hasFetchedSummary.value = true;
+  }
+  catch (err) {
+    console.error('Analytics page: 30日サマリー取得失敗', err);
+  }
+};
+
 // Fetch cats data
 const fetchCats = async () => {
   // Client-side only
@@ -82,6 +116,7 @@ const fetchCats = async () => {
         analyticsStore.setSelectedCat(chartFilters.value.catId);
       }
       // データ取得はChartFiltersコンポーネントとMealChartSimpleコンポーネントが行うため、ここでは呼び出さない
+      await fetchSummary30DaysOnce(chartFilters.value.catId);
     }
   }
   catch (err) {
@@ -108,18 +143,7 @@ const handleFiltersChange = async (filters: ChartFilters) => {
   analyticsStore.setChartDisplayMode(displayMode);
 
   // データを再取得
-  if (filters.catId) {
-    try {
-      await analyticsStore.fetchAnalytics({
-        catId: filters.catId,
-        startDate: filters.dateRange.start,
-        endDate: filters.dateRange.end,
-      });
-    }
-    catch (err) {
-      console.error('Analytics page: データ取得失敗:', err);
-    }
-  }
+  // データ取得はチャート側に任せる（重複取得を避ける）
 };
 
 // イベントリスナーとオブザーバーの管理
@@ -135,8 +159,6 @@ onMounted(async () => {
     analyticsStore.setDateRange(chartFilters.value.dateRange.start, chartFilters.value.dateRange.end);
     analyticsStore.setChartDisplayMode(chartFilters.value.chartType === 'stacked-bar' ? 'bar' : chartFilters.value.chartType);
 
-    // リアルタイム更新を開始（1分間隔）
-    analyticsStore.startAutoRefresh(60000);
   }
   catch (err) {
     // エラーは fetchCats 内で処理済み
@@ -344,6 +366,7 @@ onUnmounted(() => {
               :cat-id="chartFilters.catId"
               :height="400"
               :period-days="selectedPeriodDays"
+              :summary-analytics="summaryAnalytics30Days"
             />
             <div
               v-else

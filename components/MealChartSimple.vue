@@ -109,11 +109,13 @@ interface Props {
   catId?: number;
   height?: number;
   periodDays?: number;
+  summaryAnalytics?: MealAnalytics | null;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   height: 400,
   periodDays: 90,
+  summaryAnalytics: null,
 });
 
 // Reactive state
@@ -123,7 +125,7 @@ const isChartInitialized = ref(false);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const analytics = ref<MealAnalytics | null>(null);
-const analytics30Days = ref<MealAnalytics | null>(null); // 30日間のデータ（総カロリー計算用）
+const analytics30Days = ref<MealAnalytics | null>(props.summaryAnalytics || null); // 30日間のデータ（総カロリー計算用）
 
 // チャート作成の競合を防ぐためのフラグ
 const isCreatingChart = ref(false);
@@ -137,17 +139,6 @@ const analyticsStore = useAnalyticsStore();
 
 // チャート表示モードを監視
 const chartDisplayMode = computed(() => analyticsStore.chartDisplayMode);
-
-// ヘルパー関数: ローカルタイムゾーンで日付をISO形式の文字列に変換（UTC変換なし）
-const formatLocalDateTime = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const seconds = String(date.getSeconds()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-};
 
 // Computed properties for summary
 // 総カロリーは直近30日間のデータで計算
@@ -183,34 +174,26 @@ const fetchData = async (retryCount = 0) => {
       retryCount,
     });
 
-    const startDate = new Date(Date.now() - props.periodDays * 24 * 60 * 60 * 1000);
-    const endDate = new Date();
+    // フィルターで指定された期間を優先し、なければperiodDaysから算出
+    const filterRange = analyticsStore.dateRange;
+    const startDate = filterRange.startDate
+      ? new Date(filterRange.startDate)
+      : new Date(Date.now() - props.periodDays * 24 * 60 * 60 * 1000);
+    const endDate = filterRange.endDate ? new Date(filterRange.endDate) : new Date();
 
     console.log('MealChartSimple: 日付範囲', {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
     });
 
-    // ストアの現在のフィルタと比較
-    const currentFilters = analyticsStore.currentFilters;
-    const isSameFilters =
-      currentFilters.catId === props.catId &&
-      currentFilters.startDate?.getTime() === startDate.getTime() &&
-      currentFilters.endDate?.getTime() === endDate.getTime();
-
-    // 既にストアに同じ条件のデータがある場合はキャッシュを使用
-    if (isSameFilters && analyticsStore.analytics) {
-      console.log('MealChartSimple: キャッシュされたデータを使用');
-      analytics.value = analyticsStore.analytics;
-    } else {
-      console.log('MealChartSimple: 新規データ取得', { isSameFilters, hasAnalytics: !!analyticsStore.analytics });
-      await analyticsStore.fetchAnalytics({
-        catId: props.catId,
-        startDate,
-        endDate,
-      });
-      analytics.value = analyticsStore.analytics;
-    }
+    // ストアのキャッシュは fetchAnalytics 側で管理する
+    console.log('MealChartSimple: データ取得（ストアに委譲）');
+    await analyticsStore.fetchAnalytics({
+      catId: props.catId,
+      startDate,
+      endDate,
+    });
+    analytics.value = analyticsStore.analytics;
 
     console.log('MealChartSimple: データ取得成功', {
       hasData: !!analytics.value,
@@ -221,33 +204,6 @@ const fetchData = async (retryCount = 0) => {
     // データがない場合でも空のanalyticsオブジェクトを作成
     if (!analytics.value) {
       analytics.value = {
-        dailyCalories: [],
-        dailyCaloriesByFoodType: [],
-        weeklyAverage: 0,
-        foodTypeBreakdown: [],
-      };
-    }
-
-    // 総カロリー計算用に直近30日間のデータを取得
-    const startDate30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const endDate30Days = new Date();
-
-    try {
-      const response30Days = await $fetch<{ analytics: MealAnalytics }>('/api/meals/analytics', {
-        params: {
-          catId: props.catId,
-          startDate: formatLocalDateTime(startDate30Days),
-          endDate: formatLocalDateTime(endDate30Days),
-        },
-      });
-      analytics30Days.value = response30Days.analytics;
-      console.log('MealChartSimple: 30日間データ取得成功', {
-        dataCount: analytics30Days.value?.dailyCalories?.length || 0,
-      });
-    } catch (err) {
-      console.error('MealChartSimple: 30日間データ取得失敗:', err);
-      // エラーでも処理を続行（総カロリーは0になる）
-      analytics30Days.value = {
         dailyCalories: [],
         dailyCaloriesByFoodType: [],
         weeklyAverage: 0,
@@ -443,9 +399,12 @@ const getLineChartConfig = () => {
     };
   }
 
-  // 期間の開始日と終了日を取得
-  const startDate = new Date(Date.now() - props.periodDays * 24 * 60 * 60 * 1000);
-  const endDate = new Date();
+  // 期間の開始日と終了日を取得（フィルターがあれば優先）
+  const { startDate: filterStartDate, endDate: filterEndDate } = analyticsStore.dateRange;
+  const startDate = filterStartDate
+    ? new Date(filterStartDate)
+    : new Date(Date.now() - props.periodDays * 24 * 60 * 60 * 1000);
+  const endDate = filterEndDate ? new Date(filterEndDate) : new Date();
 
   // 日付を YYYY/MM/DD 形式にフォーマット（ローカルタイムゾーン）
   const formatDateKey = (date: Date): string => {
@@ -467,28 +426,39 @@ const getLineChartConfig = () => {
     return formatDateKey(date);
   };
 
-  // analyticsStoreのchartDataからdailyCaloriesByFoodTypeを取得
-  const dailyCaloriesByFoodType = analyticsStore.chartData?.dailyCaloriesByFoodType;
+  // 線グラフでは棒グラフ用データ（dailyCaloriesByFoodType）は使わない。
+  // ただし、APIがchartType=lineのときに返すchartData.dailyCaloriesがあればそれを優先する。
+  const lineChartData = (() => {
+    const chartData = analyticsStore.chartData as any;
+    if (chartData?.chartType !== 'line' || !Array.isArray(chartData?.dailyCalories)) {
+      return null;
+    }
+
+    // フィルター一致を確認（異なる期間の残りデータを使わない）
+    const applied = chartData.appliedFilters;
+    if (
+      applied?.dateRange?.startDate &&
+      applied?.dateRange?.endDate &&
+      new Date(applied.dateRange.startDate).getTime() === startDate.getTime() &&
+      new Date(applied.dateRange.endDate).getTime() === endDate.getTime()
+    ) {
+      return chartData.dailyCalories;
+    }
+
+    return null;
+  })();
 
   // データをMapに格納（日付をキーとして）
   const caloriesMap = new Map<string, number>();
 
-  if (dailyCaloriesByFoodType && Array.isArray(dailyCaloriesByFoodType)) {
-    // dailyCaloriesByFoodTypeが利用可能な場合
-    dailyCaloriesByFoodType.forEach((item: any) => {
-      const normalizedKey = normalizeDateKey(item.date);
-      caloriesMap.set(normalizedKey, Number(item.totalCalories) || 0);
-    });
-  }
-  else {
-    // フォールバック: dailyCaloriesから日付ごとに合算
-    const dailyCalories = analytics.value.dailyCalories;
-    dailyCalories.forEach((item) => {
-      const normalizedKey = normalizeDateKey(item.date);
-      const currentTotal = caloriesMap.get(normalizedKey) || 0;
-      caloriesMap.set(normalizedKey, currentTotal + Number(item.calories));
-    });
-  }
+  const sourceDailyCalories = lineChartData || analytics.value.dailyCalories;
+
+  // dailyCaloriesから日付ごとに合算（線グラフ用）
+  sourceDailyCalories.forEach((item) => {
+    const normalizedKey = normalizeDateKey(item.date);
+    const currentTotal = caloriesMap.get(normalizedKey) || 0;
+    caloriesMap.set(normalizedKey, currentTotal + Number(item.calories));
+  });
 
   // 期間内のすべての日付を生成（データがない日も0として含める）
   const labels: string[] = [];
@@ -749,6 +719,16 @@ const handleRetry = async () => {
   await fetchData();
 };
 
+// ページから渡された30日サマリーの変更を監視
+watch(
+  () => props.summaryAnalytics,
+  (newSummary) => {
+    if (newSummary) {
+      analytics30Days.value = newSummary;
+    }
+  },
+);
+
 // Watch for catId changes
 watch(() => props.catId, async (newCatId) => {
   if (newCatId) {
@@ -759,18 +739,32 @@ watch(() => props.catId, async (newCatId) => {
 });
 
 // Watch for periodDays changes
-watch(() => props.periodDays, async (newPeriodDays, oldPeriodDays) => {
-  console.log('MealChartSimple: 期間変更検出', {
-    newPeriodDays,
-    oldPeriodDays,
-    catId: props.catId,
-  });
-  if (newPeriodDays !== oldPeriodDays && props.catId) {
+// 日付範囲の変更を監視（同じ日数でも開始/終了が変わった場合に再取得）
+watch(
+  () => {
+    const range = analyticsStore.dateRange;
+    return [
+      range.startDate ? range.startDate.getTime() : null,
+      range.endDate ? range.endDate.getTime() : null,
+    ];
+  },
+  async ([newStart, newEnd], [oldStart, oldEnd]) => {
+    console.log('MealChartSimple: 日付範囲変更検出', {
+      newStart,
+      newEnd,
+      oldStart,
+      oldEnd,
+      catId: props.catId,
+    });
+
+    if (!props.catId) return;
+    if (newStart === oldStart && newEnd === oldEnd) return;
+
     chartCreationId.value++;
     await destroyChartSafely();
     await fetchData();
-  }
-});
+  },
+);
 
 // Watch for chart display mode changes with debounce
 const chartModeChangeTimeout = ref<NodeJS.Timeout>();
@@ -801,6 +795,11 @@ onMounted(async () => {
   if (!props.catId) {
     error.value = 'Cat ID is required';
     return;
+  }
+
+  // ページ側から渡された30日サマリーを反映
+  if (props.summaryAnalytics) {
+    analytics30Days.value = props.summaryAnalytics;
   }
 
   // チャートをリセット
