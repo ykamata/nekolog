@@ -138,6 +138,17 @@ const analyticsStore = useAnalyticsStore();
 // チャート表示モードを監視
 const chartDisplayMode = computed(() => analyticsStore.chartDisplayMode);
 
+// ヘルパー関数: ローカルタイムゾーンで日付をISO形式の文字列に変換（UTC変換なし）
+const formatLocalDateTime = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
 // Computed properties for summary
 // 総カロリーは直近30日間のデータで計算
 const totalCalories = computed(() => {
@@ -225,8 +236,8 @@ const fetchData = async (retryCount = 0) => {
       const response30Days = await $fetch<{ analytics: MealAnalytics }>('/api/meals/analytics', {
         params: {
           catId: props.catId,
-          startDate: startDate30Days.toISOString(),
-          endDate: endDate30Days.toISOString(),
+          startDate: formatLocalDateTime(startDate30Days),
+          endDate: formatLocalDateTime(endDate30Days),
         },
       });
       analytics30Days.value = response30Days.analytics;
@@ -436,12 +447,24 @@ const getLineChartConfig = () => {
   const startDate = new Date(Date.now() - props.periodDays * 24 * 60 * 60 * 1000);
   const endDate = new Date();
 
-  // 日付を YYYY/MM/DD 形式にフォーマット
+  // 日付を YYYY/MM/DD 形式にフォーマット（ローカルタイムゾーン）
   const formatDateKey = (date: Date): string => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}/${month}/${day}`;
+  };
+
+  // 日付文字列をローカルタイムゾーンのDateオブジェクトに変換してからキーを生成
+  const normalizeDateKey = (dateStr: string): string => {
+    // "YYYY/MM/DD" 形式の場合はそのまま返す
+    if (/^\d{4}\/\d{2}\/\d{2}$/.test(dateStr)) {
+      return dateStr;
+    }
+
+    // ISO形式やその他の形式の場合は、Dateオブジェクトに変換してからローカル日付キーを生成
+    const date = new Date(dateStr);
+    return formatDateKey(date);
   };
 
   // analyticsStoreのchartDataからdailyCaloriesByFoodTypeを取得
@@ -453,16 +476,17 @@ const getLineChartConfig = () => {
   if (dailyCaloriesByFoodType && Array.isArray(dailyCaloriesByFoodType)) {
     // dailyCaloriesByFoodTypeが利用可能な場合
     dailyCaloriesByFoodType.forEach((item: any) => {
-      caloriesMap.set(item.date, Number(item.totalCalories) || 0);
+      const normalizedKey = normalizeDateKey(item.date);
+      caloriesMap.set(normalizedKey, Number(item.totalCalories) || 0);
     });
   }
   else {
     // フォールバック: dailyCaloriesから日付ごとに合算
     const dailyCalories = analytics.value.dailyCalories;
     dailyCalories.forEach((item) => {
-      const dateKey = item.date;
-      const currentTotal = caloriesMap.get(dateKey) || 0;
-      caloriesMap.set(dateKey, currentTotal + Number(item.calories));
+      const normalizedKey = normalizeDateKey(item.date);
+      const currentTotal = caloriesMap.get(normalizedKey) || 0;
+      caloriesMap.set(normalizedKey, currentTotal + Number(item.calories));
     });
   }
 
@@ -534,7 +558,16 @@ const getStackedBarChartConfig = () => {
     chartDataFromStore: analyticsStore.chartData,
   });
 
+  // 日付文字列を適切にパースしてローカルタイムゾーンで表示
   const labels = (barChartData.labels || []).map((dateStr: string) => {
+    // YYYY/MM/DD 形式の場合は分解してローカル日付を作成
+    if (/^\d{4}\/\d{2}\/\d{2}$/.test(dateStr)) {
+      const [year, month, day] = dateStr.split('/').map(Number);
+      const date = new Date(year!, month! - 1, day!);
+      return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+    }
+
+    // ISO形式やその他の形式の場合
     const date = new Date(dateStr);
     return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
   });

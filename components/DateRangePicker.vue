@@ -149,6 +149,9 @@ const validationError = ref<string>('');
 // デバウンス用のタイマー
 const dateChangeTimeout = ref<NodeJS.Timeout>();
 
+// URL更新中フラグ（無限ループ防止）
+const isUpdatingUrl = ref(false);
+
 // 初期化
 onMounted(() => {
   initializeDateRange();
@@ -163,6 +166,12 @@ watch(() => props.modelValue, (newValue) => {
 
 // 初期化処理
 const initializeDateRange = () => {
+  // URL更新中の場合はスキップ（無限ループ防止）
+  if (isUpdatingUrl.value) {
+    isUpdatingUrl.value = false;
+    return;
+  }
+
   // URLパラメータから日付範囲を取得
   const startParam = route.query.startDate as string;
   const endParam = route.query.endDate as string;
@@ -174,6 +183,10 @@ const initializeDateRange = () => {
     const end = parseDateString(endParam);
 
     if (isValidDate(start) && isValidDate(end)) {
+      // 開始日は 00:00:00、終了日は 23:59:59 に設定
+      start.setHours(0, 0, 0, 0);
+      end.setHours(23, 59, 59, 999);
+
       selectedPreset.value = presetParam || 'custom';
       updateInputsFromRange({ start, end });
       emitChange({ start, end });
@@ -308,6 +321,9 @@ const updateUrlParams = (range: DateRange, preset: string) => {
   query.startDate = formatDateForInput(range.start);
   query.endDate = formatDateForInput(range.end);
   query.preset = preset;
+
+  // URL更新中フラグを立てる
+  isUpdatingUrl.value = true;
 
   // ルートを更新（ページリロードなし）
   router.push({ query });

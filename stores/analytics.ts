@@ -350,10 +350,26 @@ export const useAnalyticsStore = defineStore("analytics", () => {
       const activeFilters = filters || currentFilters.value;
 
       if (activeFilters.catId) params.append("catId", String(activeFilters.catId));
-      if (activeFilters.startDate)
-        params.append("startDate", activeFilters.startDate.toISOString());
-      if (activeFilters.endDate)
-        params.append("endDate", activeFilters.endDate.toISOString());
+      if (activeFilters.startDate) {
+        // ローカルタイムゾーンのまま送信（UTC変換しない）
+        const year = activeFilters.startDate.getFullYear();
+        const month = String(activeFilters.startDate.getMonth() + 1).padStart(2, '0');
+        const day = String(activeFilters.startDate.getDate()).padStart(2, '0');
+        const hours = String(activeFilters.startDate.getHours()).padStart(2, '0');
+        const minutes = String(activeFilters.startDate.getMinutes()).padStart(2, '0');
+        const seconds = String(activeFilters.startDate.getSeconds()).padStart(2, '0');
+        params.append("startDate", `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`);
+      }
+      if (activeFilters.endDate) {
+        // ローカルタイムゾーンのまま送信（UTC変換しない）
+        const year = activeFilters.endDate.getFullYear();
+        const month = String(activeFilters.endDate.getMonth() + 1).padStart(2, '0');
+        const day = String(activeFilters.endDate.getDate()).padStart(2, '0');
+        const hours = String(activeFilters.endDate.getHours()).padStart(2, '0');
+        const minutes = String(activeFilters.endDate.getMinutes()).padStart(2, '0');
+        const seconds = String(activeFilters.endDate.getSeconds()).padStart(2, '0');
+        params.append("endDate", `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`);
+      }
       if (activeFilters.foodType)
         params.append("foodTypeFilter", activeFilters.foodType);
 
