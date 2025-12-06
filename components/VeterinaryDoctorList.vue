@@ -522,7 +522,7 @@ const { hospitals, fetchHospitals } = useVeterinaryHospitals();
 
 // リアクティブデータ
 const searchQuery = ref(props.searchQuery);
-const hospitalFilter = ref(props.hospitalFilter);
+const hospitalFilter = ref<number | ''>(props.hospitalFilter ?? '');
 const showDeleteConfirmation = ref(false);
 const doctorToDelete = ref<VeterinaryDoctor | null>(null);
 const activeMobileMenu = ref<number | null>(null);
@@ -597,7 +597,12 @@ const handleSearchInput = () => {
 
 const handleHospitalFilter = () => {
   currentPage.value = 1;
-  emit('hospitalFilter', hospitalFilter.value);
+  const value =
+    hospitalFilter.value === '' || hospitalFilter.value === null
+      ? undefined
+      : Number(hospitalFilter.value);
+  hospitalFilter.value = value ?? '';
+  emit('hospitalFilter', value);
 };
 
 const clearSearch = () => {
@@ -659,7 +664,7 @@ watch(() => props.searchQuery, (newQuery) => {
 });
 
 watch(() => props.hospitalFilter, (newFilter) => {
-  hospitalFilter.value = newFilter;
+  hospitalFilter.value = newFilter ?? '';
 });
 
 // filteredDoctorsの変更を監視してページネーションを調整

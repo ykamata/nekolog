@@ -83,7 +83,7 @@
           ]"
           @blur="validateField('hospitalId')"
         >
-          <option value="">病院を選択してください</option>
+          <option value="">すべての病院</option>
           <option
             v-for="hospital in hospitals"
             :key="hospital.id"
@@ -235,7 +235,7 @@ const { hospitals, fetchHospitals } = useVeterinaryHospitals();
 // リアクティブデータ
 const formData = ref<VeterinaryDoctorInput>({
   name: "",
-  hospitalId: undefined,
+  hospitalId: null,
   specialty: "",
   memo: "",
 });
@@ -269,7 +269,7 @@ const initializeForm = () => {
   } else {
     formData.value = {
       name: "",
-      hospitalId: props.preselectedHospitalId || undefined,
+      hospitalId: props.preselectedHospitalId ?? null,
       specialty: "",
       memo: "",
     };

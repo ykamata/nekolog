@@ -26,7 +26,7 @@ const isLoading = ref(false);
 const error = ref<string | null>(null);
 
 // Filter state
-const selectedCatId = ref<number | null>(null);
+const selectedCatId = ref<number | ''>('');
 const selectedStatus = ref<AppointmentStatus | ''>('');
 
 // Modal states
@@ -59,7 +59,7 @@ const filteredAppointments = computed(() => {
   let filtered = appointments.value;
 
   if (selectedCatId.value) {
-    filtered = filtered.filter(appointment => appointment.catId === selectedCatId.value);
+    filtered = filtered.filter(appointment => appointment.catId === Number(selectedCatId.value));
   }
 
   if (selectedStatus.value) {
@@ -106,7 +106,7 @@ const fetchInitialData = async () => {
 const fetchAppointments = async (params?: GetVeterinaryAppointmentsParams) => {
   try {
     const queryParams: GetVeterinaryAppointmentsParams = {
-      catId: selectedCatId.value || undefined,
+      catId: selectedCatId.value ? Number(selectedCatId.value) : undefined,
       status: selectedStatus.value || undefined,
       limit: 100,
       ...params,
@@ -180,8 +180,9 @@ const fetchAppointmentStats = async () => {
 };
 
 // Handle filter changes
-const handleCatFilterChange = async (catId: number | null) => {
-  selectedCatId.value = catId;
+const handleCatFilterChange = async (catId: number | '' | null) => {
+  const normalized = catId ? Number(catId) : '';
+  selectedCatId.value = normalized as any;
   await fetchAppointments();
   await fetchAppointmentStats();
 };

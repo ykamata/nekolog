@@ -215,7 +215,8 @@ const handleSelectVisit = (visit: VeterinaryVisitWithRelations) => {
       console.warn('Invalid visit data for select:', visit);
       return;
     }
-    emit('select', visit);
+    // 行クリックは編集ではなく参照用の詳細表示
+    emit('view', visit);
   }
   catch (error) {
     console.error('Error handling visit selection:', error);
@@ -397,6 +398,18 @@ const getCatName = (catId: number): string => {
   }
 
   return '不明';
+};
+
+const getCatAvatar = (catId: number): string | null => {
+  if (props.cats && Array.isArray(props.cats)) {
+    const cat = props.cats.find(c => c?.id === catId);
+    if (cat?.photoUrl) return cat.photoUrl;
+  }
+  if (props.visits && Array.isArray(props.visits)) {
+    const visit = props.visits.find(v => v?.catId === catId);
+    if (visit?.cat?.photoUrl) return visit.cat.photoUrl;
+  }
+  return null;
 };
 
 const toggleSort = (field: typeof sortBy.value) => {
@@ -735,20 +748,28 @@ const prevPage = () => {
         >
           <div class="table-cell">
             <div class="visit-date">
-              {{ formatDate(visit.visitDate) }}
+              <span class="visit-date__day">{{ formatDate(visit.visitDate) }}</span>
             </div>
           </div>
 
           <div class="table-cell">
             <div class="cat-info">
-              {{ getCatName(visit.catId) }}
+              <div class="cat-avatar" :aria-label="getCatName(visit.catId)">
+                <img
+                  v-if="getCatAvatar(visit.catId)"
+                  :src="getCatAvatar(visit.catId)!"
+                  :alt="getCatName(visit.catId)"
+                  loading="lazy"
+                >
+                <span v-else>{{ getCatName(visit.catId).slice(0, 1) }}</span>
+              </div>
             </div>
           </div>
 
           <div class="table-cell">
             <div class="hospital-info">
               <div class="hospital-name">
-                {{ visit.hospital?.name || 'Unknown Hospital' }}
+                {{ visit.hospital?.name || '病院未登録' }}
               </div>
               <div
                 v-if="visit.doctor"
@@ -762,18 +783,18 @@ const prevPage = () => {
           <div class="table-cell">
             <div class="treatments">
               <span
-                v-for="treatment in visit.treatments.slice(0, 2)"
+                v-for="treatment in visit.treatments.slice(0, 3)"
                 :key="treatment.id"
-                class="treatment-tag"
+                class="pill pill--treatment"
                 :data-testid="`treatment-tag-${treatment.id}`"
               >
                 {{ treatment.treatment?.name || 'Unknown Treatment' }}
               </span>
               <span
-                v-if="visit.treatments.length > 2"
-                class="treatment-more"
+                v-if="visit.treatments.length > 3"
+                class="pill pill--muted"
               >
-                +{{ visit.treatments.length - 2 }}
+                +{{ visit.treatments.length - 3 }}
               </span>
             </div>
           </div>
@@ -788,18 +809,19 @@ const prevPage = () => {
             <div class="visit-details">
               <span
                 v-if="visit.hasBloodTest"
-                class="blood-test-badge"
+                class="icon-chip icon-chip--alert"
                 data-testid="blood-test-badge"
                 aria-label="血液検査実施"
+                title="血液検査あり"
               >
-                血液検査
+                🩸
               </span>
               <span
                 v-if="visit.notes"
-                class="notes-indicator"
+                class="note-chip"
                 :title="visit.notes"
               >
-                📝 {{ visit.notes.length > 20 ? visit.notes.substring(0, 20) + '...' : visit.notes }}
+                📝 {{ visit.notes }}
               </span>
             </div>
 
@@ -1011,18 +1033,13 @@ const prevPage = () => {
     font-size: 0.9rem;
   }
 
-  .treatment-tag {
-    padding: 0.375rem 0.75rem;
+  .pill {
+    padding: 0.4rem 0.8rem;
     font-size: 0.85rem;
   }
 
   .cost {
     font-size: 1rem;
-  }
-
-  .blood-test-badge {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.85rem;
   }
 
   .action-btn {
@@ -1080,13 +1097,13 @@ const prevPage = () => {
 
   .table-header {
     padding: 2rem 2.5rem;
-    grid-template-columns: 1.5fr 1fr 1.5fr 1.5fr 1fr 1fr 120px;
+    grid-template-columns: 1.4fr 0.9fr 1.5fr 1.8fr 0.9fr 1.1fr 120px;
     gap: 1.5rem;
   }
 
   .table-row {
     padding: 2rem 2.5rem;
-    grid-template-columns: 1.5fr 1fr 1.5fr 1.5fr 1fr 1fr 120px;
+    grid-template-columns: 1.4fr 0.9fr 1.5fr 1.8fr 0.9fr 1.1fr 120px;
     gap: 1.5rem;
   }
 
@@ -1224,14 +1241,14 @@ const prevPage = () => {
 
 .table-header {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1.5fr 1.5fr 1fr 1fr 100px;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
+  grid-template-columns: 1.4fr 0.9fr 1.5fr 1.8fr 0.9fr 1.1fr 100px;
+  gap: 1.25rem;
+  padding: 1.05rem 1.4rem;
   background-color: #f8f9fa;
   border-bottom: 2px solid #e0e0e0;
   font-weight: 600;
-  color: #555;
-  font-size: 0.875rem;
+  color: #4b5563;
+  font-size: 0.78rem;
 }
 
 .header-cell {
@@ -1241,8 +1258,8 @@ const prevPage = () => {
   background: none;
   border: none;
   font-weight: 600;
-  color: #555;
-  font-size: 0.875rem;
+  color: #4b5563;
+  font-size: 0.78rem;
   text-align: left;
   cursor: default;
 }
@@ -1281,12 +1298,12 @@ const prevPage = () => {
 
 .table-row {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1.5fr 1.5fr 1fr 1fr 100px;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
+  grid-template-columns: 1.4fr 0.9fr 1.5fr 1.8fr 0.9fr 1.1fr 100px;
+  gap: 1.25rem;
+  padding: 1.1rem 1.4rem;
+  border-bottom: 1px solid #e5e7eb;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 
 .table-row:hover {
@@ -1310,13 +1327,29 @@ const prevPage = () => {
 }
 
 .visit-date {
-  font-weight: 500;
-  color: #333;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 600;
+  color: #111827;
+  white-space: nowrap;
+}
+
+.visit-date__day {
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.visit-date__meta {
+  font-size: 0.7rem;
+  color: #9ca3af;
+  white-space: nowrap;
 }
 
 .cat-info {
-  font-weight: 500;
-  color: #4caf50;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
 .hospital-info {
@@ -1326,41 +1359,37 @@ const prevPage = () => {
 }
 
 .hospital-name {
-  font-weight: 500;
-  color: #333;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .doctor-name {
-  font-size: 0.875rem;
-  color: #666;
+  font-size: 0.75rem;
+  color: #6b7280;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .treatments {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: 0.4rem;
   align-items: center;
-}
-
-.treatment-tag {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  background-color: #e3f2fd;
-  color: #1976d2;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.treatment-more {
-  font-size: 0.75rem;
-  color: #666;
-  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cost {
   font-weight: 600;
-  color: #333;
+  color: #111827;
+  font-size: 1rem;
+  white-space: nowrap;
 }
 
 .visit-details {
@@ -1369,19 +1398,97 @@ const prevPage = () => {
   align-items: center;
 }
 
-.blood-test-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  background-color: #ffebee;
-  color: #c62828;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
+.note-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.5rem;
+  background: #f3f4f6;
+  color: #374151;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.notes-indicator {
-  font-size: 1rem;
-  cursor: help;
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 0.74rem;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+  background: #f8fafc;
+  color: #1f2937;
+}
+
+.pill--cat {
+  background: #ecfdf3;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.pill--treatment {
+  background: #eef2ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
+}
+
+.pill--muted {
+  background: #f3f4f6;
+  color: #6b7280;
+  border-color: #e5e7eb;
+}
+
+.pill--alert {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecdd3;
+}
+
+.cat-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #ecfdf3;
+  color: #166534;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: 1px solid #bbf7d0;
+}
+
+.cat-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.icon-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecdd3;
+}
+
+.icon-chip--alert {
+  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecdd3;
 }
 
 .action-btn {
@@ -1732,8 +1839,8 @@ const prevPage = () => {
     margin: 0.5rem 0;
   }
 
-  .treatment-tag {
-    padding: 0.5rem 0.75rem;
+  .pill {
+    padding: 0.5rem 0.85rem;
     font-size: 0.85rem;
     border-radius: 16px;
   }
@@ -1757,14 +1864,9 @@ const prevPage = () => {
     flex-wrap: wrap;
   }
 
-  .blood-test-badge {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
-    border-radius: 16px;
-  }
-
-  .notes-indicator {
-    font-size: 1.25rem;
+  .note-chip {
+    max-width: 100%;
+    font-size: 0.9rem;
   }
 
   /* Mobile action buttons */
@@ -1861,13 +1963,8 @@ const prevPage = () => {
     font-size: 0.8rem;
   }
 
-  .treatment-tag {
-    padding: 0.375rem 0.625rem;
-    font-size: 0.75rem;
-  }
-
-  .blood-test-badge {
-    padding: 0.375rem 0.625rem;
+  .pill {
+    padding: 0.4rem 0.75rem;
     font-size: 0.75rem;
   }
 

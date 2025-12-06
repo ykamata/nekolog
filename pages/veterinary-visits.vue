@@ -34,8 +34,10 @@ const selectedCatId = ref<number | undefined>(undefined);
 // Modal states
 const showAddModal = ref(false);
 const showEditModal = ref(false);
+const showViewModal = ref(false);
 const showAddAppointmentModal = ref(false);
 const editingVisit = ref<VeterinaryVisitWithRelations | null>(null);
+const viewingVisit = ref<VeterinaryVisitWithRelations | null>(null);
 
 // Delete confirmation state
 const showDeleteConfirmation = ref(false);
@@ -329,6 +331,16 @@ const handleEditCancel = () => {
   editingVisit.value = null;
 };
 
+const handleView = (visit: VeterinaryVisitWithRelations) => {
+  viewingVisit.value = visit;
+  showViewModal.value = true;
+};
+
+const handleViewClose = () => {
+  showViewModal.value = false;
+  viewingVisit.value = null;
+};
+
 const handleAddAppointmentCancel = () => {
   showAddAppointmentModal.value = false;
   selectedDate.value = null;
@@ -399,6 +411,20 @@ const formatCurrency = (amount: number) => {
     style: 'currency',
     currency: 'JPY',
   }).format(amount);
+};
+
+const formatVisitDateTime = (date: Date | string) => {
+  if (!date) return '不明';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '不明';
+  const tzOffsetMs = 9 * 60 * 60 * 1000; // JST (+9)
+  const jst = new Date(d.getTime() + tzOffsetMs);
+  const y = jst.getFullYear();
+  const m = String(jst.getMonth() + 1).padStart(2, '0');
+  const day = String(jst.getDate()).padStart(2, '0');
+  const hh = String(jst.getHours()).padStart(2, '0');
+  const mm = String(jst.getMinutes()).padStart(2, '0');
+  return `${y}-${m}-${day} ${hh}:${mm}`;
 };
 
 // Lifecycle
@@ -648,6 +674,7 @@ onMounted(() => {
           @edit="handleEdit"
           @delete="handleDelete"
           @add="handleAdd"
+          @view="handleView"
         />
       </div>
 
@@ -709,6 +736,110 @@ onMounted(() => {
       @save="handleEditSubmit"
     />
 
+    <!-- View-only Visit Modal -->
+    <div
+      v-if="showViewModal && viewingVisit"
+      class="visit-detail-modal"
+      data-testid="visit-detail-modal"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="visit-detail-dialog">
+        <div class="visit-detail-header">
+          <div>
+            <p class="visit-detail-subtitle">通院記録の詳細</p>
+            <h3 class="visit-detail-title">
+              {{ viewingVisit.hospital?.name || '病院情報なし' }}
+            </h3>
+          </div>
+          <button
+            type="button"
+            class="close-detail-btn"
+            data-testid="close-detail-button"
+            @click="handleViewClose"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div
+          class="visit-detail-body"
+          data-testid="visit-detail"
+        >
+          <div class="detail-row">
+            <div class="detail-label">猫</div>
+            <div class="detail-value">
+              {{ viewingVisit.cat?.name || getCatName(viewingVisit.catId) }}
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">診察日時</div>
+            <div class="detail-value">
+              {{ formatVisitDateTime(viewingVisit.visitDate) }}
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">病院</div>
+            <div class="detail-value">
+              {{ viewingVisit.hospital?.name || '未登録' }}
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">先生</div>
+            <div class="detail-value">
+              {{ viewingVisit.doctor?.name || '未登録' }}
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">処方</div>
+            <div class="detail-value">
+              <span
+                v-for="treatment in viewingVisit.treatments"
+                :key="treatment.id"
+                class="pill pill--treatment"
+              >
+                {{ (treatment as any).treatment?.name || treatment.name || '不明' }}
+              </span>
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">費用</div>
+            <div class="detail-value">
+              {{ (viewingVisit.cost || 0).toLocaleString() }}円
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">血液検査</div>
+            <div class="detail-value">
+              <span
+                v-if="viewingVisit.hasBloodTest"
+                class="pill pill--alert"
+              >
+                血液検査あり
+              </span>
+              <span v-else class="pill pill--muted">なし</span>
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">メモ</div>
+            <div class="detail-value">
+              {{ viewingVisit.notes || 'なし' }}
+            </div>
+          </div>
+        </div>
+
+        <div class="visit-detail-footer">
+          <button
+            type="button"
+            class="btn btn--secondary"
+            @click="handleViewClose"
+          >
+            閉じる
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Add Appointment Modal -->
     <VeterinaryAppointmentForm
       :is-open="showAddAppointmentModal"
@@ -737,6 +868,99 @@ onMounted(() => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0;
+}
+
+.visit-detail-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1000;
+}
+
+.visit-detail-dialog {
+  width: min(720px, 95vw);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.visit-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.visit-detail-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.visit-detail-subtitle {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.close-detail-btn {
+  border: none;
+  background: #f3f4f6;
+  color: #374151;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background 0.2s ease;
+}
+
+.close-detail-btn:hover {
+  background: #e5e7eb;
+}
+
+.visit-detail-body {
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
+}
+
+.detail-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.detail-label {
+  min-width: 90px;
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.detail-value {
+  font-size: 0.95rem;
+  color: #111827;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.visit-detail-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* Desktop optimizations */

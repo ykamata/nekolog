@@ -139,23 +139,14 @@ const initializeForm = () => {
     // 病院IDを設定
     selectedHospitalId.value = props.appointment.hospital.id;
   }
-  else if (props.initialData) {
-    // New appointment with initial data
-    formData.catId = props.initialData.catId || 0;
-    formData.appointmentDate = props.initialData.appointmentDate || new Date();
-    formData.hospitalName = props.initialData.hospitalName || '';
-    formData.doctorName = props.initialData.doctorName || '';
-    formData.plannedTreatments = props.initialData.plannedTreatments || '';
-    formData.notes = props.initialData.notes || '';
-  }
   else {
-    // New appointment - reset to defaults
-    formData.catId = props.cats.length === 1 ? props.cats[0]?.id || 0 : 0;
-    formData.appointmentDate = new Date();
-    formData.hospitalName = '';
-    formData.doctorName = '';
-    formData.plannedTreatments = '';
-    formData.notes = '';
+    // New appointment - initialData優先、なければ「全ての猫」（0）を初期値に
+    formData.catId = props.initialData?.catId ?? 0;
+    formData.appointmentDate = props.initialData?.appointmentDate || new Date();
+    formData.hospitalName = props.initialData?.hospitalName || '';
+    formData.doctorName = props.initialData?.doctorName || '';
+    formData.plannedTreatments = props.initialData?.plannedTreatments || '';
+    formData.notes = props.initialData?.notes || '';
   }
 };
 

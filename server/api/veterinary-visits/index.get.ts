@@ -105,6 +105,7 @@ export default defineEventHandler(async (event) => {
             select: {
               id: true,
               name: true,
+              photoUrl: true,
             },
           },
           hospital: {
@@ -139,10 +140,13 @@ export default defineEventHandler(async (event) => {
       prisma.veterinaryVisit.count({ where }),
     ]);
 
-    // Transform the data to flatten treatments
+    // Transform the data (保持: visit.treatments[].treatment に名前が入る構造を維持)
     const transformedVisits = visits.map((visit) => ({
       ...visit,
-      treatments: visit.treatments.map((vt) => vt.treatment),
+      treatments: visit.treatments.map((vt) => ({
+        ...vt,
+        treatment: vt.treatment,
+      })),
     }));
 
     // Add optimized caching headers based on data freshness
