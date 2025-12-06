@@ -42,12 +42,12 @@
 
     <!-- Chart Summary -->
     <div
-      v-if="analytics && !loading && !error"
+      v-if="analytics && analytics30Days && !loading && !error"
       class="chart-summary"
     >
       <div class="summary-card">
         <h4 class="summary-title">
-          総カロリー
+          総カロリー（30日間）
         </h4>
         <p class="summary-value">
           {{ totalCalories.toFixed(1) }} kcal
@@ -55,7 +55,7 @@
       </div>
       <div class="summary-card">
         <h4 class="summary-title">
-          1日平均
+          1日平均（30日間）
         </h4>
         <p class="summary-value">
           {{ averageCaloriesPerDay.toFixed(1) }} kcal
@@ -63,10 +63,10 @@
       </div>
       <div class="summary-card">
         <h4 class="summary-title">
-          週平均
+          週平均（30日間）
         </h4>
         <p class="summary-value">
-          {{ (analytics?.weeklyAverage || 0).toFixed(1) }} kcal
+          {{ (analytics30Days?.weeklyAverage || 0).toFixed(1) }} kcal
         </p>
       </div>
     </div>
@@ -123,6 +123,7 @@ const isChartInitialized = ref(false);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const analytics = ref<MealAnalytics | null>(null);
+const analytics30Days = ref<MealAnalytics | null>(null); // 30日間のデータ（総カロリー計算用）
 
 // チャート作成の競合を防ぐためのフラグ
 const isCreatingChart = ref(false);
@@ -138,19 +139,20 @@ const analyticsStore = useAnalyticsStore();
 const chartDisplayMode = computed(() => analyticsStore.chartDisplayMode);
 
 // Computed properties for summary
+// 総カロリーは直近30日間のデータで計算
 const totalCalories = computed(() => {
-  if (!analytics.value?.dailyCalories) return 0;
-  return analytics.value.dailyCalories.reduce(
+  if (!analytics30Days.value?.dailyCalories) return 0;
+  return analytics30Days.value.dailyCalories.reduce(
     (sum, item) => sum + Number(item.calories),
     0,
   );
 });
 
 const averageCaloriesPerDay = computed(() => {
-  if (!analytics.value?.dailyCalories || analytics.value.dailyCalories.length === 0) {
+  if (!analytics30Days.value?.dailyCalories || analytics30Days.value.dailyCalories.length === 0) {
     return 0;
   }
-  return totalCalories.value / analytics.value.dailyCalories.length;
+  return totalCalories.value / analytics30Days.value.dailyCalories.length;
 });
 
 // Fetch analytics data with retry
@@ -178,20 +180,71 @@ const fetchData = async (retryCount = 0) => {
       endDate: endDate.toISOString(),
     });
 
-    await analyticsStore.fetchAnalytics({
-      catId: props.catId,
-      startDate,
-      endDate,
-    });
+    // ストアの現在のフィルタと比較
+    const currentFilters = analyticsStore.currentFilters;
+    const isSameFilters =
+      currentFilters.catId === props.catId &&
+      currentFilters.startDate?.getTime() === startDate.getTime() &&
+      currentFilters.endDate?.getTime() === endDate.getTime();
 
-    analytics.value = analyticsStore.analytics;
+    // 既にストアに同じ条件のデータがある場合はキャッシュを使用
+    if (isSameFilters && analyticsStore.analytics) {
+      console.log('MealChartSimple: キャッシュされたデータを使用');
+      analytics.value = analyticsStore.analytics;
+    } else {
+      console.log('MealChartSimple: 新規データ取得', { isSameFilters, hasAnalytics: !!analyticsStore.analytics });
+      await analyticsStore.fetchAnalytics({
+        catId: props.catId,
+        startDate,
+        endDate,
+      });
+      analytics.value = analyticsStore.analytics;
+    }
+
     console.log('MealChartSimple: データ取得成功', {
       hasData: !!analytics.value,
       dataCount: analytics.value?.dailyCalories?.length || 0,
       analytics: analytics.value,
     });
 
-    // データ取得後にチャートを作成
+    // データがない場合でも空のanalyticsオブジェクトを作成
+    if (!analytics.value) {
+      analytics.value = {
+        dailyCalories: [],
+        dailyCaloriesByFoodType: [],
+        weeklyAverage: 0,
+        foodTypeBreakdown: [],
+      };
+    }
+
+    // 総カロリー計算用に直近30日間のデータを取得
+    const startDate30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const endDate30Days = new Date();
+
+    try {
+      const response30Days = await $fetch<{ analytics: MealAnalytics }>('/api/meals/analytics', {
+        params: {
+          catId: props.catId,
+          startDate: startDate30Days.toISOString(),
+          endDate: endDate30Days.toISOString(),
+        },
+      });
+      analytics30Days.value = response30Days.analytics;
+      console.log('MealChartSimple: 30日間データ取得成功', {
+        dataCount: analytics30Days.value?.dailyCalories?.length || 0,
+      });
+    } catch (err) {
+      console.error('MealChartSimple: 30日間データ取得失敗:', err);
+      // エラーでも処理を続行（総カロリーは0になる）
+      analytics30Days.value = {
+        dailyCalories: [],
+        dailyCaloriesByFoodType: [],
+        weeklyAverage: 0,
+        foodTypeBreakdown: [],
+      };
+    }
+
+    // データ取得後にチャートを作成（データがなくても0のグラフを描画）
     await nextTick();
     console.log('MealChartSimple: createChart呼び出し判定', {
       hasData: (analytics.value?.dailyCalories?.length || 0) > 0,
@@ -199,15 +252,9 @@ const fetchData = async (retryCount = 0) => {
       chartDisplayMode: chartDisplayMode.value,
     });
 
-    if ((analytics.value?.dailyCalories?.length || 0) > 0) {
-      console.log('MealChartSimple: createChart呼び出し開始');
-      await createChart();
-      console.log('MealChartSimple: createChart呼び出し完了');
-    }
-    else {
-      console.log('MealChartSimple: データが空のためチャートを作成しません');
-      error.value = 'データがありません';
-    }
+    console.log('MealChartSimple: createChart呼び出し開始（データがない場合も0のグラフを描画）');
+    await createChart();
+    console.log('MealChartSimple: createChart呼び出し完了');
   }
   catch (err) {
     console.error('MealChartSimple: データ取得エラー:', err);
@@ -270,18 +317,11 @@ const createChart = async () => {
 
     console.log('MealChartSimple: Canvas要素が利用可能になりました');
 
-    if (!analytics.value?.dailyCalories?.length) {
-      console.log('MealChartSimple: データがありません', {
-        analytics: analytics.value,
-        dailyCaloriesLength: analytics.value?.dailyCalories?.length,
-        hasAnalytics: !!analytics.value,
-      });
-      error.value = 'データがありません';
-      return;
-    }
-
-    console.log('MealChartSimple: データ存在確認OK', {
-      dailyCaloriesLength: analytics.value.dailyCalories.length,
+    // データがない場合でもチャートを作成（0の値で描画）
+    console.log('MealChartSimple: データ確認', {
+      analytics: analytics.value,
+      dailyCaloriesLength: analytics.value?.dailyCalories?.length,
+      hasAnalytics: !!analytics.value,
       chartDisplayMode: chartDisplayMode.value,
     });
 
@@ -310,7 +350,16 @@ const createChart = async () => {
       type: chartConfig.type,
       datasetsCount: chartConfig.data.datasets.length,
       labelsCount: chartConfig.data.labels.length,
+      hasOptions: !!chartConfig.options,
+      optionsKeys: chartConfig.options ? Object.keys(chartConfig.options) : [],
     });
+
+    // オプションの検証
+    if (!chartConfig.options) {
+      console.error('MealChartSimple: チャートオプションが未定義');
+      error.value = 'チャートオプションが設定されていません';
+      return;
+    }
 
     // 作成IDが変更された場合は処理を中断
     if (chartCreationId.value !== currentCreationId) {
@@ -318,7 +367,16 @@ const createChart = async () => {
       return;
     }
 
-    chart.value = new Chart(ctx, chartConfig);
+    // Chart.jsインスタンスを作成
+    try {
+      // デフォルトのchartConfigをそのまま使用
+      chart.value = new Chart(ctx, chartConfig as any);
+    } catch (chartError) {
+      console.error('MealChartSimple: Chart.js作成エラー:', chartError);
+      console.error('MealChartSimple: chartConfig:', JSON.stringify(chartConfig, null, 2));
+      error.value = 'チャートの作成に失敗しました';
+      return;
+    }
 
     isChartInitialized.value = true;
     console.log('MealChartSimple: チャート作成成功', {
@@ -364,8 +422,14 @@ const getChartConfig = () => {
 
 // 線グラフの設定
 const getLineChartConfig = () => {
-  if (!analytics.value?.dailyCalories) {
-    throw new Error('Analytics data is not available');
+  // analyticsがない場合は空のオブジェクトを作成
+  if (!analytics.value) {
+    analytics.value = {
+      dailyCalories: [],
+      dailyCaloriesByFoodType: [],
+      weeklyAverage: 0,
+      foodTypeBreakdown: [],
+    };
   }
 
   // 期間の開始日と終了日を取得
@@ -418,6 +482,19 @@ const getLineChartConfig = () => {
     currentDate.setDate(currentDate.getDate() + 1);
   }
 
+  // データが空の場合は最低1つのデータポイントを追加
+  if (labels.length === 0) {
+    labels.push(new Date().toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }));
+    data.push(0);
+  }
+
+  console.log('MealChartSimple: 線グラフデータ生成', {
+    labelsCount: labels.length,
+    dataCount: data.length,
+    sampleLabels: labels.slice(0, 3),
+    sampleData: data.slice(0, 3),
+  });
+
   return {
     type: 'line' as const,
     data: {
@@ -457,46 +534,61 @@ const getStackedBarChartConfig = () => {
     chartDataFromStore: analyticsStore.chartData,
   });
 
-  const labels = barChartData.labels.map((dateStr: string) => {
+  const labels = (barChartData.labels || []).map((dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
+  });
+
+  // データが空の場合は最低1つのデータポイントを追加
+  const finalLabels = labels.length > 0 ? labels : [new Date().toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })];
+  const dryData = barChartData.datasets?.[0]?.data || [];
+  const wetData = barChartData.datasets?.[1]?.data || [];
+  const finalDryData = dryData.length > 0 ? dryData : [0];
+  const finalWetData = wetData.length > 0 ? wetData : [0];
+
+  console.log('MealChartSimple: 積み上げ棒グラフデータ生成', {
+    labelsCount: finalLabels.length,
+    dryDataCount: finalDryData.length,
+    wetDataCount: finalWetData.length,
   });
 
   return {
     type: 'bar' as const,
     data: {
-      labels,
+      labels: finalLabels,
       datasets: [
         {
           label: 'ドライフード',
-          data: barChartData.datasets[0]?.data || [],
+          data: finalDryData,
           backgroundColor: 'rgba(255, 159, 64, 0.8)',
           borderColor: 'rgba(255, 159, 64, 1)',
           borderWidth: 1,
         },
         {
           label: 'ウェットフード',
-          data: barChartData.datasets[1]?.data || [],
+          data: finalWetData,
           backgroundColor: 'rgba(54, 162, 235, 0.8)',
           borderColor: 'rgba(54, 162, 235, 1)',
           borderWidth: 1,
         },
       ],
     },
-    options: {
-      ...getCommonChartOptions('積み上げ棒グラフ'),
-      scales: {
-        ...getCommonChartOptions('積み上げ棒グラフ').scales,
-        x: {
-          ...getCommonChartOptions('積み上げ棒グラフ').scales?.x,
-          stacked: true,
+    options: (() => {
+      const baseOptions = getCommonChartOptions('積み上げ棒グラフ');
+      return {
+        ...baseOptions,
+        scales: {
+          x: {
+            ...baseOptions.scales?.x,
+            stacked: true,
+          },
+          y: {
+            ...baseOptions.scales?.y,
+            stacked: true,
+          },
         },
-        y: {
-          ...getCommonChartOptions('積み上げ棒グラフ').scales?.y,
-          stacked: true,
-        },
-      },
-    },
+      };
+    })(),
   };
 };
 
@@ -507,6 +599,9 @@ const getCommonChartOptions = (title: string) => ({
   devicePixelRatio: (typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1,
   animation: {
     duration: 1000,
+  },
+  layout: {
+    padding: 0,
   },
   plugins: {
     title: {
@@ -526,6 +621,10 @@ const getCommonChartOptions = (title: string) => ({
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
       titleColor: 'white',
       bodyColor: 'white',
+    },
+    filler: {
+      propagate: false,
+      drawTime: 'beforeDatasetsDraw' as const,
     },
   },
   scales: {
@@ -562,6 +661,9 @@ const getCommonChartOptions = (title: string) => ({
     point: {
       hoverRadius: 8,
     },
+    line: {
+      borderWidth: 2,
+    },
   },
 });
 
@@ -569,7 +671,9 @@ const getCommonChartOptions = (title: string) => ({
 const destroyChartSafely = async () => {
   if (chart.value) {
     try {
-      // Chart.jsのイベントリスナーを削除
+      // Chart.jsのすべてのプラグインとイベントを停止
+      chart.value.stop();
+      // Chart.jsのインスタンスを破棄
       chart.value.destroy();
       console.log('MealChartSimple: チャートを破棄しました');
     }
@@ -587,6 +691,8 @@ const destroyChartSafely = async () => {
     const ctx = chartCanvas.value.getContext('2d');
     if (ctx) {
       ctx.clearRect(0, 0, chartCanvas.value.width, chartCanvas.value.height);
+      // コンテキストの状態をリセット
+      ctx.resetTransform();
     }
   }
 
@@ -611,16 +717,16 @@ const handleRetry = async () => {
 };
 
 // Watch for catId changes
-watch(() => props.catId, (newCatId) => {
+watch(() => props.catId, async (newCatId) => {
   if (newCatId) {
     chartCreationId.value++;
-    destroyChart();
-    fetchData();
+    await destroyChartSafely();
+    await fetchData();
   }
 });
 
 // Watch for periodDays changes
-watch(() => props.periodDays, (newPeriodDays, oldPeriodDays) => {
+watch(() => props.periodDays, async (newPeriodDays, oldPeriodDays) => {
   console.log('MealChartSimple: 期間変更検出', {
     newPeriodDays,
     oldPeriodDays,
@@ -628,8 +734,8 @@ watch(() => props.periodDays, (newPeriodDays, oldPeriodDays) => {
   });
   if (newPeriodDays !== oldPeriodDays && props.catId) {
     chartCreationId.value++;
-    destroyChart();
-    fetchData();
+    await destroyChartSafely();
+    await fetchData();
   }
 });
 

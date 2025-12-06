@@ -38,7 +38,7 @@ const error = ref<string | null>(null);
 const chartFilters = ref<ChartFilters>({
   catId: undefined,
   dateRange: {
-    start: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 90日前
+    start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7日前
     end: new Date(),
   },
   chartType: 'line',
@@ -81,18 +81,7 @@ const fetchCats = async () => {
       if (chartFilters.value.catId) {
         analyticsStore.setSelectedCat(chartFilters.value.catId);
       }
-
-      // 初期データを取得
-      try {
-        await analyticsStore.fetchAnalytics({
-          catId: chartFilters.value.catId,
-          startDate: chartFilters.value.dateRange.start,
-          endDate: chartFilters.value.dateRange.end,
-        });
-      }
-      catch (err) {
-        console.error('Analytics page: 初期データ取得失敗:', err);
-      }
+      // データ取得はChartFiltersコンポーネントとMealChartSimpleコンポーネントが行うため、ここでは呼び出さない
     }
   }
   catch (err) {

@@ -146,6 +146,9 @@ const startDateInput = ref<string>('');
 const endDateInput = ref<string>('');
 const validationError = ref<string>('');
 
+// デバウンス用のタイマー
+const dateChangeTimeout = ref<NodeJS.Timeout>();
+
 // 初期化
 onMounted(() => {
   initializeDateRange();
@@ -166,9 +169,9 @@ const initializeDateRange = () => {
   const presetParam = route.query.preset as string;
 
   if (startParam && endParam) {
-    // URLパラメータから復元
-    const start = new Date(startParam);
-    const end = new Date(endParam);
+    // URLパラメータから復元（タイムゾーン問題を回避）
+    const start = parseDateString(startParam);
+    const end = parseDateString(endParam);
 
     if (isValidDate(start) && isValidDate(end)) {
       selectedPreset.value = presetParam || 'custom';
@@ -192,15 +195,26 @@ const isValidDate = (date: Date): boolean => {
   return date instanceof Date && !isNaN(date.getTime());
 };
 
+// 日付文字列をローカルタイムゾーンで解釈
+// "2024-01-04" -> 2024年1月4日 00:00:00 (ローカル)
+const parseDateString = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  // monthは0始まりなので-1する
+  return new Date(year!, month! - 1, day!, 0, 0, 0, 0);
+};
+
 // 入力フィールドを日付範囲から更新
 const updateInputsFromRange = (range: DateRange) => {
   startDateInput.value = formatDateForInput(range.start);
   endDateInput.value = formatDateForInput(range.end);
 };
 
-// 日付をinput[type="date"]用にフォーマット
+// 日付をinput[type="date"]用にフォーマット (ローカルタイムゾーンで)
 const formatDateForInput = (date: Date): string => {
-  return date.toISOString().split('T')[0]!;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 // プリセット選択
@@ -216,19 +230,37 @@ const selectPreset = (presetKey: string) => {
       emitChange(range);
       updateUrlParams(range, presetKey);
     }
+    // カスタムプリセットの場合、現在の入力値を使用してデータを再取得
+    else if (presetKey === 'custom' && startDateInput.value && endDateInput.value) {
+      handleDateChange();
+    }
   }
 };
 
-// 日付入力の変更処理
+// 日付入力の変更処理（デバウンス付き）
 const handleDateChange = () => {
+  // 既存のタイマーをクリア
+  if (dateChangeTimeout.value) {
+    clearTimeout(dateChangeTimeout.value);
+  }
+
+  // 500msのデバウンス処理
+  dateChangeTimeout.value = setTimeout(() => {
+    performDateChange();
+  }, 500);
+};
+
+// 実際の日付変更処理
+const performDateChange = () => {
   validationError.value = '';
 
   if (!startDateInput.value || !endDateInput.value) {
     return;
   }
 
-  const start = new Date(startDateInput.value);
-  const end = new Date(endDateInput.value);
+  // タイムゾーンの問題を避けるため、日付文字列を分解してローカル日付を作成
+  const start = parseDateString(startDateInput.value);
+  const end = parseDateString(endDateInput.value);
 
   // バリデーション
   if (!isValidDate(start) || !isValidDate(end)) {
@@ -280,6 +312,13 @@ const updateUrlParams = (range: DateRange, preset: string) => {
   // ルートを更新（ページリロードなし）
   router.push({ query });
 };
+
+// クリーンアップ処理
+onBeforeUnmount(() => {
+  if (dateChangeTimeout.value) {
+    clearTimeout(dateChangeTimeout.value);
+  }
+});
 </script>
 
 <style scoped>

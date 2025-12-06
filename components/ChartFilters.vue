@@ -79,29 +79,9 @@
     <div class="filter-tags">
       <span
         v-if="selectedCatId"
-        class="filter-tag filter-tag--removable"
+        class="filter-tag filter-tag--cat"
       >
-        <span class="filter-tag__label">猫: {{ selectedCatName }}</span>
-        <button
-          type="button"
-          class="filter-tag__remove"
-          @click="clearCatFilter"
-          aria-label="猫フィルターを削除"
-        >
-          <svg
-            class="w-3.5 h-3.5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
+        猫: {{ selectedCatName }}
       </span>
 
       <span class="filter-tag filter-tag--period">
@@ -179,11 +159,20 @@ const dateRange = ref<DateRange>({
 const chartType = ref<ChartType>('line');
 
 // 初期化
-onMounted(() => {
+onMounted(async () => {
   if (props.modelValue) {
     selectedCatId.value = props.modelValue.catId || undefined;
     dateRange.value = props.modelValue.dateRange;
     chartType.value = props.modelValue.chartType;
+  }
+
+  // 猫データがロードされるまで待つ
+  await catsStore.fetchCats();
+
+  // 猫が選択されていない場合、最初の猫を選択
+  if (!selectedCatId.value && sortedCats.value.length > 0) {
+    selectedCatId.value = sortedCats.value[0]!.id;
+    emitChange();
   }
 });
 
@@ -244,13 +233,8 @@ const handleChartTypeChange = (type: ChartType) => {
   emitChange();
 };
 
-const clearCatFilter = () => {
-  selectedCatId.value = undefined;
-  emitChange();
-};
-
 const resetFilters = () => {
-  selectedCatId.value = undefined;
+  // 最初の猫を選択（猫の選択はリセットしない）
   dateRange.value = {
     start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     end: new Date(),
@@ -330,10 +314,9 @@ const emitChange = () => {
   transition: all 0.2s ease;
 }
 
-.filter-tag--removable {
+.filter-tag--cat {
   background: #d1fae5;
   color: #065f46;
-  padding-right: 0.5rem;
 }
 
 .filter-tag--period {
@@ -344,30 +327,6 @@ const emitChange = () => {
 .filter-tag--chart {
   background: #e9d5ff;
   color: #6b21a8;
-}
-
-.filter-tag__label {
-  line-height: 1;
-}
-
-.filter-tag__remove {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1rem;
-  height: 1rem;
-  padding: 0;
-  background: transparent;
-  border: none;
-  border-radius: 9999px;
-  color: #059669;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.filter-tag__remove:hover {
-  background: rgba(5, 150, 105, 0.1);
-  color: #047857;
 }
 
 /* リセットボタン */

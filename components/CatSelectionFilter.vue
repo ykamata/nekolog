@@ -9,12 +9,9 @@
     <select
       id="cat-select"
       v-model="selectedCatId"
-      class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+      class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 sm:text-sm"
       @change="handleCatChange"
     >
-      <option value="">
-        すべての猫
-      </option>
       <option
         v-for="cat in sortedCats"
         :key="cat.id"
@@ -68,15 +65,25 @@ const selectedCatId = ref<string>(props.modelValue ? String(props.modelValue) : 
 
 // URLパラメータから初期値を設定
 onMounted(async () => {
-  // URLパラメータから猫IDを取得
-  const catIdFromUrl = route.query.catId as string;
-  if (catIdFromUrl) {
-    selectedCatId.value = catIdFromUrl;
-  }
-
   // 猫データを取得
   try {
     await catsStore.fetchCats();
+
+    // URLパラメータから猫IDを取得
+    const catIdFromUrl = route.query.catId as string;
+    if (catIdFromUrl) {
+      selectedCatId.value = catIdFromUrl;
+    }
+    else if (!props.modelValue && sortedCats.value.length > 0) {
+      // デフォルトで最初の猫を選択
+      selectedCatId.value = String(sortedCats.value[0]!.id);
+      // 親コンポーネントに通知
+      const numericValue = Number(selectedCatId.value);
+      emit('update:modelValue', numericValue);
+      emit('change', numericValue);
+      // URLパラメータも更新
+      updateUrlParams();
+    }
   }
   catch (error) {
     console.error('猫データの取得に失敗しました:', error);
@@ -88,15 +95,16 @@ watch(() => props.modelValue, (newValue) => {
   if (newValue !== undefined) {
     selectedCatId.value = String(newValue);
   }
-  else {
-    selectedCatId.value = '';
+  else if (sortedCats.value.length > 0) {
+    // modelValueがundefinedの場合は最初の猫を選択
+    selectedCatId.value = String(sortedCats.value[0]!.id);
   }
 });
 
 // 猫選択の変更処理
 const handleCatChange = () => {
-  // 文字列から数値に変換してemit
-  const numericValue = selectedCatId.value ? Number(selectedCatId.value) : undefined;
+  // 文字列から数値に変換してemit（常に値が存在する前提）
+  const numericValue = Number(selectedCatId.value);
   emit('update:modelValue', numericValue);
   emit('change', numericValue);
 
