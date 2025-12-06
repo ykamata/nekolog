@@ -151,42 +151,44 @@ export const useAnalyticsStore = defineStore("analytics", () => {
 
     if (!analytics.value) return { labels: [], datasets: [] };
 
-    // Get unique dates within the date range
+    // Get unique dates within the date range (ローカルタイムで扱い、UTC変換による日付ずれを防ぐ)
     const startDate = dateRange.value.startDate;
     const endDate = dateRange.value.endDate;
-    const dates = [];
+    const dates: string[] = [];
     const currentDate = new Date(startDate);
 
+    const formatLocalDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}/${month}/${day}`;
+    };
+
     while (currentDate <= endDate) {
-      dates.push(currentDate.toISOString().split("T")[0]);
+      dates.push(formatLocalDate(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
     const dryData = dates.map((date) => {
-      // 日付フォーマットを統一（YYYY-MM-DD → YYYY/MM/DD）
       if (!date) return 0;
-      const formattedDate = date.replace(/-/g, "/");
       const dayData = analytics.value!.dailyCalories.filter(
-        (item) => item.date === formattedDate && item.type === "DRY"
+        (item) => item.date === date && item.type === "DRY"
       );
       return dayData.reduce((sum, item) => sum + item.calories, 0);
     });
 
     const wetData = dates.map((date) => {
-      // 日付フォーマットを統一（YYYY-MM-DD → YYYY/MM/DD）
       if (!date) return 0;
-      const formattedDate = date.replace(/-/g, "/");
       const dayData = analytics.value!.dailyCalories.filter(
-        (item) => item.date === formattedDate && item.type === "WET"
+        (item) => item.date === date && item.type === "WET"
       );
       return dayData.reduce((sum, item) => sum + item.calories, 0);
     });
 
     const missingDataDates = dates.filter((date) => {
       if (!date) return false;
-      const formattedDate = date.replace(/-/g, "/");
       return !analytics.value!.dailyCalories.some(
-        (item) => item.date === formattedDate
+        (item) => item.date === date
       );
     });
 
