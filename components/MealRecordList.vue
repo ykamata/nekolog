@@ -298,76 +298,141 @@ watch(
 
     <!-- Filters -->
     <div class="filters-section">
-      <!-- Cat Filter -->
-      <div class="filter-group">
-        <label class="filter-label">猫で絞り込み</label>
-        <div class="cat-filter">
-          <button
-            type="button"
-            class="filter-button"
-            :class="{ 'filter-button--active': !filter.catId }"
-            @click="handleCatFilter(undefined)"
+      <!-- Mobile Filters (Dropdowns) -->
+      <div class="filters-mobile">
+        <!-- Cat Filter Dropdown -->
+        <div class="filter-dropdown">
+          <label class="filter-dropdown-label">猫</label>
+          <select
+            class="filter-select"
+            :value="filter.catId || ''"
+            @change="handleCatFilter($event.target.value ? Number($event.target.value) : undefined)"
           >
-            すべて
-          </button>
-          <button
-            v-for="cat in cats"
-            :key="cat.id"
-            type="button"
-            class="filter-button"
-            :class="{ 'filter-button--active': filter.catId === cat.id }"
-            @click="handleCatFilter(cat.id)"
+            <option value="">
+              すべて
+            </option>
+            <option
+              v-for="cat in cats"
+              :key="cat.id"
+              :value="cat.id"
+            >
+              {{ cat.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Date Range Dropdown -->
+        <div class="filter-dropdown">
+          <label class="filter-dropdown-label">期間</label>
+          <select
+            class="filter-select"
+            :value="selectedDateRange"
+            @change="handleDateRangeShortcut(Number($event.target.value))"
           >
-            {{ cat.name }}
-          </button>
+            <option
+              v-for="shortcut in dateRangeShortcuts"
+              :key="shortcut.label"
+              :value="shortcut.days"
+            >
+              {{ shortcut.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Food Type Dropdown -->
+        <div class="filter-dropdown">
+          <label class="filter-dropdown-label">種類</label>
+          <select
+            class="filter-select"
+            :value="filter.foodType || ''"
+            @change="handleFoodTypeFilter($event.target.value || undefined)"
+          >
+            <option value="">
+              すべて
+            </option>
+            <option value="DRY">
+              ドライ
+            </option>
+            <option value="WET">
+              ウェット
+            </option>
+          </select>
         </div>
       </div>
 
-      <!-- Date Range Shortcuts -->
-      <div class="filter-group">
-        <label class="filter-label">期間で絞り込み</label>
-        <div class="date-shortcuts">
-          <button
-            v-for="shortcut in dateRangeShortcuts"
-            :key="shortcut.label"
-            type="button"
-            class="filter-button"
-            :class="{ 'filter-button--active': selectedDateRange === shortcut.days }"
-            @click="handleDateRangeShortcut(shortcut.days)"
-          >
-            {{ shortcut.label }}
-          </button>
+      <!-- Desktop Filters (Buttons) -->
+      <div class="filters-desktop">
+        <!-- Cat Filter -->
+        <div class="filter-group">
+          <label class="filter-label">猫で絞り込み</label>
+          <div class="cat-filter">
+            <button
+              type="button"
+              class="filter-button"
+              :class="{ 'filter-button--active': !filter.catId }"
+              @click="handleCatFilter(undefined)"
+            >
+              すべて
+            </button>
+            <button
+              v-for="cat in cats"
+              :key="cat.id"
+              type="button"
+              class="filter-button"
+              :class="{ 'filter-button--active': filter.catId === cat.id }"
+              @click="handleCatFilter(cat.id)"
+            >
+              {{ cat.name }}
+            </button>
+          </div>
         </div>
-      </div>
 
-      <!-- Food Type Filter -->
-      <div class="filter-group">
-        <label class="filter-label">フードタイプ</label>
-        <div class="food-type-filter">
-          <button
-            type="button"
-            class="filter-button"
-            :class="{ 'filter-button--active': !filter.foodType }"
-            @click="handleFoodTypeFilter(undefined)"
-          >
-            すべて
-          </button>
-          <button
-            type="button"
-            class="filter-button"
-            :class="{ 'filter-button--active': filter.foodType === 'DRY' }"
-            @click="handleFoodTypeFilter('DRY')"
-          >
-            ドライ
-          </button>
-          <button
-            type="button"
-            class="filter-button"
-            :class="{ 'filter-button--active': filter.foodType === 'WET' }"
-            @click="handleFoodTypeFilter('WET')"
-          >
-            ウェット
-          </button>
+        <!-- Date Range Shortcuts -->
+        <div class="filter-group">
+          <label class="filter-label">期間で絞り込み</label>
+          <div class="date-shortcuts">
+            <button
+              v-for="shortcut in dateRangeShortcuts"
+              :key="shortcut.label"
+              type="button"
+              class="filter-button"
+              :class="{ 'filter-button--active': selectedDateRange === shortcut.days }"
+              @click="handleDateRangeShortcut(shortcut.days)"
+            >
+              {{ shortcut.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Food Type Filter -->
+        <div class="filter-group">
+          <label class="filter-label">フードタイプ</label>
+          <div class="food-type-filter">
+            <button
+              type="button"
+              class="filter-button"
+              :class="{ 'filter-button--active': !filter.foodType }"
+              @click="handleFoodTypeFilter(undefined)"
+            >
+              すべて
+            </button>
+            <button
+              type="button"
+              class="filter-button"
+              :class="{ 'filter-button--active': filter.foodType === 'DRY' }"
+              @click="handleFoodTypeFilter('DRY')"
+            >
+              ドライ
+            </button>
+            <button
+              type="button"
+              class="filter-button"
+              :class="{ 'filter-button--active': filter.foodType === 'WET' }"
+              @click="handleFoodTypeFilter('WET')"
+            >
+              ウェット
+            </button>
+          </div>
         </div>
       </div>
 
@@ -659,6 +724,7 @@ watch(
 /* Header */
 .list-header {
   margin-bottom: 1.5rem;
+  position: relative;
 }
 
 .header-content {
@@ -688,6 +754,16 @@ watch(
   padding: 1.5rem;
   margin-bottom: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Mobile Filters (Dropdowns) - Hidden by default */
+.filters-mobile {
+  display: none;
+}
+
+/* Desktop Filters (Buttons) - Visible by default */
+.filters-desktop {
+  display: block;
 }
 
 .filter-group {
@@ -1049,46 +1125,187 @@ watch(
     padding: 0.5rem;
   }
 
+  /* ヘッダーの件数を右上に配置 */
+  .list-header {
+    margin-bottom: 1rem;
+  }
+
+  .header-content {
+    position: relative;
+  }
+
+  .record-count {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 0.85rem;
+  }
+
+  /* スマホではドロップダウンを表示、ボタンを非表示 */
+  .filters-mobile {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+  }
+
+  .filters-desktop {
+    display: none;
+  }
+
   .filters-section {
-    padding: 1rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border: 1px solid #e2e8f0;
   }
 
-  .cat-filter,
-  .date-shortcuts,
-  .food-type-filter {
-    justify-content: center;
-  }
-
-  .filter-button {
+  /* ドロップダウンスタイル */
+  .filter-dropdown {
     flex: 1;
-    min-width: 0;
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .filter-dropdown-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #666;
+  }
+
+  .filter-select {
+    width: 100%;
+    padding: 0.5rem 0.375rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    background: white;
+    color: #333;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: #4caf50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+  }
+
+  .filter-actions {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+  }
+
+  .clear-filters-button {
+    font-size: 0.8rem;
+    padding: 0.375rem 0.75rem;
+    width: 100%;
   }
 
   .records-grid {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: transparent;
+    padding: 0.5rem;
   }
 
   .meal-record-card {
-    padding: 1rem;
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
 
+  .meal-record-card:hover {
+    background: white;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+
+  /* カードヘッダーをコンパクトに */
   .card-header {
-    flex-direction: column;
-    gap: 0.75rem;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.5rem;
+  }
+
+  .meal-info {
+    flex: 1;
+  }
+
+  .cat-name {
+    font-size: 1rem;
+    margin-bottom: 0.125rem;
+  }
+
+  .meal-time {
+    font-size: 0.8rem;
   }
 
   .card-actions {
-    align-self: flex-end;
+    flex-shrink: 0;
+  }
+
+  .action-button {
+    width: 28px;
+    height: 28px;
+    font-size: 0.85rem;
+  }
+
+  /* カードボディをコンパクトに */
+  .card-body {
+    gap: 0.5rem;
   }
 
   .food-info {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .food-name {
+    font-size: 0.9rem;
+  }
+
+  .food-brand {
+    font-size: 0.8rem;
+  }
+
+  .food-type-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
   }
 
   .quantity-info {
-    justify-content: space-between;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .quantity-value,
+  .calories-value {
+    font-size: 1.1rem;
+  }
+
+  .quantity-unit,
+  .calories-unit {
+    font-size: 0.85rem;
+  }
+
+  .notes {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .notes-label {
+    font-size: 0.75rem;
+    margin-bottom: 0.125rem;
+  }
+
+  .notes-content {
+    font-size: 0.85rem;
+    line-height: 1.3;
   }
 }
 

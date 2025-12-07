@@ -676,23 +676,14 @@ onMounted(() => {
     font-size: 1rem;
   }
 
+  /* スマホでは表示切り替えトグルを非表示 */
   .view-toggle {
-    width: 100%;
+    display: none;
   }
 
-  .view-button {
-    flex: 1;
-    justify-content: center;
-  }
-
+  /* スマホでは quick-actions を非表示 */
   .quick-actions {
-    margin: 0 1rem;
-    flex-direction: column;
-  }
-
-  .action-button {
-    min-width: auto;
-    justify-content: center;
+    display: none;
   }
 
   .meal-list-container {
