@@ -267,12 +267,6 @@ const getDeleteMessage = (food: Food | null): string => {
   return `${food.name}を削除しますか？この操作は取り消せません。`;
 };
 
-// Handle sync completion
-const handleSyncComplete = async () => {
-  // Refetch foods after sync
-  await fetchFoods();
-};
-
 // Lifecycle
 onMounted(() => {
   fetchFoods();
@@ -295,13 +289,6 @@ onMounted(() => {
 
         <!-- Header Actions -->
         <div class="header-actions">
-          <!-- Sync Button -->
-          <SyncButton
-            size="medium"
-            :show-label="true"
-            @sync-complete="handleSyncComplete"
-          />
-
           <!-- View Mode Toggle -->
           <div class="view-toggle">
             <button

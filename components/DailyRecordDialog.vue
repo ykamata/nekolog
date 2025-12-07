@@ -1223,6 +1223,33 @@ watch(() => props.dayData, () => {
   .radio-group {
     flex-direction: column;
   }
+
+  /* スマホ用: 健康シグナルボタンを横一列に */
+  .signal-color-buttons {
+    flex-wrap: nowrap;
+    gap: 0.5rem;
+  }
+
+  .signal-button {
+    min-width: 60px;
+    flex: 1;
+    padding: 0.75rem 0.25rem;
+    gap: 0.25rem;
+  }
+
+  .signal-icon {
+    font-size: 1.5rem;
+  }
+
+  .signal-text {
+    font-size: 0.75rem;
+  }
+
+  /* スマホ用: アクションボタンを小さく */
+  .btn {
+    padding: 0.625rem 1rem;
+    font-size: 0.9rem;
+  }
 }
 
 /* Reduced motion support */

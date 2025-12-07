@@ -170,16 +170,6 @@ onMounted(() => {
               <span class="view-icon">📋</span>
             </button>
           </div>
-
-          <!-- Add Button -->
-          <button
-            type="button"
-            class="add-button"
-            @click="handleAdd"
-          >
-            <span class="add-icon">+</span>
-            <span class="add-text">猫を追加</span>
-          </button>
         </div>
       </div>
     </div>
@@ -717,106 +707,159 @@ onMounted(() => {
     padding: 0;
   }
 
+  /* ヘッダーの最適化 */
   .page-header {
     border-radius: 0;
-    margin-bottom: 1rem;
-    padding: 1.5rem 1rem;
+    margin-bottom: 0.75rem;
+    padding: 1rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .header-content {
+    gap: 1rem;
   }
 
   .page-title {
-    font-size: 1.6rem;
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
   }
 
   .page-description {
-    font-size: 1rem;
+    font-size: 0.9rem;
   }
 
-  .add-text {
-    display: none;
+  .header-actions {
+    width: 100%;
   }
 
+  .view-toggle {
+    display: none; /* スマホでは表示切り替え不要 */
+  }
+
+  /* 統計サマリーの最適化 */
   .stats-summary {
-    margin: 0 1rem;
+    margin: 0 1rem 0.75rem;
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
   }
 
   .stat-card {
     padding: 1rem;
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
   }
 
   .stat-icon {
-    font-size: 1.5rem;
-    width: 40px;
-    height: 40px;
+    font-size: 1.75rem;
+    width: 44px;
+    height: 44px;
   }
 
   .stat-value {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
 
+  .stat-label {
+    font-size: 0.85rem;
+  }
+
+  /* 猫リストコンテナの最適化 */
   .cats-container {
     border-radius: 0;
     box-shadow: none;
     border-top: 1px solid #e2e8f0;
     border-bottom: 1px solid #e2e8f0;
+    background: #f8f9fa;
   }
 
-  .quick-actions {
-    margin: 1rem;
-    padding: 1.5rem;
-  }
-
-  .action-buttons {
-    grid-template-columns: 1fr;
-    gap: 0.75rem;
-  }
-
-  .action-button {
-    flex-direction: row;
-    justify-content: flex-start;
-    padding: 1rem;
-  }
-
-  .action-icon {
-    font-size: 1.5rem;
-  }
-
-  /* Force list view on mobile for better UX */
-  .cat-list--grid :deep(.cat-list__grid) {
+  /* 猫カードを横長レイアウトに */
+  .cat-list--grid :deep(.cat-list__grid),
+  .cat-list--list :deep(.cat-list__grid) {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    background: #e2e8f0;
-  }
-
-  .cat-list--grid :deep(.cat-card) {
-    display: flex;
-    align-items: center;
-    border-radius: 0;
+    gap: 0.75rem;
     padding: 1rem;
+    background: #f8f9fa;
   }
 
-  .cat-list--grid :deep(.cat-card__image-container) {
-    width: 60px;
-    height: 60px;
+  .cat-list--grid :deep(.cat-card),
+  .cat-list--list :deep(.cat-card) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    border-radius: 8px;
+    padding: 1rem;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  /* 画像を左側に配置 */
+  .cat-list--grid :deep(.cat-card__image-container),
+  .cat-list--list :deep(.cat-card__image-container) {
+    width: 80px;
+    height: 80px;
     flex-shrink: 0;
     margin-right: 1rem;
+    margin-bottom: 0;
   }
 
-  .cat-list--grid :deep(.cat-card__content) {
+  /* コンテンツエリアを右側に */
+  .cat-list--grid :deep(.cat-card__content),
+  .cat-list--list :deep(.cat-card__content) {
     flex: 1;
     display: flex;
     flex-direction: column;
+    gap: 0.75rem;
     padding: 0;
   }
 
-  .cat-list--grid :deep(.cat-card__info) {
-    margin-bottom: 0.75rem;
+  /* 猫の名前 */
+  .cat-list--grid :deep(.cat-card__name),
+  .cat-list--list :deep(.cat-card__name) {
+    font-size: 1.2rem;
+    margin: 0;
   }
 
-  .cat-list--grid :deep(.cat-card__actions) {
-    align-self: flex-start;
+  /* 情報行 */
+  .cat-list--grid :deep(.cat-card__info),
+  .cat-list--list :deep(.cat-card__info) {
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  /* アクションボタン */
+  .cat-list--grid :deep(.cat-card__actions),
+  .cat-list--list :deep(.cat-card__actions) {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .cat-list--grid :deep(.action-button),
+  .cat-list--list :deep(.action-button) {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+    min-width: auto;
+  }
+
+  .cat-list--grid :deep(.edit-button),
+  .cat-list--list :deep(.edit-button) {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  .cat-list--grid :deep(.delete-button),
+  .cat-list--list :deep(.delete-button) {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
+
+  /* クイックアクション */
+  .quick-actions {
+    display: none; /* スマホでは非表示 */
   }
 }
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import ConfirmationDialog from './ConfirmationDialog.vue';
-import CatDetailDialog from './CatDetailDialog.vue';
-import type { Cat } from '~/types/cat-meal';
+import ConfirmationDialog from "./ConfirmationDialog.vue";
+import CatDetailDialog from "./CatDetailDialog.vue";
+import type { Cat } from "~/types/cat-meal";
 
 interface Props {
   cats: Cat[];
@@ -10,8 +10,8 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'select' | 'edit' | 'delete', cat: Cat): void;
-  (e: 'add'): void;
+  (e: "select" | "edit" | "delete", cat: Cat): void;
+  (e: "add"): void;
 }
 
 const _props = withDefaults(defineProps<Props>(), {
@@ -33,17 +33,17 @@ const selectedCat = ref<Cat | null>(null);
 const handleSelectCat = (cat: Cat) => {
   selectedCat.value = cat;
   showDetailDialog.value = true;
-  emit('select', cat);
+  emit("select", cat);
 };
 
 const handleEditCat = (cat: Cat) => {
-  emit('edit', cat);
+  emit("edit", cat);
 };
 
 const handleEditFromDetail = (cat: Cat) => {
   showDetailDialog.value = false;
   selectedCat.value = null;
-  emit('edit', cat);
+  emit("edit", cat);
 };
 
 const handleCloseDetail = () => {
@@ -58,7 +58,7 @@ const handleDeleteCat = (cat: Cat) => {
 
 const confirmDelete = () => {
   if (catToDelete.value) {
-    emit('delete', catToDelete.value);
+    emit("delete", catToDelete.value);
   }
   showDeleteConfirmation.value = false;
   catToDelete.value = null;
@@ -70,25 +70,25 @@ const cancelDelete = () => {
 };
 
 const handleAddCat = () => {
-  emit('add');
+  emit("add");
 };
 
 // Calculate age from birthdate
 const calculateAge = (birthdate?: Date | string | null): string => {
-  if (!birthdate) return '不明';
+  if (!birthdate) return "不明";
 
   const today = new Date();
   const birth = new Date(birthdate);
 
   // Check if date is valid
-  if (isNaN(birth.getTime())) return '不明';
+  if (isNaN(birth.getTime())) return "不明";
 
   const ageInMs = today.getTime() - birth.getTime();
   const ageInYears = Math.floor(ageInMs / (1000 * 60 * 60 * 24 * 365.25));
 
   if (ageInYears < 1) {
     const ageInMonths = Math.floor(ageInMs / (1000 * 60 * 60 * 24 * 30.44));
-    return ageInMonths <= 0 ? '1ヶ月未満' : `${ageInMonths}ヶ月`;
+    return ageInMonths <= 0 ? "1ヶ月未満" : `${ageInMonths}ヶ月`;
   }
 
   return `${ageInYears}歳`;
@@ -96,7 +96,7 @@ const calculateAge = (birthdate?: Date | string | null): string => {
 
 // Format weight display
 const formatWeight = (weight?: number | null): string => {
-  if (weight === null || weight === undefined || weight === 0) return '未記録';
+  if (weight === null || weight === undefined || weight === 0) return "未記録";
   return `${weight}kg`;
 };
 
@@ -104,7 +104,7 @@ const formatWeight = (weight?: number | null): string => {
 const handleImageError = (event: Event) => {
   const target = event.target as HTMLImageElement;
   if (target) {
-    target.style.display = 'none';
+    target.style.display = "none";
   }
 };
 </script>
@@ -112,9 +112,7 @@ const handleImageError = (event: Event) => {
 <template>
   <div class="cat-list">
     <div class="cat-list__header">
-      <h2 class="cat-list__title">
-        猫の管理
-      </h2>
+      <h2 class="cat-list__title">猫の管理</h2>
       <button
         v-if="showActions"
         :disabled="loading"
@@ -125,25 +123,15 @@ const handleImageError = (event: Event) => {
       </button>
     </div>
 
-    <div
-      v-if="loading"
-      class="cat-list__loading"
-    >
+    <div v-if="loading" class="cat-list__loading">
       <div class="loading-spinner" />
       <p>猫の情報を読み込み中...</p>
     </div>
 
-    <div
-      v-else-if="cats.length === 0"
-      class="cat-list__empty"
-    >
+    <div v-else-if="cats.length === 0" class="cat-list__empty">
       <div class="empty-state">
-        <div class="empty-state__icon">
-          🐱
-        </div>
-        <h3 class="empty-state__title">
-          猫が登録されていません
-        </h3>
+        <div class="empty-state__icon">🐱</div>
+        <h3 class="empty-state__title">猫が登録されていません</h3>
         <p class="empty-state__message">
           最初の猫を追加して、食事管理を始めましょう。
         </p>
@@ -157,10 +145,7 @@ const handleImageError = (event: Event) => {
       </div>
     </div>
 
-    <div
-      v-else
-      class="cat-list__grid"
-    >
+    <div v-else class="cat-list__grid">
       <div
         v-for="cat in cats"
         :key="cat.id"
@@ -174,18 +159,15 @@ const handleImageError = (event: Event) => {
             :alt="cat.name"
             class="cat-card__image"
             @error="handleImageError"
-          >
-          <div
-            v-else
-            class="cat-card__image cat-card__image--placeholder"
-          >
+          />
+          <div v-else class="cat-card__image cat-card__image--placeholder">
             🐱
           </div>
         </div>
 
         <div class="cat-card__content">
           <h3 class="cat-card__name">
-            {{ cat.name || '名前未設定' }}
+            {{ cat.name || "名前未設定" }}
           </h3>
 
           <div class="cat-card__info">
@@ -195,7 +177,6 @@ const handleImageError = (event: Event) => {
                 calculateAge(cat.birthdate)
               }}</span>
             </div>
-
             <div class="cat-card__info-item">
               <span class="cat-card__info-label">体重:</span>
               <span class="cat-card__info-value">{{
@@ -203,24 +184,21 @@ const handleImageError = (event: Event) => {
               }}</span>
             </div>
           </div>
+        </div>
 
-          <div
-            v-if="showActions"
-            class="cat-card__actions"
+        <div v-if="showActions" class="cat-card__actions">
+          <button
+            class="btn btn--small btn--secondary"
+            @click.stop="handleEditCat(cat)"
           >
-            <button
-              class="btn btn--small btn--secondary"
-              @click.stop="handleEditCat(cat)"
-            >
-              編集
-            </button>
-            <button
-              class="btn btn--small btn--danger"
-              @click.stop="handleDeleteCat(cat)"
-            >
-              削除
-            </button>
-          </div>
+            編集
+          </button>
+          <button
+            class="btn btn--small btn--danger"
+            @click.stop="handleDeleteCat(cat)"
+          >
+            削除
+          </button>
         </div>
       </div>
     </div>
@@ -385,7 +363,8 @@ const handleImageError = (event: Event) => {
 
 .cat-card__info-item {
   display: flex;
-  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
@@ -474,16 +453,62 @@ const handleImageError = (event: Event) => {
     gap: 1rem;
   }
 
-  .cat-card__image-container {
-    height: 150px;
-  }
-
-  .cat-card__content {
+  /* 猫カードを横3分割レイアウトに */
+  .cat-card {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 0.75rem;
+    align-items: center;
     padding: 1rem;
   }
 
-  .cat-card__actions {
+  .cat-card__image-container {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    grid-column: 1;
+  }
+
+  .cat-card__content {
+    padding: 0;
+    grid-column: 2;
+    display: flex;
     flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .cat-card__name {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+
+  .cat-card__info {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    font-size: 0.85rem;
+  }
+
+  .cat-card__info-item {
+    margin-bottom: 0;
+    line-height: 0.5;
+    align-items: center;
+  }
+
+  .cat-card__actions {
+    grid-column: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0;
+  }
+
+  .btn--small {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+    width: 100%;
+    min-width: auto;
   }
 }
 

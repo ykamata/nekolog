@@ -1140,6 +1140,56 @@ onMounted(() => {
   .legend-items {
     gap: 0.5rem;
   }
+
+  /* スマホ用: カロリー表示を簡略化 */
+  .detail-calories {
+    padding: 0.2rem 0.3rem;
+    background: transparent;
+    border: none;
+  }
+
+  .detail-calories .detail-label {
+    display: none; /* 🍽️アイコンを非表示 */
+  }
+
+  .detail-calories .detail-value {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #f57c00;
+  }
+
+  /* スマホ用: 排泄時刻を非表示、アイコンのみ表示 */
+  .excretion-times {
+    padding: 0;
+    background: transparent;
+    justify-content: center;
+  }
+
+  .excretion-values {
+    display: none; /* 時刻を非表示 */
+  }
+
+  .excretion-icon {
+    font-size: 0.5rem;
+  }
+
+  /* スマホ用: アイコンバッジのサイズ調整 */
+  .icon-badge {
+    font-size: 0.5rem;
+  }
+
+  /* スマホ用: アイコンを縦並びに */
+  .day-icons {
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  /* スマホ用: 詳細行の配置調整 */
+  .detail-excretion {
+    flex-direction: row;
+    gap: 0.25rem;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1161,6 +1211,19 @@ onMounted(() => {
 
   .indicator {
     padding: 0.0625rem 0.125rem;
+  }
+
+  /* 480px以下でさらに調整 */
+  .detail-calories .detail-value {
+    font-size: 0.65rem;
+  }
+
+  .excretion-icon {
+    font-size: 0.5rem;
+  }
+
+  .icon-badge {
+    font-size: 0.5rem;
   }
 }
 
