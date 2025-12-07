@@ -155,9 +155,6 @@ onMounted(async () => {
           飼い猫の食事記録と健康管理を簡単に行えるアプリケーションです
         </p>
       </div>
-      <div class="welcome-icon">
-        🐱
-      </div>
     </section>
 
     <!-- Stats Section -->
@@ -276,7 +273,7 @@ onMounted(async () => {
         ケアカレンダー
       </h2>
       <p class="calendar-description">
-        日々の食事、排泄、介護の記録を一目で確認できます。日付をクリックして詳細を記録しましょう。
+        日々の食事、排泄、介護の記録を一目で確認できます。<br>日付をクリックして詳細を記録しましょう。
       </p>
       <DailyCalendar @select-date="handleDateSelect" />
     </section>
@@ -601,14 +598,14 @@ onMounted(async () => {
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .stat-card {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 1.25rem;
   background: #f8f9fa;
   border-radius: 8px;
   border: 1px solid #e2e8f0;
@@ -630,16 +627,17 @@ onMounted(async () => {
 }
 
 .stat-value {
-  font-size: 2.5rem;
+  font-size: 2.2rem;
   font-weight: 700;
   color: #4caf50;
   line-height: 1;
 }
 
 .stat-label {
-  font-size: 1rem;
+  font-size: 0.92rem;
   color: #666;
-  margin-top: 0.25rem;
+  margin-top: 0.1rem;
+  white-space: nowrap;
 }
 
 /* Quick Actions Section */
@@ -647,7 +645,7 @@ onMounted(async () => {
   background: white;
   border-radius: 12px;
   padding: 2rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -1022,6 +1020,15 @@ onMounted(async () => {
     gap: 0.75rem;
   }
 
+  .stat-value {
+    font-size: 2.1rem;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
   .action-card {
     flex-direction: column;
     text-align: center;
@@ -1093,6 +1100,119 @@ onMounted(async () => {
   }
 
   .getting-started-actions {
+    display: none;
+  }
+}
+</style>
+
+<!-- Compact/mobile overrides -->
+<style scoped>
+/* Base tightening */
+.welcome-section {
+  padding: 2.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.welcome-title {
+  font-size: 2.1rem;
+}
+
+.welcome-description {
+  font-size: 1rem;
+}
+
+.stats-section {
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.04);
+}
+
+.stats-grid {
+  gap: 0.75rem;
+}
+
+.stat-card {
+  min-height: 90px;
+}
+
+.section-title {
+  font-size: 1.3rem;
+}
+
+.quick-actions-section {
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.actions-grid {
+  gap: 0.75rem;
+}
+
+.calendar-section {
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.calendar-description {
+  font-size: 0.95rem;
+}
+
+.getting-started-section {
+  padding: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Mobile specific */
+@media (max-width: 768px) {
+  .home-page {
+    padding: 1rem 0;
+  }
+
+  .welcome-section {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    gap: 0.35rem;
+  }
+
+  .welcome-title {
+    font-size: 1.1rem;
+  }
+
+  .welcome-description {
+    font-size: 0.78rem;
+  }
+
+  .stats-section {
+    padding: 0.75rem 0.85rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .stat-card {
+    padding: 0.75rem;
+    min-height: 60px;
+  }
+
+  .section-title {
+    font-size: 0.95rem;
+  }
+
+  .calendar-section {
+    padding: 1rem 0;
+    margin-bottom: 1rem;
+  }
+
+  .calendar-description {
+    font-size: 0.85rem;
+  }
+
+  /* Hide less important sections on mobile */
+  .quick-actions-section,
+  .getting-started-section {
     display: none;
   }
 }

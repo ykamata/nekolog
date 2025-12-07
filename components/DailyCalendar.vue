@@ -1138,7 +1138,6 @@ onMounted(() => {
   }
 
   .legend-items {
-    flex-direction: column;
     gap: 0.5rem;
   }
 }

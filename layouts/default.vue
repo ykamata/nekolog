@@ -481,7 +481,7 @@ const handleLogout = async () => {
   }
 
   .page-content {
-    padding: 1rem;
+    padding: 0;
     padding-bottom: 6rem;
   }
 
@@ -496,7 +496,7 @@ const handleLogout = async () => {
 
 @media (max-width: 480px) {
   .page-content {
-    padding: 0.75rem;
+    padding: 0;
     padding-bottom: 6rem;
   }
 
