@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # MySQL Database Service (Production)
+  mysql:
+    image: mysql:8.0
+    container_name: nekolog-mysql-prod
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: nekolog
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      # MySQL data persistence (production volume)
+      - mysql_prod_data:/var/lib/mysql
+      # MySQL configuration
+      - ./docker/mysql/prod.cnf:/etc/mysql/conf.d/prod.cnf:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-authentication-plugin=mysql_native_password
+      # Production optimizations
+      - --max-connections=200
+      - --innodb-buffer-pool-size=512M
+      - --innodb-log-file-size=128M
+      - --slow-query-log=1
+      - --slow-query-log-file=/var/log/mysql/slow-query.log
+      - --long-query-time=2
+    networks:
+      - nekolog-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Node.js Application Service (Production)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+      args:
+        NODE_ENV: production
+    container_name: nekolog-app-prod
+    restart: always
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/nekolog
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 3000
+      # Nuxt production settings
+      NITRO_PORT: 3000
+      NITRO_HOST: 0.0.0.0
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - nekolog-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  nekolog-network:
+    driver: bridge
+
+volumes:
+  mysql_prod_data:
+    driver: local
