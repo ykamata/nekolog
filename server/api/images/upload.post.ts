@@ -71,7 +71,12 @@ export default defineEventHandler(async (event) => {
     const filename = `cat-${timestamp}-${randomStr}.${extension}`;
 
     // アップロードディレクトリの作成
-    const uploadDir = join(process.cwd(), 'public', 'uploads', 'cats');
+    // 本番環境では .output/public に、開発環境では public に保存
+    const isProduction = process.env.NODE_ENV === 'production';
+    const uploadDir = isProduction
+      ? join(process.cwd(), '.output', 'public', 'uploads', 'cats')
+      : join(process.cwd(), 'public', 'uploads', 'cats');
+
     if (!existsSync(uploadDir)) {
       mkdirSync(uploadDir, { recursive: true });
     }

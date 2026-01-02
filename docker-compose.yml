@@ -53,7 +53,7 @@ services:
         condition: service_healthy
     networks:
       - nekolog-network
-    command: npm run dev
+    command: sleep infinity
 
 networks:
   nekolog-network:

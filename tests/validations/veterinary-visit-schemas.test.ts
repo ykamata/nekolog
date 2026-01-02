@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { AppointmentStatus } from '@prisma/client';
 import {
+  AppointmentStatus,
   VeterinaryVisitInputSchema,
   VeterinaryAppointmentInputSchema,
   VeterinaryHospitalInputSchema,

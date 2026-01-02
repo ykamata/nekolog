@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
-import VeterinaryMasterSelector from '@/components/VeterinaryMasterSelector.vue';
+import VeterinaryMasterSelector from '~/components/VeterinaryMasterSelector.vue';
 
 // テスト用のモックデータ
 const mockHospitals = [

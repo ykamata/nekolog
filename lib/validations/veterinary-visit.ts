@@ -3,7 +3,13 @@
  */
 
 import { z } from 'zod';
-import { AppointmentStatus } from '@prisma/client';
+
+// Appointment status enum (mirrors Prisma schema)
+export enum AppointmentStatus {
+  SCHEDULED = 'SCHEDULED',
+  COMPLETED = 'COMPLETED',
+  CANCELLED = 'CANCELLED',
+}
 
 // Enum schemas
 export const AppointmentStatusSchema = z.nativeEnum(AppointmentStatus);

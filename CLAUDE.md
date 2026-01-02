@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Nekolog is a comprehensive cat care management application built with Nuxt 3 and TypeScript. The app tracks multiple cats with meal recording, medication management, veterinary visits, excretion tracking, and analytics visualization.
+Nekolog is a comprehensive cat care management application built with Nuxt 4 and TypeScript. The app tracks multiple cats with meal recording, medication management, veterinary visits, excretion tracking, and analytics visualization.
 
 ## Development Commands
 
@@ -238,7 +238,7 @@ User          - Authentication and hospital/doctor ownership
 
 ### Frontend Architecture
 
-- **Nuxt 3**: Full-stack framework with auto-imports
+- **Nuxt 4**: Full-stack framework with auto-imports and improved performance
 - **Vue 3 Composition API**: `<script setup lang="ts">` syntax
 - **Pinia**: Centralized state management
 - **TypeScript**: Strict mode with comprehensive type checking
@@ -246,7 +246,7 @@ User          - Authentication and hospital/doctor ownership
 
 ### API Pattern
 
-Server API routes follow Nuxt 3 conventions with Zod validation:
+Server API routes follow Nuxt 4 conventions with Zod validation:
 
 ```typescript
 // server/api/[feature]/index.get.ts

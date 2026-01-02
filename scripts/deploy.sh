@@ -66,10 +66,10 @@ if ! command -v docker &> /dev/null; then
 fi
 
 # Check if Docker Compose is installed
-if ! command -v docker-compose &> /dev/null; then
-    print_error "Docker Compose is not installed. Please install Docker Compose first."
-    exit 1
-fi
+#if ! command -v docker-compose &> /dev/null; then
+#    print_error "Docker Compose is not installed. Please install Docker Compose first."
+#    exit 1
+#fi
 
 print_success "Docker and Docker Compose are available"
 
@@ -156,7 +156,7 @@ echo ""
 
 # Run database migrations
 print_info "Running database migrations..."
-docker exec nekolog-app-prod npx prisma migrate deploy --schema=prisma/schema.mysql.prisma
+docker exec nekolog-app-prod npx prisma migrate deploy --schema=prisma/schema.prisma
 print_success "Database migrations completed"
 
 # Wait for application to be ready

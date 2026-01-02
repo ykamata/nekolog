@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { AppointmentStatus } from '@prisma/client';
 import { prisma } from '~/lib/prisma';
 import {
+  AppointmentStatus,
   VeterinaryAppointmentInputSchema,
   VeterinaryAppointmentUpdateSchema,
   VeterinaryAppointmentFilterSchema,

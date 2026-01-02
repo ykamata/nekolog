@@ -361,15 +361,25 @@ onUnmounted(() => {
             role="img"
             :aria-label="`${selectedCat?.name}の${selectedPeriodDays}日間の食事データチャート`"
           >
-            <MealChartSimple
-              v-if="chartFilters.catId"
-              :cat-id="chartFilters.catId"
-              :height="400"
-              :period-days="selectedPeriodDays"
-              :summary-analytics="summaryAnalytics30Days"
-            />
+            <ClientOnly>
+              <MealChartSimple
+                v-if="chartFilters.catId"
+                :cat-id="chartFilters.catId"
+                :height="400"
+                :period-days="selectedPeriodDays"
+                :summary-analytics="summaryAnalytics30Days"
+              />
+              <template #fallback>
+                <div class="loading-container">
+                  <div class="loading-spinner" />
+                  <p class="loading-text">
+                    チャートを読み込み中...
+                  </p>
+                </div>
+              </template>
+            </ClientOnly>
             <div
-              v-else
+              v-if="!chartFilters.catId"
               class="no-cat-selected"
             >
               <div class="text-center py-12">

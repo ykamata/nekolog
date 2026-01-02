@@ -56,6 +56,12 @@ export default defineNuxtConfig({
     routeRules: {
       // Add redirect from /index to /
       '/index': { redirect: '/' },
+      // Static file serving for uploaded images
+      '/uploads/**': {
+        headers: {
+          'cache-control': 'public, max-age=31536000, immutable',
+        },
+      },
     },
   },
 
@@ -65,7 +71,7 @@ export default defineNuxtConfig({
       global: 'globalThis',
     },
     optimizeDeps: {
-      include: ['@prisma/client'],
+      include: ['@prisma/client', 'chart.js', 'vue-chartjs'],
     },
     build: {
       rollupOptions: {

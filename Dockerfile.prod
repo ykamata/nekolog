@@ -30,10 +30,13 @@ RUN npm ci --ignore-scripts
 RUN npx nuxt prepare
 
 # Generate Prisma Client for MySQL
-RUN npx prisma generate --schema=prisma/schema.mysql.prisma
+RUN npx prisma generate --schema=prisma/schema.prisma
 
 # Copy application source
 COPY . .
+
+# Set NODE_ENV for build (required for nuxt.config.ts conditional logic)
+ENV NODE_ENV=production
 
 # Build the application
 RUN npm run build
@@ -48,7 +51,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     ca-certificates \
-    wget \
+    procps \
+    curl \
     default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
@@ -62,7 +66,7 @@ COPY prisma ./prisma/
 RUN npm ci --only=production --ignore-scripts
 
 # Generate Prisma Client for MySQL
-RUN npx prisma generate --schema=prisma/schema.mysql.prisma
+RUN npx prisma generate --schema=prisma/schema.prisma
 
 # Copy built application from builder
 COPY --from=builder /app/.output /app/.output
@@ -76,18 +80,24 @@ COPY tailwind.config.ts ./
 # Create non-root user
 RUN groupadd -r nekolog && useradd -r -g nekolog nekolog
 
+# Create uploads directory in .output/public with proper permissions
+# RUN mkdir -p /app/.output/public/uploads/cats && \
+#     chown -R nekolog:nekolog /app/.output/public/uploads && \
+#     chmod -R 2775 /app/.output/public/uploads
+RUN mkdir -p /app/.output/public/uploads/cats
+
 # Set ownership
-RUN chown -R nekolog:nekolog /app
+#RUN chown -R nekolog:nekolog /app
 
 # Switch to non-root user
-USER nekolog
+#USER nekolog
 
 # Expose port
 EXPOSE 3000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1
+  CMD curl -f http://127.0.0.1:3000/api/health || exit 1
 
 # Start application
 CMD ["node", ".output/server/index.mjs"]

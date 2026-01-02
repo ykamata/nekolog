@@ -74,36 +74,10 @@
 </template>
 
 <script setup lang="ts">
-import {
-  Chart,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  LineController,
-  BarElement,
-  BarController,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
+import { Chart } from 'chart.js';
 import type { MealAnalytics } from '~/types/cat-meal';
 
-// Chart.js components registration - 棒グラフ用コンポーネントを追加
-Chart.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  LineController,
-  BarElement,
-  BarController,
-  Title,
-  Tooltip,
-  Legend,
-  Filler,
-);
+// Chart.jsのコンポーネント登録はplugins/chartjs.client.tsで行われます
 
 interface Props {
   catId?: number;
@@ -624,10 +598,6 @@ const getCommonChartOptions = (title: string) => ({
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
       titleColor: 'white',
       bodyColor: 'white',
-    },
-    filler: {
-      propagate: false,
-      drawTime: 'beforeDatasetsDraw' as const,
     },
   },
   scales: {
