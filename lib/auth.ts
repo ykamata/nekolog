@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 
 // JWT configuration
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+  process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 );
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 const REFRESH_TOKEN_EXPIRES_IN = process.env.REFRESH_TOKEN_EXPIRES_IN || '30d';
@@ -25,7 +25,7 @@ export interface TokenPair {
  * Generate JWT access token
  */
 export async function generateAccessToken(
-  payload: Omit<JWTPayload, 'iat' | 'exp'>,
+  payload: Omit<JWTPayload, 'iat' | 'exp'>
 ): Promise<string> {
   return await new SignJWT(payload as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
@@ -38,7 +38,7 @@ export async function generateAccessToken(
  * Generate JWT refresh token
  */
 export async function generateRefreshToken(
-  payload: Omit<JWTPayload, 'iat' | 'exp'>,
+  payload: Omit<JWTPayload, 'iat' | 'exp'>
 ): Promise<string> {
   return await new SignJWT(payload as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
@@ -51,7 +51,7 @@ export async function generateRefreshToken(
  * Generate both access and refresh tokens
  */
 export async function generateTokenPair(
-  payload: Omit<JWTPayload, 'iat' | 'exp'>,
+  payload: Omit<JWTPayload, 'iat' | 'exp'>
 ): Promise<TokenPair> {
   return {
     accessToken: await generateAccessToken(payload),
@@ -71,8 +71,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
       iat: payload.iat,
       exp: payload.exp,
     };
-  }
-  catch {
+  } catch {
     // Token verification failed
     return null;
   }
@@ -91,7 +90,7 @@ export async function hashPassword(password: string): Promise<string> {
  */
 export async function comparePassword(
   password: string,
-  hash: string,
+  hash: string
 ): Promise<boolean> {
   return await bcrypt.compare(password, hash);
 }
@@ -100,7 +99,7 @@ export async function comparePassword(
  * Extract token from Authorization header
  */
 export function extractTokenFromHeader(
-  authHeader: string | undefined,
+  authHeader: string | undefined
 ): string | null {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
@@ -114,7 +113,7 @@ export function extractTokenFromHeader(
 export function getSecureCookieOptions() {
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     sameSite: 'lax' as const, // 開発環境での問題を回避するためstrictからlaxに変更
     maxAge: 60 * 60 * 24 * 7, // 7 days in seconds
     path: '/',
@@ -127,7 +126,7 @@ export function getSecureCookieOptions() {
 export function getRefreshCookieOptions() {
   return {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: false,
     sameSite: 'lax' as const, // 開発環境での問題を回避するためstrictからlaxに変更
     maxAge: 60 * 60 * 24 * 30, // 30 days in seconds
     path: '/',
@@ -142,8 +141,7 @@ export async function debugTokenFlow(payload: Omit<JWTPayload, 'iat' | 'exp'>) {
     const accessToken = await generateAccessToken(payload);
     const verified = await verifyToken(accessToken);
     return { accessToken, verified };
-  }
-  catch {
+  } catch {
     return null;
   }
 }
