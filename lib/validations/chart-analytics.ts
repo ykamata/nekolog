@@ -21,7 +21,8 @@ export const DateRangeQuerySchema = z.object({
       if (!str) return undefined;
       try {
         const decodedStr = decodeURIComponent(str);
-        const date = new Date(decodedStr);
+        // JST（タイムゾーンなし）の日時文字列をJSTとして解釈
+        const date = new Date(decodedStr + '+09:00');
         if (isNaN(date.getTime())) {
           throw new Error('Invalid date format');
         }
@@ -38,7 +39,8 @@ export const DateRangeQuerySchema = z.object({
       if (!str) return undefined;
       try {
         const decodedStr = decodeURIComponent(str);
-        const date = new Date(decodedStr);
+        // JST（タイムゾーンなし）の日時文字列をJSTとして解釈
+        const date = new Date(decodedStr + '+09:00');
         if (isNaN(date.getTime())) {
           throw new Error('Invalid date format');
         }
@@ -62,7 +64,8 @@ export const ChartAnalyticsQuerySchema = z
         if (!str) return undefined;
         try {
           const decodedStr = decodeURIComponent(str);
-          const date = new Date(decodedStr);
+          // JST（タイムゾーンなし）の日時文字列をJSTとして解釈
+          const date = new Date(decodedStr + '+09:00');
           if (isNaN(date.getTime())) {
             throw new Error('Invalid date format');
           }
@@ -80,7 +83,8 @@ export const ChartAnalyticsQuerySchema = z
         if (!str) return undefined;
         try {
           const decodedStr = decodeURIComponent(str);
-          const date = new Date(decodedStr);
+          // JST（タイムゾーンなし）の日時文字列をJSTとして解釈
+          const date = new Date(decodedStr + '+09:00');
           if (isNaN(date.getTime())) {
             throw new Error('Invalid date format');
           }

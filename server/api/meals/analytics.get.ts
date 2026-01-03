@@ -16,7 +16,9 @@ const querySchema = z.object({
       try {
         // URLデコードしてから日付をパース
         const decodedStr = decodeURIComponent(str);
-        const date = new Date(decodedStr);
+        // JST（タイムゾーンなし）の日時文字列をJSTとして解釈
+        // クライアントから送られる形式: YYYY-MM-DDTHH:mm:ss
+        const date = new Date(decodedStr + '+09:00'); // JSTのタイムゾーンオフセットを追加
         if (isNaN(date.getTime())) {
           throw new Error('Invalid date format');
         }
@@ -34,7 +36,9 @@ const querySchema = z.object({
       try {
         // URLデコードしてから日付をパース
         const decodedStr = decodeURIComponent(str);
-        const date = new Date(decodedStr);
+        // JST（タイムゾーンなし）の日時文字列をJSTとして解釈
+        // クライアントから送られる形式: YYYY-MM-DDTHH:mm:ss
+        const date = new Date(decodedStr + '+09:00'); // JSTのタイムゾーンオフセットを追加
         if (isNaN(date.getTime())) {
           throw new Error('Invalid date format');
         }
