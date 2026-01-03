@@ -74,10 +74,12 @@
 </template>
 
 <script setup lang="ts">
-import { Chart } from 'chart.js';
+import type { Chart } from 'chart.js';
 import type { MealAnalytics } from '~/types/cat-meal';
 
-// Chart.jsのコンポーネント登録はplugins/chartjs.client.tsで行われます
+// Chart.jsはクライアント側でのみ動的にインポートされます
+// プラグインでの登録はplugins/chartjs.client.tsで行われます
+let ChartJS: typeof Chart | null = null;
 
 interface Props {
   catId?: number;
@@ -119,7 +121,7 @@ const chartDisplayMode = computed(() => analyticsStore.chartDisplayMode);
 const totalCalories = computed(() => {
   if (!analytics30Days.value?.dailyCalories) return 0;
   return analytics30Days.value.dailyCalories.reduce(
-    (sum, item) => sum + Number(item.calories),
+    (sum: number, item: { calories: number }) => sum + Number(item.calories),
     0,
   );
 });
@@ -227,6 +229,20 @@ const createChart = async () => {
   isCreatingChart.value = true;
 
   try {
+    // Client-side only: Dynamically import Chart.js
+    if (!ChartJS && import.meta.client) {
+      console.log('MealChartSimple: Chart.jsを動的にインポート中...');
+      const chartModule = await import('chart.js');
+      ChartJS = chartModule.Chart;
+      console.log('MealChartSimple: Chart.jsのインポート完了');
+    }
+
+    if (!ChartJS) {
+      console.error('MealChartSimple: Chart.jsがロードされていません');
+      error.value = 'Chart.jsのロードに失敗しました';
+      return;
+    }
+
     // Canvas要素が利用可能になるまで待つ
     let retryCount = 0;
     const maxRetries = 20;
@@ -311,7 +327,11 @@ const createChart = async () => {
     // Chart.jsインスタンスを作成
     try {
       // デフォルトのchartConfigをそのまま使用
-      chart.value = new Chart(ctx, chartConfig as any);
+      if (!ChartJS) {
+        error.value = 'Chart.jsが初期化されていません';
+        return;
+      }
+      chart.value = new ChartJS(ctx, chartConfig as any);
     } catch (chartError) {
       console.error('MealChartSimple: Chart.js作成エラー:', chartError);
       console.error('MealChartSimple: chartConfig:', JSON.stringify(chartConfig, null, 2));

@@ -71,7 +71,12 @@ export default defineNuxtConfig({
       global: 'globalThis',
     },
     optimizeDeps: {
-      include: ['@prisma/client', 'chart.js', 'vue-chartjs'],
+      include: ['@prisma/client'],
+    },
+    ssr: {
+      // Exclude Chart.js from SSR to prevent server-side bundling
+      noExternal: [],
+      external: ['chart.js', 'vue-chartjs'],
     },
     build: {
       rollupOptions: {
