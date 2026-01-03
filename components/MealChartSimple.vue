@@ -28,17 +28,17 @@
     </div>
 
     <!-- Chart -->
-    <div
-      class="chart-container"
-      :style="{ display: error ? 'none' : 'block' }"
-    >
-      <canvas
-        :id="`meal-chart-simple-${props.catId || 'default'}-${canvasKey}`"
-        :key="`chart-canvas-${canvasKey}`"
-        ref="chartCanvas"
-        class="chart-canvas"
-      />
-    </div>
+    <ClientOnly>
+      <div
+        class="chart-container"
+        :style="{ display: error ? 'none' : 'block' }"
+      >
+        <canvas
+          ref="chartCanvas"
+          class="chart-canvas"
+        />
+      </div>
+    </ClientOnly>
 
     <!-- Chart Summary -->
     <div
@@ -136,9 +136,6 @@ const analytics30Days = ref<MealAnalytics | null>(props.summaryAnalytics || null
 const isCreatingChart = ref(false);
 const chartCreationId = ref(0);
 
-// キャンバス再作成用のキー
-const canvasKey = ref(0);
-
 // Analytics Store
 const analyticsStore = useAnalyticsStore();
 
@@ -227,6 +224,25 @@ const fetchData = async (retryCount = 0) => {
     console.log('MealChartSimple: createChart呼び出し開始（データがない場合も0のグラフを描画）');
     await createChart();
     console.log('MealChartSimple: createChart呼び出し完了');
+
+    // チャート作成後、さらにリサイズを確実に実行
+    if (chart.value) {
+      await nextTick();
+      await new Promise(resolve => requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (chart.value) {
+            try {
+              chart.value.resize();
+              console.log('MealChartSimple: 追加リサイズ実行');
+            }
+            catch (err) {
+              console.error('MealChartSimple: 追加リサイズエラー:', err);
+            }
+          }
+          resolve(undefined);
+        });
+      }));
+    }
   }
   catch (err) {
     console.error('MealChartSimple: データ取得エラー:', err);
@@ -271,7 +287,7 @@ const createChart = async () => {
 
     // Canvas要素が利用可能になるまで待つ
     let retryCount = 0;
-    const maxRetries = 20;
+    const maxRetries = 30;
 
     while (!chartCanvas.value && retryCount < maxRetries) {
       // 作成IDが変更された場合は処理を中断
@@ -290,6 +306,23 @@ const createChart = async () => {
       console.log('MealChartSimple: Canvas要素が見つかりません');
       error.value = 'Canvas要素が見つかりません';
       return;
+    }
+
+    // 親要素のサイズが確定するまで待つ（requestAnimationFrame を2回）
+    await new Promise(resolve => requestAnimationFrame(() => {
+      requestAnimationFrame(resolve);
+    }));
+
+    // 親要素のサイズを確認
+    const container = chartCanvas.value.parentElement;
+    if (container) {
+      const { width, height } = container.getBoundingClientRect();
+      console.log('MealChartSimple: 親要素のサイズ', { width, height });
+
+      if (width === 0 || height === 0) {
+        console.warn('MealChartSimple: 親要素のサイズが0です。追加で待機します。');
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
 
     // 作成IDが変更された場合は処理を中断
@@ -371,11 +404,19 @@ const createChart = async () => {
       type: chartConfig.type,
     });
 
-    // チャート作成後にリサイズを強制実行
+    // チャート作成後にリサイズを強制実行（requestAnimationFrameで遅延）
     await nextTick();
+    await new Promise(resolve => requestAnimationFrame(() => {
+      requestAnimationFrame(resolve);
+    }));
+
     if (chart.value && chartCreationId.value === currentCreationId) {
-      chart.value.resize();
-      console.log('MealChartSimple: チャートリサイズ実行');
+      try {
+        chart.value.resize();
+        console.log('MealChartSimple: チャートリサイズ実行');
+      } catch (resizeError) {
+        console.error('MealChartSimple: リサイズエラー:', resizeError);
+      }
     }
   }
   catch (err) {
@@ -769,9 +810,6 @@ const destroyChartSafely = async () => {
     }
   }
 
-  // キャンバスキーを更新して要素を再作成
-  canvasKey.value++;
-
   // 少し待機してDOM操作を完了させる
   await nextTick();
 };
@@ -873,7 +911,6 @@ onMounted(async () => {
   }
 
   // チャートをリセット
-  canvasKey.value = 0;
   chartCreationId.value = 0;
   isCreatingChart.value = false;
   isChartInitialized.value = false;
@@ -923,10 +960,14 @@ onUnmounted(() => {
 .chart-container {
   width: 100%;
   height: 400px;
+  min-height: 400px; /* 最小高さを保証 */
   position: relative;
   background: #fafafa;
   border: 1px solid #e2e8f0;
   border-radius: 4px;
+  /* Chart.jsがサイズを認識できるように */
+  display: block;
+  overflow: hidden;
 }
 
 .chart-canvas {
