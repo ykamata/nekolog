@@ -5,6 +5,12 @@ export default defineNuxtPlugin(async () => {
   }
 
   try {
+    // 既にグローバルに登録されている場合はスキップ
+    if (typeof window !== 'undefined' && (window as any).Chart) {
+      console.log('Chart.js は既にグローバルに登録されています');
+      return;
+    }
+
     // Dynamic import to prevent server-side bundling
     const {
       Chart,
@@ -21,6 +27,7 @@ export default defineNuxtPlugin(async () => {
       Filler,
     } = await import('chart.js');
 
+    // プラグインを登録
     Chart.register(
       CategoryScale,
       LinearScale,
@@ -35,13 +42,14 @@ export default defineNuxtPlugin(async () => {
       Filler,
     );
 
-    // Make Chart.js globally available for debugging
+    // Make Chart.js globally available
     if (typeof window !== 'undefined') {
-      window.Chart = Chart;
+      (window as any).Chart = Chart;
     }
 
     console.log('Chart.js プラグインが登録されました');
   } catch (error) {
     console.error('Chart.js プラグインの読み込みに失敗しました:', error);
+    throw error;
   }
 });

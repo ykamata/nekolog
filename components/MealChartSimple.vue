@@ -79,7 +79,36 @@ import type { MealAnalytics } from '~/types/cat-meal';
 
 // Chart.jsはクライアント側でのみ動的にインポートされます
 // プラグインでの登録はplugins/chartjs.client.tsで行われます
+// ウィンドウオブジェクトからChart.jsのグローバルインスタンスを取得
 let ChartJS: typeof Chart | null = null;
+
+// グローバルに登録されたChart.jsを取得するヘルパー
+const getChartJS = async (): Promise<typeof Chart> => {
+  // すでにロード済みの場合はそれを返す
+  if (ChartJS) {
+    return ChartJS as typeof Chart;
+  }
+
+  // windowオブジェクトにChart.jsが既に登録されているかチェック
+  if (typeof window !== 'undefined' && (window as any).Chart) {
+    ChartJS = (window as any).Chart;
+    console.log('MealChartSimple: グローバルChart.jsを使用');
+    return ChartJS as typeof Chart;
+  }
+
+  // まだロードされていない場合は動的インポート
+  console.log('MealChartSimple: Chart.jsを動的にインポート中...');
+  const chartModule = await import('chart.js');
+  ChartJS = chartModule.Chart;
+
+  // グローバルに設定
+  if (typeof window !== 'undefined') {
+    (window as any).Chart = ChartJS;
+  }
+
+  console.log('MealChartSimple: Chart.jsのインポート完了');
+  return ChartJS as typeof Chart;
+};
 
 interface Props {
   catId?: number;
@@ -229,12 +258,9 @@ const createChart = async () => {
   isCreatingChart.value = true;
 
   try {
-    // Client-side only: Dynamically import Chart.js
-    if (!ChartJS && import.meta.client) {
-      console.log('MealChartSimple: Chart.jsを動的にインポート中...');
-      const chartModule = await import('chart.js');
-      ChartJS = chartModule.Chart;
-      console.log('MealChartSimple: Chart.jsのインポート完了');
+    // Client-side only: Get Chart.js instance
+    if (import.meta.client) {
+      ChartJS = await getChartJS();
     }
 
     if (!ChartJS) {
@@ -448,7 +474,7 @@ const getLineChartConfig = () => {
   const sourceDailyCalories = lineChartData || analytics.value.dailyCalories;
 
   // dailyCaloriesから日付ごとに合算（線グラフ用）
-  sourceDailyCalories.forEach((item) => {
+  sourceDailyCalories.forEach((item: { date: string; calories: number }) => {
     const normalizedKey = normalizeDateKey(item.date);
     const currentTotal = caloriesMap.get(normalizedKey) || 0;
     caloriesMap.set(normalizedKey, currentTotal + Number(item.calories));
@@ -543,27 +569,45 @@ const getStackedBarChartConfig = () => {
   const finalDryData = dryData.length > 0 ? dryData : [0];
   const finalWetData = wetData.length > 0 ? wetData : [0];
 
+  // データの整合性チェック：ラベルとデータの長さを揃える
+  const maxLength = Math.max(finalLabels.length, finalDryData.length, finalWetData.length);
+  const paddedLabels = [...finalLabels];
+  const paddedDryData = [...finalDryData];
+  const paddedWetData = [...finalWetData];
+
+  // 不足分を0で埋める
+  while (paddedLabels.length < maxLength) {
+    paddedLabels.push(new Date().toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' }));
+  }
+  while (paddedDryData.length < maxLength) {
+    paddedDryData.push(0);
+  }
+  while (paddedWetData.length < maxLength) {
+    paddedWetData.push(0);
+  }
+
   console.log('MealChartSimple: 積み上げ棒グラフデータ生成', {
-    labelsCount: finalLabels.length,
-    dryDataCount: finalDryData.length,
-    wetDataCount: finalWetData.length,
+    labelsCount: paddedLabels.length,
+    dryDataCount: paddedDryData.length,
+    wetDataCount: paddedWetData.length,
+    allLengthsMatch: paddedLabels.length === paddedDryData.length && paddedLabels.length === paddedWetData.length,
   });
 
   return {
     type: 'bar' as const,
     data: {
-      labels: finalLabels,
+      labels: paddedLabels,
       datasets: [
         {
           label: 'ドライフード',
-          data: finalDryData,
+          data: paddedDryData,
           backgroundColor: 'rgba(255, 159, 64, 0.8)',
           borderColor: 'rgba(255, 159, 64, 1)',
           borderWidth: 1,
         },
         {
           label: 'ウェットフード',
-          data: finalWetData,
+          data: paddedWetData,
           backgroundColor: 'rgba(54, 162, 235, 0.8)',
           borderColor: 'rgba(54, 162, 235, 1)',
           borderWidth: 1,
@@ -572,15 +616,44 @@ const getStackedBarChartConfig = () => {
     },
     options: (() => {
       const baseOptions = getCommonChartOptions('積み上げ棒グラフ');
+
+      // baseOptions.scales が確実に存在することを保証
+      if (!baseOptions.scales || !baseOptions.scales.x || !baseOptions.scales.y) {
+        console.error('MealChartSimple: baseOptions.scales が正しく定義されていません');
+        // フォールバック用の基本的な scales を定義
+        return {
+          ...baseOptions,
+          scales: {
+            x: {
+              display: true,
+              stacked: true,
+              title: {
+                display: true,
+                text: '日付',
+              },
+            },
+            y: {
+              display: true,
+              stacked: true,
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'カロリー (kcal)',
+              },
+            },
+          },
+        };
+      }
+
       return {
         ...baseOptions,
         scales: {
           x: {
-            ...baseOptions.scales?.x,
+            ...baseOptions.scales.x,
             stacked: true,
           },
           y: {
-            ...baseOptions.scales?.y,
+            ...baseOptions.scales.y,
             stacked: true,
           },
         },
@@ -590,75 +663,82 @@ const getStackedBarChartConfig = () => {
 };
 
 // 共通のチャートオプション
-const getCommonChartOptions = (title: string) => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  devicePixelRatio: (typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1,
-  animation: {
-    duration: 1000,
-  },
-  layout: {
-    padding: 0,
-  },
-  plugins: {
+const getCommonChartOptions = (title: string) => {
+  // scales オブジェクトを明示的に定義して undefined を防ぐ
+  const xScaleConfig = {
+    display: true,
     title: {
       display: true,
-      text: `食事カロリー推移 (${title})`,
-      font: {
-        size: 16,
+      text: '日付',
+    },
+    grid: {
+      display: true,
+      color: 'rgba(0, 0, 0, 0.1)',
+    },
+  };
+
+  const yScaleConfig = {
+    display: true,
+    title: {
+      display: true,
+      text: 'カロリー (kcal)',
+    },
+    beginAtZero: true,
+    grid: {
+      display: true,
+      color: 'rgba(0, 0, 0, 0.1)',
+    },
+  };
+
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    devicePixelRatio: (typeof window !== 'undefined' ? window.devicePixelRatio : 1) || 1,
+    animation: {
+      duration: 1000,
+    },
+    layout: {
+      padding: 0,
+    },
+    plugins: {
+      title: {
+        display: true,
+        text: `食事カロリー推移 (${title})`,
+        font: {
+          size: 16,
+        },
+      },
+      legend: {
+        display: true,
+        position: 'top' as const,
+      },
+      tooltip: {
+        mode: 'index' as const,
+        intersect: false,
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: 'white',
+        bodyColor: 'white',
       },
     },
-    legend: {
-      display: true,
-      position: 'top' as const,
+    scales: {
+      x: xScaleConfig,
+      y: yScaleConfig,
     },
-    tooltip: {
-      mode: 'index' as const,
+    interaction: {
+      mode: 'nearest' as const,
+      axis: 'x' as const,
       intersect: false,
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      titleColor: 'white',
-      bodyColor: 'white',
     },
-  },
-  scales: {
-    x: {
-      display: true,
-      title: {
-        display: true,
-        text: '日付',
+    elements: {
+      point: {
+        hoverRadius: 8,
       },
-      grid: {
-        display: true,
-        color: 'rgba(0, 0, 0, 0.1)',
+      line: {
+        borderWidth: 2,
       },
     },
-    y: {
-      display: true,
-      title: {
-        display: true,
-        text: 'カロリー (kcal)',
-      },
-      beginAtZero: true,
-      grid: {
-        display: true,
-        color: 'rgba(0, 0, 0, 0.1)',
-      },
-    },
-  },
-  interaction: {
-    mode: 'nearest' as const,
-    axis: 'x' as const,
-    intersect: false,
-  },
-  elements: {
-    point: {
-      hoverRadius: 8,
-    },
-    line: {
-      borderWidth: 2,
-    },
-  },
-});
+  };
+};
 
 // Destroy chart safely
 const destroyChartSafely = async () => {

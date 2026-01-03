@@ -92,6 +92,10 @@ RUN mkdir -p /app/.output/public/uploads/cats
 # Switch to non-root user
 #USER nekolog
 
+# Set environment variables for runtime
+ENV NODE_ENV=production
+ENV PORT=3000
+
 # Expose port
 EXPOSE 3000
 
