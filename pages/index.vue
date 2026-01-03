@@ -275,7 +275,9 @@ onMounted(async () => {
       <p class="calendar-description">
         日々の食事、排泄、介護の記録を一目で確認できます。<br>日付をクリックして詳細を記録しましょう。
       </p>
-      <DailyCalendar @select-date="handleDateSelect" />
+      <ClientOnly>
+        <DailyCalendar @select-date="handleDateSelect" />
+      </ClientOnly>
     </section>
 
     <!-- Getting Started Section -->
