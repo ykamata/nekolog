@@ -16,6 +16,7 @@ import type {
 } from "~/types/medication";
 
 import { MedicationStatus, ReminderStatus } from "~/types/medication";
+import { toLocalISOString } from "~/utils/cat-meal";
 
 export const useMedicationsStore = defineStore("medications", () => {
   // State
@@ -586,10 +587,12 @@ export const useMedicationsStore = defineStore("medications", () => {
       if (filter?.medicationId)
         params.append("medicationId", String(filter.medicationId));
       if (filter?.status) params.append("status", filter.status);
-      if (filter?.startDate)
-        params.append("startDate", filter.startDate.toISOString());
-      if (filter?.endDate)
-        params.append("endDate", filter.endDate.toISOString());
+      if (filter?.startDate) {
+        params.append("startDate", toLocalISOString(filter.startDate));
+      }
+      if (filter?.endDate) {
+        params.append("endDate", toLocalISOString(filter.endDate));
+      }
 
       const response = await $fetch<{
         records: MedicationRecord[];
@@ -677,10 +680,12 @@ export const useMedicationsStore = defineStore("medications", () => {
       const params = new URLSearchParams();
       if (filter?.catId) params.append("catId", String(filter.catId));
       if (filter?.status) params.append("status", filter.status);
-      if (filter?.startDate)
-        params.append("startDate", filter.startDate.toISOString());
-      if (filter?.endDate)
-        params.append("endDate", filter.endDate.toISOString());
+      if (filter?.startDate) {
+        params.append("startDate", toLocalISOString(filter.startDate));
+      }
+      if (filter?.endDate) {
+        params.append("endDate", toLocalISOString(filter.endDate));
+      }
 
       const response = await $fetch<{
         reminders: MedicationReminder[];

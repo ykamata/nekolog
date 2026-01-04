@@ -11,6 +11,7 @@ import {
   createCacheKey,
   invalidateRelatedCache,
 } from '~/utils/cache';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 interface PaginationState {
   currentPage: number;
@@ -160,10 +161,14 @@ export const useMealsStore = defineStore('meals', () => {
       // Add filters
       if (filters.value.catId) query.append('catId', String(filters.value.catId));
       if (filters.value.foodId) query.append('foodId', String(filters.value.foodId));
-      if (filters.value.startDate)
-        query.append('startDate', filters.value.startDate.toISOString());
-      if (filters.value.endDate)
-        query.append('endDate', filters.value.endDate.toISOString());
+      if (filters.value.startDate) {
+        // JSTの日時をそのままローカルISO形式で送信（タイムゾーン変換なし）
+        query.append('startDate', toLocalISOString(filters.value.startDate));
+      }
+      if (filters.value.endDate) {
+        // JSTの日時をそのままローカルISO形式で送信（タイムゾーン変換なし）
+        query.append('endDate', toLocalISOString(filters.value.endDate));
+      }
       if (filters.value.foodType)
         query.append('foodType', filters.value.foodType);
 

@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import type { MealAnalytics } from "~/types/cat-meal";
 import { FoodType } from "~/types/cat-meal";
 import type { ErrorInfo } from "~/utils/error-handling";
+import { toLocalDateString } from "~/utils/cat-meal";
 
 interface AnalyticsFilter {
   catId?: number;
@@ -82,7 +83,7 @@ export const useAnalyticsStore = defineStore("analytics", () => {
 
   const totalCaloriesToday = computed(() => {
     if (!analytics.value) return 0;
-    const today = new Date().toISOString().split("T")[0];
+    const today = toLocalDateString(new Date());
     const todayData = analytics.value.dailyCalories.filter(
       (data) => data.date === today
     );
@@ -133,8 +134,8 @@ export const useAnalyticsStore = defineStore("analytics", () => {
         ],
         appliedFilters: {
           dateRange: {
-            startDate: dateRange.value.startDate.toISOString(),
-            endDate: dateRange.value.endDate.toISOString(),
+            startDate: dateRange.value.startDate,
+            endDate: dateRange.value.endDate,
           },
           catId: selectedCatId.value,
           foodType: selectedFoodType.value,
@@ -216,8 +217,8 @@ export const useAnalyticsStore = defineStore("analytics", () => {
       missingDataDates,
       appliedFilters: {
         dateRange: {
-          startDate: startDate.toISOString(),
-          endDate: endDate.toISOString(),
+          startDate: startDate,
+          endDate: endDate,
         },
         catId: selectedCatId.value,
         foodType: selectedFoodType.value,
@@ -599,7 +600,7 @@ export const useAnalyticsStore = defineStore("analytics", () => {
         peakDay,
       },
       metadata: {
-        generatedAt: new Date().toISOString(),
+        generatedAt: new Date(),
         filters: currentFilters.value,
       },
     };
@@ -681,7 +682,7 @@ export const useAnalyticsStore = defineStore("analytics", () => {
     const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split("T")[0] as string;
+      const dateStr = toLocalDateString(currentDate);
 
       if (!existingDateSet.has(dateStr)) {
         if (!currentMissingStart) {
@@ -691,7 +692,7 @@ export const useAnalyticsStore = defineStore("analytics", () => {
         if (currentMissingStart) {
           const prevDate = new Date(currentDate);
           prevDate.setDate(prevDate.getDate() - 1);
-          const endDateStr = prevDate.toISOString().split("T")[0] as string;
+          const endDateStr = toLocalDateString(prevDate);
 
           const startDateObj = new Date(currentMissingStart);
           const endDateObj = new Date(endDateStr);
@@ -716,7 +717,7 @@ export const useAnalyticsStore = defineStore("analytics", () => {
 
     // 最後の期間が欠損している場合
     if (currentMissingStart) {
-      const endDateStr = endDate.toISOString().split("T")[0] as string;
+      const endDateStr = toLocalDateString(endDate);
       const startDateObj = new Date(currentMissingStart);
       const endDateObj = new Date(endDateStr);
       const days =
