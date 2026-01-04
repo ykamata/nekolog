@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Cat, Food, MealRecord, MealRecordInput } from '~/types/cat-meal';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 // Page meta
 useSeoMeta({
@@ -101,9 +102,17 @@ const handleEditSubmit = async (data: MealRecordInput) => {
   if (!editingRecord.value) return;
 
   try {
+    // mealTimeをローカルISO文字列に変換してタイムゾーン(JST)を保持
+    const submitData = {
+      ...data,
+      mealTime: data.mealTime instanceof Date
+        ? toLocalISOString(data.mealTime)
+        : data.mealTime,
+    };
+
     await $fetch(`/api/meals/${editingRecord.value.id}`, {
       method: 'PUT' as any,
-      body: data,
+      body: submitData,
     });
 
     // Refresh the meal list

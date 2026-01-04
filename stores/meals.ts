@@ -230,9 +230,17 @@ export const useMealsStore = defineStore('meals', () => {
     error.value = null;
 
     try {
+      // mealTimeをローカルISO文字列に変換してタイムゾーン(JST)を保持
+      const submitData = {
+        ...mealInput,
+        mealTime: mealInput.mealTime instanceof Date
+          ? toLocalISOString(mealInput.mealTime)
+          : mealInput.mealTime,
+      };
+
       const data = await $fetch<MealRecord>('/api/meals', {
         method: 'POST',
-        body: mealInput,
+        body: submitData,
       });
 
       const newMeal = {
@@ -275,9 +283,19 @@ export const useMealsStore = defineStore('meals', () => {
     error.value = null;
 
     try {
+      // mealTimeをローカルISO文字列に変換してタイムゾーン(JST)を保持
+      const submitData = {
+        ...mealUpdate,
+        ...(mealUpdate.mealTime && {
+          mealTime: mealUpdate.mealTime instanceof Date
+            ? toLocalISOString(mealUpdate.mealTime)
+            : mealUpdate.mealTime,
+        }),
+      };
+
       const data = await $fetch<MealRecord>(`/api/meals/${id}`, {
         method: 'PUT',
-        body: mealUpdate,
+        body: submitData,
       });
 
       const updatedMeal = {

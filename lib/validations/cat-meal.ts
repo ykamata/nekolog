@@ -200,7 +200,27 @@ export const MealRecordInputSchema = z.object({
     .positive('カロリーは正の数値で入力してください')
     .max(5000, 'カロリーは5000以下で入力してください')
     .optional(),
-  mealTime: z.coerce.date(),
+  mealTime: z.union([
+    z.date(),
+    z.string().transform((str) => {
+      // ローカルISO文字列(YYYY-MM-DDTHH:mm:ss)をJSTとして解釈
+      // タイムゾーン指定がない場合、ローカルタイムゾーンとして扱う
+      const localIsoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+      if (localIsoMatch) {
+        const [, year, month, day, hours, minutes, seconds] = localIsoMatch;
+        return new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+          parseInt(hours),
+          parseInt(minutes),
+          parseInt(seconds)
+        );
+      }
+      // その他の形式はnew Dateに任せる（ISO 8601 with timezone など）
+      return new Date(str);
+    }),
+  ]),
   notes: z
     .string()
     .max(500, 'メモは500文字以内で入力してください')
