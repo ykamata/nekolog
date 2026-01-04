@@ -222,6 +222,22 @@ export function toLocalISOString(date: Date): string {
 }
 
 /**
+ * Convert Date to MySQL DATETIME format (YYYY-MM-DD HH:mm:ss) in local timezone
+ * This prevents Prisma from converting to UTC when storing in MySQL
+ * @param date Date object
+ * @returns MySQL DATETIME string in local timezone
+ */
+export function toMySQLDateTime(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+/**
  * Convert Date to local date string (JST) without timezone conversion
  * @param date Date object
  * @returns Date string in local timezone (YYYY-MM-DD)
