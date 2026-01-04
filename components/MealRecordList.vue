@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Cat, Food, MealRecord, MealRecordFilter } from '~/types/cat-meal';
+import { toLocalDateString } from '~/utils/cat-meal';
 
 interface Props {
   cats: Cat[];
@@ -80,9 +81,9 @@ const fetchMealRecords = async (reset = false) => {
 
     if (filter.value.catId) queryParams.append('catId', String(filter.value.catId));
     if (filter.value.startDate)
-      queryParams.append('startDate', filter.value.startDate.toISOString());
+      queryParams.append('startDate', toLocalDateString(filter.value.startDate));
     if (filter.value.endDate)
-      queryParams.append('endDate', filter.value.endDate.toISOString());
+      queryParams.append('endDate', toLocalDateString(filter.value.endDate));
     if (filter.value.foodType)
       queryParams.append('foodType', filter.value.foodType);
 

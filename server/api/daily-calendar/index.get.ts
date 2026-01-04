@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { calendarDataQuerySchema } from '~/lib/validations/daily-calendar';
+import { toLocalDateString } from '~/utils/cat-meal';
 import type { DailyCalendarData, MonthlyCalendarData } from '~/types/daily-calendar';
 
 /**
@@ -95,25 +96,25 @@ export default defineEventHandler(async (event) => {
 
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(year, month - 1, day);
-      const dateStr = currentDate.toISOString().split('T')[0];
+      const dateStr = toLocalDateString(currentDate);
 
       // Find daily note for this date
       const dailyNote = dailyNotes.find((note: { date: Date }) => {
         const noteDate = new Date(note.date);
-        return noteDate.toISOString().split('T')[0] === dateStr;
+        return toLocalDateString(noteDate) === dateStr;
       });
 
       // Find health signal for this date
       const healthSignal = healthSignals.find((signal: { date: Date, catId: number }) => {
         const signalDate = new Date(signal.date);
-        return signalDate.toISOString().split('T')[0] === dateStr &&
+        return toLocalDateString(signalDate) === dateStr &&
                (!catId || signal.catId === catId);
       });
 
       // Get meals for this day
       const dayMeals = mealRecords.filter((meal) => {
         const mealDate = new Date(meal.mealTime);
-        return mealDate.toISOString().split('T')[0] === dateStr &&
+        return toLocalDateString(mealDate) === dateStr &&
                (!catId || meal.catId === catId);
       });
 
@@ -123,7 +124,7 @@ export default defineEventHandler(async (event) => {
       // Get excretions for this day
       const dayExcretions = excretionRecords.filter((excretion) => {
         const excretionDate = new Date(excretion.recordedAt);
-        return excretionDate.toISOString().split('T')[0] === dateStr &&
+        return toLocalDateString(excretionDate) === dateStr &&
                (!catId || excretion.catId === catId);
       });
 

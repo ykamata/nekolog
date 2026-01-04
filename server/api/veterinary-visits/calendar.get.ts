@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { prisma } from "~/lib/prisma";
+import { toLocalDateString } from "~/utils/cat-meal";
 
 // カレンダー表示用に最適化されたクエリパラメータ
 const calendarQuerySchema = z.object({
@@ -142,7 +143,7 @@ export default defineEventHandler(async (event) => {
     // 通院記録を日付ごとにグループ化
     visits.forEach((visit) => {
       console.log(visit);
-      const dateKey = visit.visitDate.toISOString().split("T")[0];
+      const dateKey = toLocalDateString(visit.visitDate);
       if (dateKey && !calendarData[dateKey]) {
         calendarData[dateKey] = {
           date: dateKey,
@@ -165,7 +166,7 @@ export default defineEventHandler(async (event) => {
 
     // 予約を日付ごとにグループ化
     appointments.forEach((appointment) => {
-      const dateKey = appointment.appointmentDate.toISOString().split("T")[0];
+      const dateKey = toLocalDateString(appointment.appointmentDate);
       if (!calendarData[dateKey]) {
         calendarData[dateKey] = {
           date: dateKey,

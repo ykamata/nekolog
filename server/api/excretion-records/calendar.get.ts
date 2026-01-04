@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { ExcretionCalendarQuerySchema } from '~/lib/validations/excretion';
+import { toLocalDateString } from '~/utils/cat-meal';
 import { performanceMonitor } from '~/utils/performance-monitor';
 
 export default defineEventHandler(async (event) => {
@@ -64,7 +65,7 @@ export default defineEventHandler(async (event) => {
     const calendarData: Record<string, any> = {};
 
     excretionRecords.forEach((record) => {
-      const dateKey = record.recordedAt.toISOString().split('T')[0];
+      const dateKey = toLocalDateString(record.recordedAt);
       if (!dateKey) return; // dateKeyがundefinedの場合はスキップ
 
       if (!calendarData[dateKey]) {

@@ -18,14 +18,32 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>();
 
 // 日付と時刻を分離して管理
+// JSTでの日時を正しく扱うため、ローカルタイムゾーンとして処理
 const dateValue = computed({
   get: () => {
     const date = new Date(props.value);
-    return date.toISOString().split('T')[0];
+    // ローカルタイムゾーン（JST）での日付を取得
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   },
   set: (value: string) => {
-    const currentTime = props.value.toTimeString().split(' ')[0];
-    const newDate = new Date(`${value}T${currentTime}`);
+    // 現在の時刻を維持しながら日付のみ変更
+    const currentDate = new Date(props.value);
+    const parts = value.split('-').map(Number);
+    if (parts.length !== 3 || parts.some(p => isNaN(p))) return;
+
+    const [year, month, day] = parts as [number, number, number];
+    const newDate = new Date(
+      year,
+      month - 1,
+      day,
+      currentDate.getHours(),
+      currentDate.getMinutes(),
+      currentDate.getSeconds(),
+      currentDate.getMilliseconds()
+    );
     emit('change', newDate);
   },
 });
@@ -33,21 +51,47 @@ const dateValue = computed({
 const timeValue = computed({
   get: () => {
     const date = new Date(props.value);
-    return date.toTimeString().slice(0, 5);
+    // ローカルタイムゾーン（JST）での時刻を取得
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
   },
   set: (value: string) => {
-    const currentDate = props.value.toISOString().split('T')[0];
-    const newDate = new Date(`${currentDate}T${value}:00`);
+    // 現在の日付を維持しながら時刻のみ変更
+    const currentDate = new Date(props.value);
+    const parts = value.split(':').map(Number);
+    if (parts.length !== 2 || parts.some(p => isNaN(p))) return;
+
+    const [hours, minutes] = parts as [number, number];
+    const newDate = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate(),
+      hours,
+      minutes,
+      0,
+      0
+    );
     emit('change', newDate);
   },
 });
 
 const minDateString = computed(() => {
-  return props.minDate ? props.minDate.toISOString().split('T')[0] : undefined;
+  if (!props.minDate) return undefined;
+  const date = new Date(props.minDate);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 });
 
 const maxDateString = computed(() => {
-  return props.maxDate ? props.maxDate.toISOString().split('T')[0] : undefined;
+  if (!props.maxDate) return undefined;
+  const date = new Date(props.maxDate);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 });
 </script>
 

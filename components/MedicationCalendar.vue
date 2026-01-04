@@ -276,6 +276,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
+import { toLocalDateString } from '~/utils/cat-meal';
 import { useMedicationsStore } from '~/stores/medications';
 import { useCatsStore } from '~/stores/cats';
 import type { MedicationRecord, MedicationReminder, MedicationStatus, ReminderStatus } from '~/types/medication';
@@ -481,7 +482,7 @@ const generateCalendarDays = (): CalendarDay[] => {
   const today = new Date();
 
   while (currentDateObj <= endDate) {
-    const dateString = currentDateObj.toISOString().split('T')[0];
+    const dateString = toLocalDateString(currentDateObj);
     const isCurrentMonth = currentDateObj.getMonth() === month;
     const isToday
       = currentDateObj.getDate() === today.getDate()
@@ -490,14 +491,14 @@ const generateCalendarDays = (): CalendarDay[] => {
 
     // Get records and reminders for this date
     const dayRecords = medicationsStore.records.filter((record) => {
-      const recordDate = new Date(record.administeredAt).toISOString().split('T')[0];
+      const recordDate = toLocalDateString(new Date(record.administeredAt));
       const matchesDate = recordDate === dateString;
       const matchesCat = !selectedCatId.value || record.catId === selectedCatId.value;
       return matchesDate && matchesCat;
     });
 
     const dayReminders = medicationsStore.reminders.filter((reminder) => {
-      const reminderDate = new Date(reminder.scheduledAt).toISOString().split('T')[0];
+      const reminderDate = toLocalDateString(new Date(reminder.scheduledAt));
       const matchesDate = reminderDate === dateString;
       const matchesCat = !selectedCatId.value || reminder.catId === selectedCatId.value;
       return matchesDate && matchesCat;

@@ -238,6 +238,7 @@
 </template>
 
 <script setup lang="ts">
+import { toLocalDateString } from '~/utils/cat-meal';
 import ExcretionCalendarDetailModal from './ExcretionCalendarDetailModal.vue';
 import type { Cat } from '~/types/index';
 import type { ExcretionRecord, ExcretionCalendarDay, ExcretionRecordFilter, ExcretionCalendarStats } from '~/types/excretion';
@@ -508,7 +509,7 @@ const generateCalendarDays = (): CalendarDay[] => {
   const today = new Date();
 
   while (currentDateObj <= endDate) {
-    const dateString = currentDateObj.toISOString().split('T')[0];
+    const dateString = toLocalDateString(currentDateObj);
     if (!dateString) continue; // Skip if dateString is undefined
 
     const dayData = calendarData.value[dateString];

@@ -1,18 +1,19 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
+import { parseLocalDateString, parseLocalDateStringEndOfDay } from '~/utils/cat-meal';
 
 const querySchema = z.object({
   catId: z.coerce.number().positive().optional(),
   foodId: z.coerce.number().positive().optional(),
   startDate: z
     .string()
-    .transform(str => new Date(str))
-    .pipe(z.date())
+    .transform(str => parseLocalDateString(str))
+    .pipe(z.date().nullable())
     .optional(),
   endDate: z
     .string()
-    .transform(str => new Date(str))
-    .pipe(z.date())
+    .transform(str => parseLocalDateStringEndOfDay(str))
+    .pipe(z.date().nullable())
     .optional(),
   foodType: z.enum(['DRY', 'WET']).optional(),
   limit: z

@@ -207,6 +207,61 @@ export function convertQuantityInput(
  */
 
 /**
+ * Convert Date to local ISO string (JST) without timezone conversion
+ * @param date Date object
+ * @returns ISO-formatted string in local timezone (YYYY-MM-DDTHH:mm:ss)
+ */
+export function toLocalISOString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+}
+
+/**
+ * Convert Date to local date string (JST) without timezone conversion
+ * @param date Date object
+ * @returns Date string in local timezone (YYYY-MM-DD)
+ */
+export function toLocalDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Parse YYYY-MM-DD string as local date (JST) at 00:00:00
+ * IMPORTANT: new Date("YYYY-MM-DD") parses as UTC, causing timezone issues
+ * This function explicitly parses as local timezone
+ * @param dateString Date string in YYYY-MM-DD format
+ * @returns Date object in local timezone at 00:00:00, or null if invalid
+ */
+export function parseLocalDateString(dateString: string): Date | null {
+  if (!dateString) return null;
+  const parts = dateString.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(p => isNaN(p))) return null;
+  const [year, month, day] = parts as [number, number, number];
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+}
+
+/**
+ * Parse YYYY-MM-DD string as local date (JST) at 23:59:59.999
+ * @param dateString Date string in YYYY-MM-DD format
+ * @returns Date object in local timezone at 23:59:59.999, or null if invalid
+ */
+export function parseLocalDateStringEndOfDay(dateString: string): Date | null {
+  if (!dateString) return null;
+  const parts = dateString.split('-').map(Number);
+  if (parts.length !== 3 || parts.some(p => isNaN(p))) return null;
+  const [year, month, day] = parts as [number, number, number];
+  return new Date(year, month - 1, day, 23, 59, 59, 999);
+}
+
+/**
  * Format date for display
  */
 export function formatDate(date: Date): string {

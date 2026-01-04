@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
+import { parseLocalDateString, parseLocalDateStringEndOfDay } from '~/utils/cat-meal';
 
 const querySchema = z
   .object({
@@ -7,11 +8,11 @@ const querySchema = z
     medicationId: z.string().optional(),
     startDate: z
       .string()
-      .transform(val => (val ? new Date(val) : undefined))
+      .transform(val => (val ? parseLocalDateString(val) : undefined))
       .optional(),
     endDate: z
       .string()
-      .transform(val => (val ? new Date(val) : undefined))
+      .transform(val => (val ? parseLocalDateStringEndOfDay(val) : undefined))
       .optional(),
     status: z.string().optional(),
     limit: z

@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { ChartAnalyticsQuerySchema } from '~/lib/validations/chart-analytics';
+import { toLocalDateString } from '~/utils/cat-meal';
 import {
   processChartData,
   calculateChartSummary,
@@ -267,7 +268,7 @@ export default defineEventHandler(async (event) => {
     const dailyCalories: DailyCalorieData[] = validRecords
       .filter(record => record.food) // foodが存在するレコードのみ
       .map(record => ({
-        date: record.mealTime.toISOString().split('T')[0]!,
+        date: toLocalDateString(record.mealTime),
         calories: record.calories,
         type: record.food!.type as FoodType,
       }));

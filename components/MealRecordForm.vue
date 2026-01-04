@@ -30,7 +30,7 @@ const formData = ref<MealRecordForm>({
   foodId: props.initialData?.foodId || 0,
   quantity: props.initialData?.quantity || 0,
   calories: props.initialData?.calories,
-  mealTime: props.initialData?.mealTime || new Date(),
+  mealTime: props.initialData?.mealTime ? new Date(props.initialData.mealTime) : new Date(),
   notes: props.initialData?.notes || "",
 });
 
@@ -223,7 +223,7 @@ watch(
         foodId: newData.foodId || 0,
         quantity: newData.quantity || 0,
         calories: newData.calories,
-        mealTime: newData.mealTime || new Date(),
+        mealTime: newData.mealTime ? new Date(newData.mealTime) : new Date(),
         notes: newData.notes || "",
       };
     }

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { VeterinaryAppointmentFilterSchema } from '~/lib/validations/veterinary-visit';
+import { parseLocalDateString, parseLocalDateStringEndOfDay } from '~/utils/cat-meal';
 
 // クエリパラメータのスキーマ（文字列から適切な型に変換）
 const querySchema = z.object({
@@ -11,11 +12,11 @@ const querySchema = z.object({
   startDate: z
     .string()
     .optional()
-    .transform(val => (val ? new Date(val) : undefined)),
+    .transform(val => (val ? parseLocalDateString(val) : undefined)),
   endDate: z
     .string()
     .optional()
-    .transform(val => (val ? new Date(val) : undefined)),
+    .transform(val => (val ? parseLocalDateStringEndOfDay(val) : undefined)),
   limit: z
     .string()
     .transform(Number)

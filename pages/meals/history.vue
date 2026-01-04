@@ -285,7 +285,7 @@ onMounted(() => {
               foodId: editingRecord.foodId,
               quantity: editingRecord.quantity,
               calories: editingRecord.calories,
-              mealTime: editingRecord.mealTime,
+              mealTime: new Date(editingRecord.mealTime),
               notes: editingRecord.notes,
             }"
             @submit="handleEditSubmit"
