@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { MealRecordUpdateSchema } from '~/lib/validations/cat-meal';
-import { calculateCaloriesFromGrams, toMySQLDateTime } from '~/utils/cat-meal';
+import { calculateCaloriesFromGrams } from '~/utils/cat-meal';
 
 const paramsSchema = z.object({
   id: z.coerce.number().positive('Invalid meal record ID format'),
@@ -82,12 +82,11 @@ export default defineEventHandler(async (event) => {
     }
 
     // Update meal record
-    // mealTimeがある場合はMySQL DATETIME文字列に変換してタイムゾーンを保持
+    // DATABASE_URLのtimezone=Asia/Tokyoパラメータによりタイムゾーンが保持される
     const mealRecord = await prisma.mealRecord.update({
       where: { id },
       data: {
         ...updateData,
-        ...(updateData.mealTime && { mealTime: toMySQLDateTime(updateData.mealTime) as any }),
         ...(calories !== undefined && { calories }),
       },
       include: {

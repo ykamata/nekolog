@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { MealRecordInputSchema } from '~/lib/validations/cat-meal';
-import { calculateCaloriesFromGrams, toMySQLDateTime } from '~/utils/cat-meal';
+import { calculateCaloriesFromGrams } from '~/utils/cat-meal';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -53,11 +53,10 @@ export default defineEventHandler(async (event) => {
     }
 
     // Create new meal record
-    // mealTimeをMySQL DATETIME文字列に変換してタイムゾーンを保持
+    // DATABASE_URLのtimezone=Asia/Tokyoパラメータによりタイムゾーンが保持される
     const mealRecord = await prisma.mealRecord.create({
       data: {
         ...mealData,
-        mealTime: toMySQLDateTime(mealData.mealTime) as any,
         calories,
       },
       include: {
