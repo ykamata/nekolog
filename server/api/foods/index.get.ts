@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const querySchema = z.object({
   name: z.string().optional(),
@@ -71,10 +72,17 @@ export default defineEventHandler(async (event) => {
       prisma.food.count({ where }),
     ]);
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const convertedFoods = foods.map(food => ({
+      ...food,
+      createdAt: toLocalISOString(food.createdAt),
+      updatedAt: toLocalISOString(food.updatedAt),
+    }));
+
     // Add caching headers for foods data (changes less frequently)
     setHeader(event, 'Cache-Control', 'public, max-age=300, s-maxage=600');
 
-    return foods;
+    return convertedFoods;
   }
   catch (error) {
     // Handle validation errors

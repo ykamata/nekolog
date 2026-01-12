@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { VeterinaryDoctorInputSchema } from '~/lib/validations/veterinary-visit';
 import { requireAuth } from '~/lib/auth-middleware';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -13,7 +14,8 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
-    const doctorData = VeterinaryDoctorInputSchema.parse(body);
+    const { createdAt, updatedAt, ...restBody } = body;
+    const doctorData = VeterinaryDoctorInputSchema.parse(restBody);
 
     // Check if hospital exists if hospitalId is provided
     if (doctorData.hospitalId) {
@@ -45,12 +47,16 @@ export default defineEventHandler(async (event) => {
     }
 
     // Create new doctor
+    // JSTの現在時刻を取得（UTC+9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
     const doctor = await prisma.veterinaryDoctor.create({
       data: {
         name: doctorData.name,
         hospitalId: doctorData.hospitalId || null,
         specialty: doctorData.specialty || null,
         userId: user.userId,
+        createdAt: nowJST,
+        updatedAt: nowJST,
       },
       include: {
         hospital: {
@@ -59,6 +65,8 @@ export default defineEventHandler(async (event) => {
             name: true,
             address: true,
             phone: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
         _count: {
@@ -71,7 +79,18 @@ export default defineEventHandler(async (event) => {
     });
 
     return {
-      doctor,
+      doctor: {
+        ...doctor,
+        createdAt: toLocalISOString(doctor.createdAt),
+        updatedAt: toLocalISOString(doctor.updatedAt),
+        hospital: doctor.hospital
+          ? {
+              ...doctor.hospital,
+              createdAt: toLocalISOString(doctor.hospital.createdAt),
+              updatedAt: toLocalISOString(doctor.hospital.updatedAt),
+            }
+          : null,
+      },
       message: '先生が正常に登録されました',
     };
   }

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { dailyNoteUpdateSchema } from '~/lib/validations/daily-calendar';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 /**
  * Update a daily note
@@ -19,7 +20,10 @@ export default defineEventHandler(async (event) => {
     }
 
     const body = await readBody(event);
-    const validated = dailyNoteUpdateSchema.parse(body);
+
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...requestData } = body;
+    const validated = dailyNoteUpdateSchema.parse(requestData);
 
     // Check if daily note exists
     const existing = await prisma.dailyNote.findUnique({
@@ -33,15 +37,30 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // Update daily note
+    // DATABASE_URLのtimezone=Asia/Tokyoパラメータによりタイムゾーンが保持される
     const updated = await prisma.dailyNote.update({
       where: { id },
-      data: validated,
+      data: {
+        ...validated,
+        updatedAt: nowJST,
+      },
     });
+
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseNote = {
+      ...updated,
+      date: toLocalISOString(updated.date),
+      createdAt: toLocalISOString(updated.createdAt),
+      updatedAt: toLocalISOString(updated.updatedAt),
+    };
 
     console.log('✅ デイリーノート更新成功:', id);
 
-    return updated;
+    return responseNote;
   }
   catch (error) {
     if (error instanceof z.ZodError) {

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { VeterinaryVisitUpdateSchema } from '~/lib/validations/veterinary-visit';
 import { requireAuth } from '~/lib/auth-middleware';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const paramsSchema = z.object({
   id: z.coerce.number().positive('有効なIDを指定してください'),
@@ -17,10 +18,13 @@ async function findOrCreateHospital(name: string, userId: number) {
     return existing;
   }
 
+  const now = new Date();
   return await prisma.veterinaryHospital.create({
     data: {
       name,
       user: { connect: { id: userId } },
+      createdAt: now,
+      updatedAt: now,
     },
   });
 }
@@ -42,11 +46,14 @@ async function findOrCreateDoctor(
     return existing;
   }
 
+  const now = new Date();
   return await prisma.veterinaryDoctor.create({
     data: {
       name,
       hospitalId,
       userId,
+      createdAt: now,
+      updatedAt: now,
     },
   });
 }
@@ -85,7 +92,8 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
-    const updateData = VeterinaryVisitUpdateSchema.parse(body);
+    const { createdAt, updatedAt, ...restBody } = body;
+    const updateData = VeterinaryVisitUpdateSchema.parse(restBody);
 
     // Check if visit exists
     const existingVisit = await prisma.veterinaryVisit.findUnique({
@@ -173,11 +181,15 @@ export default defineEventHandler(async (event) => {
     }
 
     // Update visit in a transaction
+    const now = new Date();
     const updatedVisit = await prisma.$transaction(async (tx) => {
       // Update the visit
       const visit = await tx.veterinaryVisit.update({
         where: { id },
-        data: visitUpdateData,
+        data: {
+          ...visitUpdateData,
+          updatedAt: now,
+        },
       });
 
       // Update treatments if provided
@@ -237,9 +249,14 @@ export default defineEventHandler(async (event) => {
       });
     });
 
-    // Transform the data to flatten treatments
+    // Transform the data to flatten treatments and convert dates
     const transformedVisit = {
       ...updatedVisit,
+      visitDate: toLocalISOString(updatedVisit!.visitDate),
+      createdAt: toLocalISOString(updatedVisit!.createdAt),
+      updatedAt: toLocalISOString(updatedVisit!.updatedAt),
+      // cat, hospital, doctor are already selected with specific fields only
+      // No date transformation needed as they don't include date fields in the select
       treatments: updatedVisit!.treatments.map(vt => vt.treatment),
     };
 

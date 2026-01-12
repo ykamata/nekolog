@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const paramsSchema = z.object({
   id: z.coerce.number().positive('有効なIDを指定してください'),
@@ -49,7 +50,7 @@ export default defineEventHandler(async (event) => {
         id: existingAppointment.id,
         catName: existingAppointment.cat.name,
         hospitalName: existingAppointment.hospital.name,
-        appointmentDate: existingAppointment.appointmentDate,
+        appointmentDate: toLocalISOString(existingAppointment.appointmentDate),
         status: existingAppointment.status,
       },
     };

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { ExcretionRecordFilterSchema } from '~/lib/validations/excretion';
 import { performanceMonitor } from '~/utils/performance-monitor';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -55,6 +56,8 @@ export default defineEventHandler(async (event) => {
                 id: true,
                 name: true,
                 photoUrl: true,
+                createdAt: true,
+                updatedAt: true,
               },
             },
           },
@@ -69,11 +72,24 @@ export default defineEventHandler(async (event) => {
       },
     );
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const convertedRecords = excretionRecords.map(record => ({
+      ...record,
+      recordedAt: toLocalISOString(record.recordedAt),
+      createdAt: toLocalISOString(record.createdAt),
+      updatedAt: toLocalISOString(record.updatedAt),
+      cat: record.cat ? {
+        ...record.cat,
+        createdAt: toLocalISOString(record.cat.createdAt),
+        updatedAt: toLocalISOString(record.cat.updatedAt),
+      } : undefined,
+    }));
+
     // Add response caching headers for better performance
     setHeader(event, 'Cache-Control', 'public, max-age=60, s-maxage=120');
 
     return {
-      records: excretionRecords,
+      records: convertedRecords,
       total,
       page: Math.floor((offset || 0) / (limit || 20)) + 1,
       limit: limit || 20,

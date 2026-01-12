@@ -7,6 +7,7 @@ import {
   validateBody,
   createApiErrorHandler,
 } from '~/server/utils/error-handler';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 // バリデーションスキーマを定義
 const veterinaryIdSchema = z.object({ id: z.coerce.number().positive() });
@@ -31,7 +32,8 @@ export default defineEventHandler(async (event) => {
     const params = getRouterParams(event);
     const { id } = validateParams(veterinaryIdSchema, params);
     const requestBody = await readBody(event);
-    const body = validateBody(veterinaryDoctorUpdateSchema, requestBody);
+    const { createdAt, updatedAt, ...restBody } = requestBody;
+    const body = validateBody(veterinaryDoctorUpdateSchema, restBody);
 
     // 先生が存在し、ユーザーが所有者であることを確認
     const existingDoctor = await prisma.veterinaryDoctor.findFirst({
@@ -99,6 +101,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // 先生情報を更新
+    // JSTの現在時刻を取得（UTC+9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
     const updatedDoctor = await prisma.veterinaryDoctor.update({
       where: { id },
       data: {
@@ -110,13 +114,25 @@ export default defineEventHandler(async (event) => {
           specialty: body.specialty || null,
         }),
         ...(body.memo !== undefined && { memo: body.memo || null }),
+        updatedAt: nowJST,
       },
       include: {
         hospital: true,
       },
     });
 
-    return updatedDoctor;
+    return {
+      ...updatedDoctor,
+      createdAt: toLocalISOString(updatedDoctor.createdAt),
+      updatedAt: toLocalISOString(updatedDoctor.updatedAt),
+      hospital: updatedDoctor.hospital
+        ? {
+            ...updatedDoctor.hospital,
+            createdAt: toLocalISOString(updatedDoctor.hospital.createdAt),
+            updatedAt: toLocalISOString(updatedDoctor.hospital.updatedAt),
+          }
+        : null,
+    };
   }
   catch (error) {
     throw errorHandler(error);

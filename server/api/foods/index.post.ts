@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { FoodInputSchema } from '~/lib/validations/cat-meal';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -9,7 +10,10 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
-    const foodData = FoodInputSchema.parse(body);
+
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...requestData } = body;
+    const foodData = FoodInputSchema.parse(requestData);
 
     // Check if food with same name and brand already exists
     const existingFood = await prisma.food.findFirst({
@@ -26,11 +30,17 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // Create new food
+    // DATABASE_URLのtimezone=Asia/Tokyoパラメータによりタイムゾーンが保持される
     const food = await prisma.food.create({
       data: {
         ...foodData,
         unit: foodData.unit || 'g',
+        createdAt: nowJST,
+        updatedAt: nowJST,
       },
       select: {
         id: true,
@@ -45,8 +55,15 @@ export default defineEventHandler(async (event) => {
       },
     });
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseFood = {
+      ...food,
+      createdAt: toLocalISOString(food.createdAt),
+      updatedAt: toLocalISOString(food.updatedAt),
+    };
+
     return {
-      food,
+      food: responseFood,
       message: 'フードが正常に登録されました',
     };
   }

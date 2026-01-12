@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { MedicationIdSchema } from '~/lib/validations/medication';
 import { ReminderStatus } from '~/types/medication';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 /**
  * PUT /api/medication-reminders/:id
@@ -23,11 +24,14 @@ export default defineEventHandler(async (event) => {
     const params = getRouterParams(event);
     const body = await readBody(event);
 
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...requestData } = body;
+
     // パラメータのバリデーション
     const { id } = MedicationIdSchema.parse(params);
 
     // 入力データのバリデーション
-    const updateData = ReminderUpdateSchema.parse(body);
+    const updateData = ReminderUpdateSchema.parse(requestData);
 
     // リマインダーの存在確認
     const existingReminder = await prisma.medicationReminder.findUnique({
@@ -49,13 +53,16 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // リマインダーを更新
     const updatedReminder = await prisma.medicationReminder.update({
       where: { id },
       data: {
         status: updateData.status,
         ...(updateData.scheduledAt && { scheduledAt: updateData.scheduledAt }),
-        updatedAt: new Date(),
+        updatedAt: nowJST,
       },
       include: {
         cat: true,
@@ -64,7 +71,33 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    return updatedReminder;
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseReminder = {
+      ...updatedReminder,
+      scheduledAt: toLocalISOString(updatedReminder.scheduledAt),
+      createdAt: toLocalISOString(updatedReminder.createdAt),
+      updatedAt: toLocalISOString(updatedReminder.updatedAt),
+      cat: {
+        ...updatedReminder.cat,
+        birthdate: updatedReminder.cat.birthdate ? toLocalISOString(updatedReminder.cat.birthdate) : null,
+        createdAt: toLocalISOString(updatedReminder.cat.createdAt),
+        updatedAt: toLocalISOString(updatedReminder.cat.updatedAt),
+      },
+      medication: {
+        ...updatedReminder.medication,
+        createdAt: toLocalISOString(updatedReminder.medication.createdAt),
+        updatedAt: toLocalISOString(updatedReminder.medication.updatedAt),
+      },
+      schedule: {
+        ...updatedReminder.schedule,
+        startDate: toLocalISOString(updatedReminder.schedule.startDate),
+        endDate: updatedReminder.schedule.endDate ? toLocalISOString(updatedReminder.schedule.endDate) : null,
+        createdAt: toLocalISOString(updatedReminder.schedule.createdAt),
+        updatedAt: toLocalISOString(updatedReminder.schedule.updatedAt),
+      },
+    };
+
+    return responseReminder;
   }
   catch (error) {
     if (error instanceof z.ZodError) {

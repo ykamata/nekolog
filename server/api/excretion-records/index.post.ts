@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { ExcretionRecordInputSchema } from '~/lib/validations/excretion';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -9,7 +10,10 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
-    const excretionData = ExcretionRecordInputSchema.parse(body);
+
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...requestData } = body;
+    const excretionData = ExcretionRecordInputSchema.parse(requestData);
 
     // Verify that cat exists
     const cat = await prisma.cat.findUnique({
@@ -24,13 +28,19 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // Create new excretion record
+    // DATABASE_URLのtimezone=Asia/Tokyoパラメータによりタイムゾーンが保持される
     const excretionRecord = await prisma.excretionRecord.create({
       data: {
         catId: excretionData.catId,
         type: excretionData.type as 'URINE' | 'FECES',
         recordedAt: excretionData.recordedAt,
         notes: excretionData.notes,
+        createdAt: nowJST,
+        updatedAt: nowJST,
       },
       include: {
         cat: {
@@ -38,13 +48,28 @@ export default defineEventHandler(async (event) => {
             id: true,
             name: true,
             photoUrl: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
       },
     });
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseRecord = {
+      ...excretionRecord,
+      recordedAt: toLocalISOString(excretionRecord.recordedAt),
+      createdAt: toLocalISOString(excretionRecord.createdAt),
+      updatedAt: toLocalISOString(excretionRecord.updatedAt),
+      cat: excretionRecord.cat ? {
+        ...excretionRecord.cat,
+        createdAt: toLocalISOString(excretionRecord.cat.createdAt),
+        updatedAt: toLocalISOString(excretionRecord.cat.updatedAt),
+      } : undefined,
+    };
+
     return {
-      record: excretionRecord,
+      record: responseRecord,
       message: '排泄記録が正常に登録されました',
     };
   }

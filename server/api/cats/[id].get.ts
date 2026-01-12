@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const paramsSchema = z.object({
   id: z.coerce.number().int().positive('Invalid cat ID format'),
@@ -40,7 +41,15 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    return { cat };
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseCat = {
+      ...cat,
+      birthdate: cat.birthdate ? toLocalISOString(cat.birthdate) : null,
+      createdAt: toLocalISOString(cat.createdAt),
+      updatedAt: toLocalISOString(cat.updatedAt),
+    };
+
+    return { cat: responseCat };
   }
   catch (error) {
     // Handle validation errors

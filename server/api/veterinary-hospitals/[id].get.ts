@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { requireAuth } from '~/lib/auth-middleware';
 import { veterinaryIdSchema } from '~/lib/validations/veterinary-master';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -42,7 +43,19 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    return hospital;
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseHospital = {
+      ...hospital,
+      createdAt: toLocalISOString(hospital.createdAt),
+      updatedAt: toLocalISOString(hospital.updatedAt),
+      doctors: hospital.doctors.map(doctor => ({
+        ...doctor,
+        createdAt: toLocalISOString(doctor.createdAt),
+        updatedAt: toLocalISOString(doctor.updatedAt),
+      })),
+    };
+
+    return responseHospital;
   }
   catch (error) {
     // Handle validation errors

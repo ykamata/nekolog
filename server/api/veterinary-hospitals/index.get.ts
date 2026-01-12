@@ -4,6 +4,7 @@ import { veterinarySearchSchema } from '~/lib/validations/veterinary-master';
 
 // クエリパラメータのスキーマ（文字列から適切な型に変換）
 import { requireAuth } from '~/lib/auth-middleware';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const querySchema = z.object({
   name: z.string().optional(),
@@ -71,11 +72,18 @@ export default defineEventHandler(async (event) => {
       prisma.veterinaryHospital.count({ where }),
     ]);
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseHospitals = hospitals.map(hospital => ({
+      ...hospital,
+      createdAt: toLocalISOString(hospital.createdAt),
+      updatedAt: toLocalISOString(hospital.updatedAt),
+    }));
+
     // Add caching headers
     setHeader(event, 'Cache-Control', 'public, max-age=300, s-maxage=600');
 
     return {
-      hospitals,
+      hospitals: responseHospitals,
       total,
       hasMore: offset + limit < total,
       pagination: {

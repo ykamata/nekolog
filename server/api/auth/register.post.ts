@@ -6,6 +6,7 @@ import {
   getRefreshCookieOptions,
 } from '~/lib/auth';
 import { prisma } from '~/lib/prisma';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -37,12 +38,18 @@ export default defineEventHandler(async (event) => {
     // Hash password
     const hashedPassword = await hashPassword(password);
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // Create user
+    // DATABASE_URLのtimezone=Asia/Tokyoパラメータによりタイムゾーンが保持される
     const user = await prisma.user.create({
       data: {
         email,
         password: hashedPassword,
         name,
+        createdAt: nowJST,
+        updatedAt: nowJST,
       },
       select: {
         id: true,
@@ -52,6 +59,13 @@ export default defineEventHandler(async (event) => {
         updatedAt: true,
       },
     });
+
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseUser = {
+      ...user,
+      createdAt: toLocalISOString(user.createdAt),
+      updatedAt: toLocalISOString(user.updatedAt),
+    };
 
     // Generate tokens
     const tokenPayload = {
@@ -65,7 +79,7 @@ export default defineEventHandler(async (event) => {
     setCookie(event, 'refresh-token', refreshToken, getRefreshCookieOptions());
 
     return {
-      user,
+      user: responseUser,
       accessToken,
       refreshToken,
     };

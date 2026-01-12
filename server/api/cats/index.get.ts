@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const querySchema = z.object({
   name: z.string().optional(),
@@ -60,6 +61,14 @@ export default defineEventHandler(async (event) => {
       prisma.cat.count({ where }),
     ]);
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const convertedCats = cats.map(cat => ({
+      ...cat,
+      birthdate: cat.birthdate ? toLocalISOString(cat.birthdate) : null,
+      createdAt: toLocalISOString(cat.createdAt),
+      updatedAt: toLocalISOString(cat.updatedAt),
+    }));
+
     // 開発時はキャッシュを短くし、no-cacheヘッダーがある場合は無効化
     const cacheControl = getHeader(event, 'cache-control');
     if (cacheControl?.includes('no-cache')) {
@@ -73,7 +82,7 @@ export default defineEventHandler(async (event) => {
     }
 
     console.log('🔍 API: 猫データ取得', { count: cats.length, total });
-    return cats;
+    return convertedCats;
   }
   catch (error) {
     console.error('❌ API: 猫データ取得エラー', error);

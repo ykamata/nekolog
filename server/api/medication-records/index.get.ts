@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
-import { parseLocalDateString, parseLocalDateStringEndOfDay } from '~/utils/cat-meal';
+import { parseLocalDateString, parseLocalDateStringEndOfDay, toLocalISOString } from '~/utils/cat-meal';
 
 const querySchema = z
   .object({
@@ -83,6 +83,8 @@ export default defineEventHandler(async (event) => {
             select: {
               id: true,
               name: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
           medication: {
@@ -91,6 +93,8 @@ export default defineEventHandler(async (event) => {
               name: true,
               type: true,
               dosage: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
         },
@@ -98,11 +102,29 @@ export default defineEventHandler(async (event) => {
       prisma.medicationRecord.count({ where }),
     ]);
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseRecords = records.map(record => ({
+      ...record,
+      administeredAt: toLocalISOString(record.administeredAt),
+      createdAt: toLocalISOString(record.createdAt),
+      updatedAt: toLocalISOString(record.updatedAt),
+      cat: {
+        ...record.cat,
+        createdAt: toLocalISOString(record.cat.createdAt),
+        updatedAt: toLocalISOString(record.cat.updatedAt),
+      },
+      medication: {
+        ...record.medication,
+        createdAt: toLocalISOString(record.medication.createdAt),
+        updatedAt: toLocalISOString(record.medication.updatedAt),
+      },
+    }));
+
     // Add caching headers for medication records data
     setHeader(event, 'Cache-Control', 'public, max-age=60, s-maxage=120');
 
     return {
-      records,
+      records: responseRecords,
       total,
       limit,
       offset,

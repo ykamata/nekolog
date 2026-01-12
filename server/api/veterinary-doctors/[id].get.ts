@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { requireAuth } from '~/lib/auth-middleware';
 import { veterinaryIdSchema } from '~/lib/validations/veterinary-master';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -23,6 +24,8 @@ export default defineEventHandler(async (event) => {
           select: {
             id: true,
             name: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
       },
@@ -35,7 +38,18 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    return doctor;
+    return {
+      ...doctor,
+      createdAt: toLocalISOString(doctor.createdAt),
+      updatedAt: toLocalISOString(doctor.updatedAt),
+      hospital: doctor.hospital
+        ? {
+            ...doctor.hospital,
+            createdAt: toLocalISOString(doctor.hospital.createdAt),
+            updatedAt: toLocalISOString(doctor.hospital.updatedAt),
+          }
+        : null,
+    };
   }
   catch (error) {
     // Zodバリデーションエラーの場合

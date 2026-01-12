@@ -6,6 +6,7 @@ import {
   validateParams,
   validateBody,
 } from '~/server/utils/error-handler';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const paramsSchema = z.object({
   id: z.coerce.number().positive('Invalid medication ID format'),
@@ -22,7 +23,10 @@ export default defineEventHandler(
 
     // Parse and validate request body
     const body = await readBody(event);
-    const updateData = validateBody(MedicationUpdateSchema, body);
+
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...requestData } = body;
+    const updateData = validateBody(MedicationUpdateSchema, requestData);
 
     // Check if medication exists
     const existingMedication = await prisma.medication.findUnique({
@@ -53,10 +57,16 @@ export default defineEventHandler(
       }
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // Update medication
     const medication = await prisma.medication.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...updateData,
+        updatedAt: nowJST,
+      },
       select: {
         id: true,
         name: true,
@@ -68,8 +78,15 @@ export default defineEventHandler(
       },
     });
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseMedication = {
+      ...medication,
+      createdAt: toLocalISOString(medication.createdAt),
+      updatedAt: toLocalISOString(medication.updatedAt),
+    };
+
     return {
-      medication,
+      medication: responseMedication,
       message: '薬の情報が正常に更新されました',
     };
   }),

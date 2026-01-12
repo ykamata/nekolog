@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { dailyNoteInputSchema } from '~/lib/validations/daily-calendar';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 /**
  * Create a new daily note
@@ -11,7 +12,10 @@ export default defineEventHandler(async (event) => {
     assertMethod(event, 'POST');
 
     const body = await readBody(event);
-    const validated = dailyNoteInputSchema.parse(body);
+
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...requestData } = body;
+    const validated = dailyNoteInputSchema.parse(requestData);
 
     // Normalize date to start of day (00:00:00)
     const normalizedDate = new Date(validated.date);
@@ -43,7 +47,11 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // Create or update daily note (upsert)
+    // DATABASE_URLのtimezone=Asia/Tokyoパラメータによりタイムゾーンが保持される
     const dailyNote = await prisma.dailyNote.upsert({
       where: {
         catId_date: {
@@ -55,6 +63,7 @@ export default defineEventHandler(async (event) => {
         medicationId: validated.medicationId,
         emergencyMedication: validated.emergencyMedication ?? false,
         memo: validated.memo,
+        updatedAt: nowJST,
       },
       create: {
         catId: validated.catId,
@@ -62,12 +71,22 @@ export default defineEventHandler(async (event) => {
         medicationId: validated.medicationId,
         emergencyMedication: validated.emergencyMedication ?? false,
         memo: validated.memo,
+        createdAt: nowJST,
+        updatedAt: nowJST,
       },
     });
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseNote = {
+      ...dailyNote,
+      date: toLocalISOString(dailyNote.date),
+      createdAt: toLocalISOString(dailyNote.createdAt),
+      updatedAt: toLocalISOString(dailyNote.updatedAt),
+    };
+
     console.log('✅ デイリーノート作成/更新成功:', dailyNote.id);
 
-    return dailyNote;
+    return responseNote;
   }
   catch (error) {
     if (error instanceof z.ZodError) {

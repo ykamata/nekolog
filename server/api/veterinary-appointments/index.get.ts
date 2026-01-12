@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { VeterinaryAppointmentFilterSchema } from '~/lib/validations/veterinary-visit';
-import { parseLocalDateString, parseLocalDateStringEndOfDay } from '~/utils/cat-meal';
+import { parseLocalDateString, parseLocalDateStringEndOfDay, toLocalISOString } from '~/utils/cat-meal';
 
 // クエリパラメータのスキーマ（文字列から適切な型に変換）
 const querySchema = z.object({
@@ -130,7 +130,14 @@ export default defineEventHandler(async (event) => {
     setHeader(event, 'X-Current-Offset', offset.toString());
 
     return {
-      appointments,
+      appointments: appointments.map(appointment => ({
+        ...appointment,
+        appointmentDate: toLocalISOString(appointment.appointmentDate),
+        createdAt: toLocalISOString(appointment.createdAt),
+        updatedAt: toLocalISOString(appointment.updatedAt),
+        // cat, hospital, doctor are already selected with specific fields only
+        // No date transformation needed as they don't include date fields in the select
+      })),
       total,
       hasMore: offset + limit < total,
       pagination: {

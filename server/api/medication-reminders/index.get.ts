@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { MedicationReminderFilterSchema } from '~/lib/validations/medication';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 /**
  * GET /api/medication-reminders
@@ -69,8 +70,34 @@ export default defineEventHandler(async (event) => {
       prisma.medicationReminder.count({ where }),
     ]);
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseReminders = reminders.map(reminder => ({
+      ...reminder,
+      scheduledAt: toLocalISOString(reminder.scheduledAt),
+      createdAt: toLocalISOString(reminder.createdAt),
+      updatedAt: toLocalISOString(reminder.updatedAt),
+      cat: {
+        ...reminder.cat,
+        birthdate: reminder.cat.birthdate ? toLocalISOString(reminder.cat.birthdate) : null,
+        createdAt: toLocalISOString(reminder.cat.createdAt),
+        updatedAt: toLocalISOString(reminder.cat.updatedAt),
+      },
+      medication: {
+        ...reminder.medication,
+        createdAt: toLocalISOString(reminder.medication.createdAt),
+        updatedAt: toLocalISOString(reminder.medication.updatedAt),
+      },
+      schedule: {
+        ...reminder.schedule,
+        startDate: toLocalISOString(reminder.schedule.startDate),
+        endDate: reminder.schedule.endDate ? toLocalISOString(reminder.schedule.endDate) : null,
+        createdAt: toLocalISOString(reminder.schedule.createdAt),
+        updatedAt: toLocalISOString(reminder.schedule.updatedAt),
+      },
+    }));
+
     return {
-      data: reminders,
+      data: responseReminders,
       pagination: {
         total,
         limit: filter.limit,

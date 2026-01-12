@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { MedicationIdSchema } from '~/lib/validations/medication';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 /**
  * GET /api/medication-schedules/:id
@@ -29,10 +30,25 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    // times フィールドをJSONパースして配列に変換
+    // times フィールドをJSONパースして配列に変換し、DateオブジェクトをローカルISO文字列に変換
     const scheduleWithParsedTimes = {
       ...schedule,
       times: JSON.parse(schedule.times),
+      startDate: toLocalISOString(schedule.startDate),
+      endDate: schedule.endDate ? toLocalISOString(schedule.endDate) : null,
+      createdAt: toLocalISOString(schedule.createdAt),
+      updatedAt: toLocalISOString(schedule.updatedAt),
+      cat: {
+        ...schedule.cat,
+        birthdate: schedule.cat.birthdate ? toLocalISOString(schedule.cat.birthdate) : null,
+        createdAt: toLocalISOString(schedule.cat.createdAt),
+        updatedAt: toLocalISOString(schedule.cat.updatedAt),
+      },
+      medication: {
+        ...schedule.medication,
+        createdAt: toLocalISOString(schedule.medication.createdAt),
+        updatedAt: toLocalISOString(schedule.medication.updatedAt),
+      },
     };
 
     return scheduleWithParsedTimes;

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { prisma } from "~/lib/prisma";
 import { VeterinaryVisitFilterSchema } from "~/lib/validations/veterinary-visit";
-import { parseLocalDateString, parseLocalDateStringEndOfDay } from "~/utils/cat-meal";
+import { parseLocalDateString, parseLocalDateStringEndOfDay, toLocalISOString } from "~/utils/cat-meal";
 
 // クエリパラメータのスキーマ（文字列から適切な型に変換）
 const querySchema = z.object({
@@ -141,9 +141,14 @@ export default defineEventHandler(async (event) => {
       prisma.veterinaryVisit.count({ where }),
     ]);
 
-    // Transform the data (保持: visit.treatments[].treatment に名前が入る構造を維持)
+    // Transform the data (保持: visit.treatments[].treatment に名前が入る構造を維持) and convert dates
     const transformedVisits = visits.map((visit) => ({
       ...visit,
+      visitDate: toLocalISOString(visit.visitDate),
+      createdAt: toLocalISOString(visit.createdAt),
+      updatedAt: toLocalISOString(visit.updatedAt),
+      // cat, hospital, doctor are already selected with specific fields only
+      // No date transformation needed as they don't include date fields in the select
       treatments: visit.treatments.map((vt) => ({
         ...vt,
         treatment: vt.treatment,

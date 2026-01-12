@@ -7,6 +7,7 @@ import {
   validateBody,
   createApiErrorHandler,
 } from '~/server/utils/error-handler';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 // バリデーションスキーマを定義
 const veterinaryIdSchema = z.object({ id: z.coerce.number().positive() });
@@ -31,7 +32,10 @@ export default defineEventHandler(async (event) => {
     const params = getRouterParams(event);
     const { id } = validateParams(veterinaryIdSchema, params);
     const requestBody = await readBody(event);
-    const body = validateBody(veterinaryHospitalUpdateSchema, requestBody);
+
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...cleanedBody } = requestBody;
+    const body = validateBody(veterinaryHospitalUpdateSchema, cleanedBody);
 
     // 病院が存在し、ユーザーが所有者であることを確認
     const existingHospital = await prisma.veterinaryHospital.findFirst({
@@ -76,6 +80,9 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // 病院情報を更新
     const updatedHospital = await prisma.veterinaryHospital.update({
       where: { id },
@@ -84,10 +91,18 @@ export default defineEventHandler(async (event) => {
         ...(body.address !== undefined && { address: body.address || null }),
         ...(body.phone !== undefined && { phone: body.phone || null }),
         ...(body.memo !== undefined && { memo: body.memo || null }),
+        updatedAt: nowJST,
       },
     });
 
-    return updatedHospital;
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseHospital = {
+      ...updatedHospital,
+      createdAt: toLocalISOString(updatedHospital.createdAt),
+      updatedAt: toLocalISOString(updatedHospital.updatedAt),
+    };
+
+    return responseHospital;
   }
   catch (error) {
     throw errorHandler(error);

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { VeterinaryVisitInputSchema } from '~/lib/validations/veterinary-visit';
 import { requireAuth } from '~/lib/auth-middleware';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 // マスタデータの検索または作成を行うヘルパー関数
 async function findOrCreateHospital(name: string, userId: number) {
@@ -13,10 +14,13 @@ async function findOrCreateHospital(name: string, userId: number) {
     return existing;
   }
 
+  const now = new Date();
   return await prisma.veterinaryHospital.create({
     data: {
       name,
       user: { connect: { id: userId } },
+      createdAt: now,
+      updatedAt: now,
     },
   });
 }
@@ -34,11 +38,14 @@ async function findOrCreateDoctor(name: string, hospitalId: number, userId: numb
     return existing;
   }
 
+  const now = new Date();
   return await prisma.veterinaryDoctor.create({
     data: {
       name,
       hospitalId,
       userId,
+      createdAt: now,
+      updatedAt: now,
     },
   });
 }
@@ -73,7 +80,8 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
-    const visitData = VeterinaryVisitInputSchema.parse(body);
+    const { createdAt, updatedAt, ...restBody } = body;
+    const visitData = VeterinaryVisitInputSchema.parse(restBody);
 
     // Check if cat exists
     const cat = await prisma.cat.findUnique({
@@ -100,6 +108,7 @@ export default defineEventHandler(async (event) => {
     const treatments = await findOrCreateTreatments(visitData.treatments);
 
     // Create veterinary visit with treatments
+    const now = new Date();
     const visit = await prisma.veterinaryVisit.create({
       data: {
         catId: visitData.catId,
@@ -109,6 +118,8 @@ export default defineEventHandler(async (event) => {
         cost: visitData.cost,
         notes: visitData.notes || null,
         hasBloodTest: visitData.hasBloodTest,
+        createdAt: now,
+        updatedAt: now,
         treatments: {
           create: treatments.map(treatment => ({
             treatmentId: treatment.id,
@@ -152,9 +163,14 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    // Transform the data to flatten treatments
+    // Transform the data to flatten treatments and convert dates
     const transformedVisit = {
       ...visit,
+      visitDate: toLocalISOString(visit.visitDate),
+      createdAt: toLocalISOString(visit.createdAt),
+      updatedAt: toLocalISOString(visit.updatedAt),
+      // cat, hospital, doctor are already selected with specific fields only
+      // No date transformation needed as they don't include date fields in the select
       treatments: visit.treatments.map(vt => vt.treatment),
     };
 

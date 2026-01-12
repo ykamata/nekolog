@@ -3,6 +3,7 @@ import { prisma } from '~/lib/prisma';
 import { veterinaryHospitalSchema } from '~/lib/validations/veterinary-master';
 
 import { requireAuth } from '~/lib/auth-middleware';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -14,7 +15,10 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
-    const hospitalData = veterinaryHospitalSchema.parse(body);
+
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...requestData } = body;
+    const hospitalData = veterinaryHospitalSchema.parse(requestData);
 
     // Check if hospital with same name already exists for this user
     const existingHospital = await prisma.veterinaryHospital.findFirst({
@@ -31,6 +35,9 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // Create new hospital
     const hospital = await prisma.veterinaryHospital.create({
       data: {
@@ -39,6 +46,8 @@ export default defineEventHandler(async (event) => {
         phone: hospitalData.phone || null,
         memo: hospitalData.memo || null,
         userId: user.userId, // ユーザーIDを設定
+        createdAt: nowJST,
+        updatedAt: nowJST,
       },
       include: {
         _count: {
@@ -51,8 +60,15 @@ export default defineEventHandler(async (event) => {
       },
     });
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseHospital = {
+      ...hospital,
+      createdAt: toLocalISOString(hospital.createdAt),
+      updatedAt: toLocalISOString(hospital.updatedAt),
+    };
+
     return {
-      hospital,
+      hospital: responseHospital,
       message: '病院が正常に登録されました',
     };
   }

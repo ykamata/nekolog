@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { ConvertAppointmentToVisitSchema } from '~/lib/validations/veterinary-visit';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const paramsSchema = z.object({
   id: z.coerce.number().positive('有効なIDを指定してください'),
@@ -38,8 +39,9 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
+    const { createdAt, updatedAt, ...restBody } = body;
     const conversionData = ConvertAppointmentToVisitSchema.parse({
-      ...body,
+      ...restBody,
       appointmentId: id,
     });
 
@@ -92,6 +94,8 @@ export default defineEventHandler(async (event) => {
     }
 
     // Create visit and update appointment status in a transaction
+    // JSTの日時を明示的に計算（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
     const result = await prisma.$transaction(async (tx) => {
       // Create veterinary visit
       const visit = await tx.veterinaryVisit.create({
@@ -103,6 +107,8 @@ export default defineEventHandler(async (event) => {
           cost,
           notes: notes || null,
           hasBloodTest,
+          createdAt: nowJST,
+          updatedAt: nowJST,
           treatments: {
             create: treatments.map(treatment => ({
               treatmentId: treatment.id,
@@ -151,6 +157,7 @@ export default defineEventHandler(async (event) => {
         where: { id },
         data: {
           status: 'COMPLETED',
+          updatedAt: nowJST,
         },
         include: {
           cat: {
@@ -180,15 +187,27 @@ export default defineEventHandler(async (event) => {
       return { visit, appointment: updatedAppointment };
     });
 
-    // Transform the visit data to flatten treatments
+    // Transform the visit data to flatten treatments and convert dates
     const transformedVisit = {
       ...result.visit,
+      visitDate: toLocalISOString(result.visit.visitDate),
+      createdAt: toLocalISOString(result.visit.createdAt),
+      updatedAt: toLocalISOString(result.visit.updatedAt),
+      // cat, hospital, doctor are already selected with specific fields only
+      // No date transformation needed as they don't include date fields in the select
       treatments: result.visit.treatments.map(vt => vt.treatment),
     };
 
     return {
       visit: transformedVisit,
-      appointment: result.appointment,
+      appointment: {
+        ...result.appointment,
+        appointmentDate: toLocalISOString(result.appointment.appointmentDate),
+        createdAt: toLocalISOString(result.appointment.createdAt),
+        updatedAt: toLocalISOString(result.appointment.updatedAt),
+        // cat, hospital, doctor are already selected with specific fields only
+        // No date transformation needed as they don't include date fields in the select
+      },
       message: '予約が通院記録に正常に変換されました',
     };
   }

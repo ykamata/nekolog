@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { VeterinaryAppointmentInputSchema } from '~/lib/validations/veterinary-visit';
 import { requireAuth } from '~/lib/auth-middleware';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 // マスタデータの検索または作成を行うヘルパー関数
 async function findOrCreateHospital(name: string, userId: number) {
@@ -13,10 +14,13 @@ async function findOrCreateHospital(name: string, userId: number) {
     return existing;
   }
 
+  const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
   return await prisma.veterinaryHospital.create({
     data: {
       name,
       user: { connect: { id: userId } },
+      createdAt: nowJST,
+      updatedAt: nowJST,
     },
   });
 }
@@ -34,11 +38,14 @@ async function findOrCreateDoctor(name: string, hospitalId: number, userId: numb
     return existing;
   }
 
+  const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
   return await prisma.veterinaryDoctor.create({
     data: {
       name,
       hospitalId,
       userId,
+      createdAt: nowJST,
+      updatedAt: nowJST,
     },
   });
 }
@@ -53,13 +60,14 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
+    const { createdAt, updatedAt, ...restBody } = body;
 
-    // Convert appointmentDate string to Date object if needed
-    if (body.appointmentDate && typeof body.appointmentDate === 'string') {
-      body.appointmentDate = new Date(body.appointmentDate);
-    }
+    // Zodスキーマが文字列をJSTのDateオブジェクトに変換するため、
+    // ここでの明示的な変換は不要
+    const appointmentData = VeterinaryAppointmentInputSchema.parse(restBody);
 
-    const appointmentData = VeterinaryAppointmentInputSchema.parse(body);
+    // JSTの日時を明示的に計算（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
 
     // Check if cat exists
     const cat = await prisma.cat.findUnique({
@@ -92,6 +100,8 @@ export default defineEventHandler(async (event) => {
         plannedTreatments: appointmentData.plannedTreatments || null,
         notes: appointmentData.notes || null,
         status: 'SCHEDULED',
+        createdAt: nowJST,
+        updatedAt: nowJST,
       },
       include: {
         cat: {
@@ -119,7 +129,14 @@ export default defineEventHandler(async (event) => {
     });
 
     return {
-      appointment,
+      appointment: {
+        ...appointment,
+        appointmentDate: toLocalISOString(appointment.appointmentDate),
+        createdAt: toLocalISOString(appointment.createdAt),
+        updatedAt: toLocalISOString(appointment.updatedAt),
+        // cat, hospital, doctor are already selected with specific fields only
+        // No date transformation needed as they don't include date fields in the select
+      },
       message: '予約が正常に作成されました',
     };
   }

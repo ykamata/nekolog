@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const paramsSchema = z.object({
   id: z.coerce.number().positive('Invalid medication ID format'),
@@ -41,10 +42,17 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseMedication = {
+      ...medication,
+      createdAt: toLocalISOString(medication.createdAt),
+      updatedAt: toLocalISOString(medication.updatedAt),
+    };
+
     // Add caching headers
     setHeader(event, 'Cache-Control', 'public, max-age=300, s-maxage=600');
 
-    return medication;
+    return responseMedication;
   }
   catch (error) {
     // Handle validation errors

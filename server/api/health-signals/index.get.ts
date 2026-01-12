@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { healthSignalQuerySchema } from '~/lib/validations/health-signal';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 /**
  * Get health signals with optional filters
@@ -41,7 +42,15 @@ export default defineEventHandler(async (event) => {
       },
     });
 
-    return healthSignals;
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const convertedSignals = healthSignals.map(signal => ({
+      ...signal,
+      date: toLocalISOString(signal.date),
+      createdAt: toLocalISOString(signal.createdAt),
+      updatedAt: toLocalISOString(signal.updatedAt),
+    }));
+
+    return convertedSignals;
   }
   catch (error) {
     if (error instanceof z.ZodError) {

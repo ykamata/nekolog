@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const querySchema = z.object({
   name: z.string().optional(),
@@ -65,11 +66,18 @@ export default defineEventHandler(async (event) => {
       prisma.medication.count({ where }),
     ]);
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseMedications = medications.map(medication => ({
+      ...medication,
+      createdAt: toLocalISOString(medication.createdAt),
+      updatedAt: toLocalISOString(medication.updatedAt),
+    }));
+
     // Add caching headers for medications data
     setHeader(event, 'Cache-Control', 'public, max-age=300, s-maxage=600');
 
     return {
-      medications,
+      medications: responseMedications,
       total,
       limit,
       offset,

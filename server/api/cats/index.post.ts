@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { CatInputSchema } from '~/lib/validations/cat-meal';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -13,7 +14,9 @@ export default defineEventHandler(async (event) => {
     // デバッグ用ログ - 受信したデータを確認
     console.log('受信したデータ:', JSON.stringify(body, null, 2));
 
-    const catData = CatInputSchema.parse(body);
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...requestData } = body;
+    const catData = CatInputSchema.parse(requestData);
 
     // Check if cat with same name already exists
     const existingCat = await prisma.cat.findFirst({
@@ -29,9 +32,17 @@ export default defineEventHandler(async (event) => {
       });
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // Create new cat
+    // DATABASE_URLのtimezone=Asia/Tokyoパラメータによりタイムゾーンが保持される
     const cat = await prisma.cat.create({
-      data: catData,
+      data: {
+        ...catData,
+        createdAt: nowJST,
+        updatedAt: nowJST,
+      },
       select: {
         id: true,
         name: true,
@@ -43,8 +54,16 @@ export default defineEventHandler(async (event) => {
       },
     });
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseCat = {
+      ...cat,
+      birthdate: cat.birthdate ? toLocalISOString(cat.birthdate) : null,
+      createdAt: toLocalISOString(cat.createdAt),
+      updatedAt: toLocalISOString(cat.updatedAt),
+    };
+
     return {
-      cat,
+      cat: responseCat,
       message: '猫が正常に登録されました',
     };
   }

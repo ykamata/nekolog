@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { MedicationRecordUpdateSchema } from '~/lib/validations/medication';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 const paramsSchema = z.object({
   id: z.coerce.number().positive('有効なIDを指定してください'),
@@ -17,7 +18,10 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
-    const updateData = MedicationRecordUpdateSchema.parse(body);
+
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...requestData } = body;
+    const updateData = MedicationRecordUpdateSchema.parse(requestData);
 
     // Check if record exists
     const existingRecord = await prisma.medicationRecord.findUnique({
@@ -65,15 +69,23 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // Update medication record
     const record = await prisma.medicationRecord.update({
       where: { id },
-      data: updateData,
+      data: {
+        ...updateData,
+        updatedAt: nowJST,
+      },
       include: {
         cat: {
           select: {
             id: true,
             name: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
         medication: {
@@ -82,13 +94,33 @@ export default defineEventHandler(async (event) => {
             name: true,
             type: true,
             dosage: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
       },
     });
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseRecord = {
+      ...record,
+      administeredAt: toLocalISOString(record.administeredAt),
+      createdAt: toLocalISOString(record.createdAt),
+      updatedAt: toLocalISOString(record.updatedAt),
+      cat: {
+        ...record.cat,
+        createdAt: toLocalISOString(record.cat.createdAt),
+        updatedAt: toLocalISOString(record.cat.updatedAt),
+      },
+      medication: {
+        ...record.medication,
+        createdAt: toLocalISOString(record.medication.createdAt),
+        updatedAt: toLocalISOString(record.medication.updatedAt),
+      },
+    };
+
     return {
-      record,
+      record: responseRecord,
       message: '投与記録が正常に更新されました',
     };
   }

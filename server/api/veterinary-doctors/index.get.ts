@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { VeterinaryDoctorFilterSchema } from '~/lib/validations/veterinary-visit';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 // クエリパラメータのスキーマ（文字列から適切な型に変換）
 const querySchema = z.object({
@@ -69,6 +70,8 @@ export default defineEventHandler(async (event) => {
               name: true,
               address: true,
               phone: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
           _count: {
@@ -86,7 +89,18 @@ export default defineEventHandler(async (event) => {
     setHeader(event, 'Cache-Control', 'public, max-age=300, s-maxage=600');
 
     return {
-      doctors,
+      doctors: doctors.map(doctor => ({
+        ...doctor,
+        createdAt: toLocalISOString(doctor.createdAt),
+        updatedAt: toLocalISOString(doctor.updatedAt),
+        hospital: doctor.hospital
+          ? {
+              ...doctor.hospital,
+              createdAt: toLocalISOString(doctor.hospital.createdAt),
+              updatedAt: toLocalISOString(doctor.hospital.updatedAt),
+            }
+          : null,
+      })),
       total,
       hasMore: offset + limit < total,
       pagination: {

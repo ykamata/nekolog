@@ -1,5 +1,6 @@
 import { requireAuth } from '~/lib/auth-middleware';
 import { prisma } from '~/lib/prisma';
+import { toLocalISOString } from '~/utils/cat-meal';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -25,7 +26,14 @@ export default defineEventHandler(async (event) => {
       });
     }
 
-    return user;
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseUser = {
+      ...user,
+      createdAt: toLocalISOString(user.createdAt),
+      updatedAt: toLocalISOString(user.updatedAt),
+    };
+
+    return responseUser;
   }
   catch (error) {
     // Re-throw HTTP errors
