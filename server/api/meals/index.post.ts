@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { MealRecordInputSchema } from '~/lib/validations/cat-meal';
-import { calculateCaloriesFromGrams } from '~/utils/cat-meal';
+import { calculateCaloriesFromGrams, toLocalISOString } from '~/utils/cat-meal';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -10,7 +10,9 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
-    const mealData = MealRecordInputSchema.parse(body);
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...requestData } = body;
+    const mealData = MealRecordInputSchema.parse(requestData);
 
     // Verify that cat exists
     const cat = await prisma.cat.findUnique({
@@ -52,12 +54,18 @@ export default defineEventHandler(async (event) => {
       );
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    // new Date()はUTCを返すため、JST時刻を明示的に計算
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // Create new meal record
     // DATABASE_URLのtimezone=Asia/Tokyoパラメータによりタイムゾーンが保持される
     const mealRecord = await prisma.mealRecord.create({
       data: {
         ...mealData,
         calories,
+        createdAt: nowJST,
+        updatedAt: nowJST,
       },
       include: {
         cat: {
@@ -65,6 +73,8 @@ export default defineEventHandler(async (event) => {
             id: true,
             name: true,
             photoUrl: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
         food: {
@@ -75,13 +85,33 @@ export default defineEventHandler(async (event) => {
             brand: true,
             caloriesPerGram: true,
             unit: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
       },
     });
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseRecord = {
+      ...mealRecord,
+      mealTime: toLocalISOString(mealRecord.mealTime),
+      createdAt: toLocalISOString(mealRecord.createdAt),
+      updatedAt: toLocalISOString(mealRecord.updatedAt),
+      cat: mealRecord.cat ? {
+        ...mealRecord.cat,
+        createdAt: toLocalISOString(mealRecord.cat.createdAt),
+        updatedAt: toLocalISOString(mealRecord.cat.updatedAt),
+      } : undefined,
+      food: mealRecord.food ? {
+        ...mealRecord.food,
+        createdAt: toLocalISOString(mealRecord.food.createdAt),
+        updatedAt: toLocalISOString(mealRecord.food.updatedAt),
+      } : undefined,
+    };
+
     return {
-      mealRecord,
+      mealRecord: responseRecord,
       message: '食事記録が正常に登録されました',
     };
   }

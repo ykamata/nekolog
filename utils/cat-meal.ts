@@ -71,10 +71,10 @@ export function transformPrismaMealRecord(prismaMealRecord: any): MealRecord {
     foodId: prismaMealRecord.foodId,
     quantity: prismaMealRecord.quantity,
     calories: prismaMealRecord.calories,
-    mealTime: new Date(prismaMealRecord.mealTime),
+    mealTime: parseJSTDateTime(prismaMealRecord.mealTime),
     notes: prismaMealRecord.notes,
-    createdAt: new Date(prismaMealRecord.createdAt),
-    updatedAt: new Date(prismaMealRecord.updatedAt),
+    createdAt: parseJSTDateTime(prismaMealRecord.createdAt),
+    updatedAt: parseJSTDateTime(prismaMealRecord.updatedAt),
     cat: prismaMealRecord.cat
       ? transformPrismaCat(prismaMealRecord.cat)
       : undefined,
@@ -247,6 +247,38 @@ export function toLocalDateString(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * Parse ISO datetime string as JST (local timezone) without timezone conversion
+ * Handles both "YYYY-MM-DDTHH:mm:ss" and "YYYY-MM-DDTHH:mm:ss.sssZ" formats
+ * IMPORTANT: This treats the datetime as JST, ignoring any Z or timezone suffix
+ * @param dateTimeString ISO datetime string
+ * @returns Date object in local timezone (JST)
+ */
+export function parseJSTDateTime(dateTimeString: string | Date): Date {
+  if (dateTimeString instanceof Date) return dateTimeString;
+  if (!dateTimeString) return new Date();
+
+  // Remove 'Z' suffix or timezone info if present, as DB datetime is already in JST
+  const cleanDateTimeString = String(dateTimeString).replace(/Z$/, '').replace(/[+-]\d{2}:\d{2}$/, '');
+
+  // Parse as "YYYY-MM-DDTHH:mm:ss" or "YYYY-MM-DD HH:mm:ss"
+  const isoMatch = cleanDateTimeString.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+  if (isoMatch) {
+    const [, year, month, day, hours, minutes, seconds] = isoMatch;
+    return new Date(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hours),
+      Number(minutes),
+      Number(seconds)
+    );
+  }
+
+  // Fallback to Date constructor (may have timezone issues)
+  return new Date(dateTimeString);
 }
 
 /**

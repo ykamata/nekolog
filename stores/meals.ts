@@ -11,7 +11,7 @@ import {
   createCacheKey,
   invalidateRelatedCache,
 } from '~/utils/cache';
-import { toLocalISOString } from '~/utils/cat-meal';
+import { toLocalISOString, parseJSTDateTime } from '~/utils/cat-meal';
 
 interface PaginationState {
   currentPage: number;
@@ -176,31 +176,32 @@ export const useMealsStore = defineStore('meals', () => {
 
       console.log('📝 食事記録ストア: API呼び出し', url);
       const response = await $fetch<{
-        data: MealRecord[];
+        mealRecords: MealRecord[];
         pagination: {
           total: number;
-          page: number;
-          pageSize: number;
-          hasNext: boolean;
-          hasPrevious: boolean;
+          limit: number;
+          offset: number;
+          hasMore: boolean;
         };
       }>(url);
       console.log('📝 食事記録ストア: API レスポンス', response);
 
-      meals.value = response.data.map(meal => ({
+      // APIレスポンスの日時文字列は既にJST形式なので、そのままparseJSTDateTimeでパース
+      meals.value = response.mealRecords.map(meal => ({
         ...meal,
-        mealTime: new Date(meal.mealTime),
-        createdAt: new Date(meal.createdAt),
-        updatedAt: new Date(meal.updatedAt),
+        mealTime: parseJSTDateTime(meal.mealTime),
+        createdAt: parseJSTDateTime(meal.createdAt),
+        updatedAt: parseJSTDateTime(meal.updatedAt),
       }));
 
       // Update pagination
+      const currentPage = Math.floor(response.pagination.offset / response.pagination.limit) + 1;
       pagination.value = {
-        currentPage: response.pagination.page,
-        pageSize: response.pagination.pageSize,
+        currentPage,
+        pageSize: response.pagination.limit,
         totalCount: response.pagination.total,
-        hasNextPage: response.pagination.hasNext,
-        hasPreviousPage: response.pagination.hasPrevious,
+        hasNextPage: response.pagination.hasMore,
+        hasPreviousPage: response.pagination.offset > 0,
       };
 
       // Cache the results
@@ -238,16 +239,17 @@ export const useMealsStore = defineStore('meals', () => {
           : mealInput.mealTime,
       };
 
-      const data = await $fetch<MealRecord>('/api/meals', {
+      const response = await $fetch<{ mealRecord: MealRecord; message: string }>('/api/meals', {
         method: 'POST',
         body: submitData,
       });
 
-      const newMeal = {
-        ...data,
-        mealTime: new Date(data.mealTime),
-        createdAt: new Date(data.createdAt),
-        updatedAt: new Date(data.updatedAt),
+      // APIレスポンスの日時文字列をJSTとしてパース（タイムゾーン変換なし）
+      const newMeal: MealRecord = {
+        ...response.mealRecord,
+        mealTime: parseJSTDateTime(response.mealRecord.mealTime),
+        createdAt: parseJSTDateTime(response.mealRecord.createdAt),
+        updatedAt: parseJSTDateTime(response.mealRecord.updatedAt),
       };
 
       // Add to beginning of meals array (most recent first)
@@ -293,16 +295,16 @@ export const useMealsStore = defineStore('meals', () => {
         }),
       };
 
-      const data = await $fetch<MealRecord>(`/api/meals/${id}`, {
+      const response = await $fetch<{ mealRecord: MealRecord; message: string }>(`/api/meals/${id}`, {
         method: 'PUT',
         body: submitData,
       });
 
       const updatedMeal = {
-        ...data,
-        mealTime: new Date(data.mealTime),
-        createdAt: new Date(data.createdAt),
-        updatedAt: new Date(data.updatedAt),
+        ...response.mealRecord,
+        mealTime: parseJSTDateTime(response.mealRecord.mealTime),
+        createdAt: parseJSTDateTime(response.mealRecord.createdAt),
+        updatedAt: parseJSTDateTime(response.mealRecord.updatedAt),
       };
 
       const index = meals.value.findIndex(meal => meal.id === id);

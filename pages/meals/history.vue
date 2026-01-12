@@ -72,14 +72,16 @@ const handleDelete = (record: MealRecord) => {
 const confirmDelete = async () => {
   if (!recordToDelete.value) return;
 
+  const recordId = recordToDelete.value.id;
+
   try {
-    await $fetch(`/api/meals/${recordToDelete.value.id}`, {
+    await $fetch(`/api/meals/${recordId}`, {
       method: 'DELETE' as any,
     });
 
-    // Refresh the meal list
+    // Remove the record from the list without refetching from DB
     if (mealListRef.value) {
-      mealListRef.value.fetchMealRecords(true);
+      mealListRef.value.removeMealRecord(recordId);
     }
   }
   catch {
@@ -101,29 +103,42 @@ const cancelDelete = () => {
 const handleEditSubmit = async (data: MealRecordInput) => {
   if (!editingRecord.value) return;
 
+  console.log('🔍 [handleEditSubmit] Received data:', data);
+  console.log('🔍 [handleEditSubmit] mealTime type:', typeof data.mealTime, data.mealTime);
+
   try {
-    // mealTimeをローカルISO文字列に変換してタイムゾーン(JST)を保持
+    // 必要なフィールドのみを抽出してサーバーに送信
     const submitData = {
-      ...data,
+      catId: data.catId,
+      foodId: data.foodId,
+      quantity: data.quantity,
+      calories: data.calories,
       mealTime: data.mealTime instanceof Date
         ? toLocalISOString(data.mealTime)
         : data.mealTime,
+      notes: data.notes,
     };
 
-    await $fetch(`/api/meals/${editingRecord.value.id}`, {
+    console.log('🔍 [handleEditSubmit] Submit data:', submitData);
+
+    const response = await $fetch<{ mealRecord: MealRecord; message: string }>(`/api/meals/${editingRecord.value.id}`, {
       method: 'PUT' as any,
       body: submitData,
     });
 
-    // Refresh the meal list
-    if (mealListRef.value) {
-      mealListRef.value.fetchMealRecords(true);
+    console.log('📥 [handleEditSubmit] API response:', response.mealRecord);
+    console.log('📥 [handleEditSubmit] mealTime from API:', response.mealRecord.mealTime, typeof response.mealRecord.mealTime);
+
+    // Update the record in the list without refetching from DB
+    if (mealListRef.value && response.mealRecord) {
+      mealListRef.value.updateMealRecord(response.mealRecord);
     }
 
     showEditModal.value = false;
     editingRecord.value = null;
   }
-  catch {
+  catch (err) {
+    console.error('❌ [handleEditSubmit] Error:', err);
     error.value = '食事記録の更新に失敗しました';
   }
 };
@@ -294,7 +309,7 @@ onMounted(() => {
               foodId: editingRecord.foodId,
               quantity: editingRecord.quantity,
               calories: editingRecord.calories,
-              mealTime: new Date(editingRecord.mealTime),
+              mealTime: editingRecord.mealTime,
               notes: editingRecord.notes,
             }"
             @submit="handleEditSubmit"

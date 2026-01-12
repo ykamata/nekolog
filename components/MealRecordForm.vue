@@ -30,7 +30,10 @@ const formData = ref<MealRecordForm>({
   foodId: props.initialData?.foodId || 0,
   quantity: props.initialData?.quantity || 0,
   calories: props.initialData?.calories,
-  mealTime: props.initialData?.mealTime ? new Date(props.initialData.mealTime) : new Date(),
+  mealTime: (() => {
+    const mealTime = props.initialData?.mealTime || new Date();
+    return typeof mealTime === 'string' ? new Date(mealTime) : mealTime;
+  })(),
   notes: props.initialData?.notes || "",
 });
 
@@ -177,7 +180,18 @@ const validateField = (field: string) => {
 };
 
 const handleSubmit = async () => {
-  if (!validateForm() || isSubmitting.value) return;
+  console.log('🔍 [MealRecordForm] handleSubmit called');
+  console.log('🔍 [MealRecordForm] formData:', formData.value);
+
+  if (!validateForm()) {
+    console.error('❌ [MealRecordForm] Validation failed:', errors.value);
+    return;
+  }
+
+  if (isSubmitting.value) {
+    console.log('⚠️ [MealRecordForm] Already submitting, skipping');
+    return;
+  }
 
   isSubmitting.value = true;
 
@@ -191,7 +205,12 @@ const handleSubmit = async () => {
       notes: formData.value.notes || undefined,
     };
 
+    console.log('✅ [MealRecordForm] Emitting submit with data:', submitData);
+    console.log('🔍 [MealRecordForm] mealTime type:', typeof submitData.mealTime, submitData.mealTime instanceof Date);
+
     emit("submit", submitData);
+  } catch (err) {
+    console.error('❌ [MealRecordForm] Error in handleSubmit:', err);
   } finally {
     isSubmitting.value = false;
   }
@@ -218,12 +237,18 @@ watch(
   () => props.initialData,
   (newData) => {
     if (newData) {
+      // mealTimeが文字列の場合はDateオブジェクトに変換
+      let mealTime = newData.mealTime || new Date();
+      if (typeof mealTime === 'string') {
+        mealTime = new Date(mealTime);
+      }
+
       formData.value = {
         catId: newData.catId || 0,
         foodId: newData.foodId || 0,
         quantity: newData.quantity || 0,
         calories: newData.calories,
-        mealTime: newData.mealTime ? new Date(newData.mealTime) : new Date(),
+        mealTime: mealTime,
         notes: newData.notes || "",
       };
     }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
-import { parseLocalDateString, parseLocalDateStringEndOfDay } from '~/utils/cat-meal';
+import { parseLocalDateString, parseLocalDateStringEndOfDay, toLocalISOString } from '~/utils/cat-meal';
 
 const querySchema = z.object({
   catId: z.coerce.number().positive().optional(),
@@ -89,6 +89,8 @@ export default defineEventHandler(async (event) => {
               id: true,
               name: true,
               photoUrl: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
           food: {
@@ -99,6 +101,8 @@ export default defineEventHandler(async (event) => {
               brand: true,
               caloriesPerGram: true,
               unit: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
         },
@@ -107,12 +111,30 @@ export default defineEventHandler(async (event) => {
       prisma.mealRecord.count({ where }),
     ]);
 
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const convertedRecords = mealRecords.map(record => ({
+      ...record,
+      mealTime: toLocalISOString(record.mealTime),
+      createdAt: toLocalISOString(record.createdAt),
+      updatedAt: toLocalISOString(record.updatedAt),
+      cat: record.cat ? {
+        ...record.cat,
+        createdAt: toLocalISOString(record.cat.createdAt),
+        updatedAt: toLocalISOString(record.cat.updatedAt),
+      } : undefined,
+      food: record.food ? {
+        ...record.food,
+        createdAt: toLocalISOString(record.food.createdAt),
+        updatedAt: toLocalISOString(record.food.updatedAt),
+      } : undefined,
+    }));
+
     // Add response caching headers for better performance
     setHeader(event, 'Cache-Control', 'public, max-age=60, s-maxage=120');
 
     // フロントエンドが期待する形式でレスポンスを返す
     return {
-      mealRecords,
+      mealRecords: convertedRecords,
       pagination: {
         total,
         limit,

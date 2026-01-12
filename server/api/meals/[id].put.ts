@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { MealRecordUpdateSchema } from '~/lib/validations/cat-meal';
-import { calculateCaloriesFromGrams } from '~/utils/cat-meal';
+import { calculateCaloriesFromGrams, toLocalISOString } from '~/utils/cat-meal';
 
 const paramsSchema = z.object({
   id: z.coerce.number().positive('Invalid meal record ID format'),
@@ -18,7 +18,14 @@ export default defineEventHandler(async (event) => {
 
     // Parse and validate request body
     const body = await readBody(event);
-    const updateData = MealRecordUpdateSchema.parse(body);
+    console.log('🔍 [PUT /api/meals/:id] Request body:', JSON.stringify(body, null, 2));
+
+    // createdAtとupdatedAtはサーバー側で管理するため除外
+    const { createdAt, updatedAt, ...requestData } = body;
+    console.log('🔍 [PUT /api/meals/:id] After removing createdAt/updatedAt:', JSON.stringify(requestData, null, 2));
+
+    const updateData = MealRecordUpdateSchema.parse(requestData);
+    console.log('✅ [PUT /api/meals/:id] Validation passed');
 
     // Check if meal record exists
     const existingMealRecord = await prisma.mealRecord.findUnique({
@@ -81,6 +88,10 @@ export default defineEventHandler(async (event) => {
       calories = calculateCaloriesFromGrams(quantity, food.caloriesPerGram);
     }
 
+    // 現在のJST時刻を明示的に作成（UTC + 9時間）
+    // new Date()はUTCを返すため、JST時刻を明示的に計算
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+
     // Update meal record
     // DATABASE_URLのtimezone=Asia/Tokyoパラメータによりタイムゾーンが保持される
     const mealRecord = await prisma.mealRecord.update({
@@ -88,6 +99,7 @@ export default defineEventHandler(async (event) => {
       data: {
         ...updateData,
         ...(calories !== undefined && { calories }),
+        updatedAt: nowJST,
       },
       include: {
         cat: {
@@ -95,6 +107,8 @@ export default defineEventHandler(async (event) => {
             id: true,
             name: true,
             photoUrl: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
         food: {
@@ -105,19 +119,53 @@ export default defineEventHandler(async (event) => {
             brand: true,
             caloriesPerGram: true,
             unit: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
       },
     });
 
+    console.log('📤 [PUT /api/meals/:id] Response mealRecord dates (before conversion):', {
+      mealTime: mealRecord.mealTime,
+      createdAt: mealRecord.createdAt,
+      updatedAt: mealRecord.updatedAt,
+      mealTimeType: typeof mealRecord.mealTime,
+    });
+
+    // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
+    const responseRecord = {
+      ...mealRecord,
+      mealTime: toLocalISOString(mealRecord.mealTime),
+      createdAt: toLocalISOString(mealRecord.createdAt),
+      updatedAt: toLocalISOString(mealRecord.updatedAt),
+      cat: mealRecord.cat ? {
+        ...mealRecord.cat,
+        createdAt: toLocalISOString(mealRecord.cat.createdAt),
+        updatedAt: toLocalISOString(mealRecord.cat.updatedAt),
+      } : undefined,
+      food: mealRecord.food ? {
+        ...mealRecord.food,
+        createdAt: toLocalISOString(mealRecord.food.createdAt),
+        updatedAt: toLocalISOString(mealRecord.food.updatedAt),
+      } : undefined,
+    };
+
+    console.log('📤 [PUT /api/meals/:id] Response mealRecord dates (after conversion):', {
+      mealTime: responseRecord.mealTime,
+      createdAt: responseRecord.createdAt,
+      updatedAt: responseRecord.updatedAt,
+    });
+
     return {
-      mealRecord,
+      mealRecord: responseRecord,
       message: '食事記録が正常に更新されました',
     };
   }
   catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
+      console.error('❌ [PUT /api/meals/:id] Zod validation error:', JSON.stringify(error.errors, null, 2));
       throw createError({
         statusCode: 400,
         statusMessage: '入力データが無効です',
@@ -131,6 +179,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Handle unexpected errors
+    console.error('❌ [PUT /api/meals/:id] Unexpected error:', error);
     throw createError({
       statusCode: 500,
       statusMessage: 'Internal server error',

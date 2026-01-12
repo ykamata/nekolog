@@ -256,9 +256,29 @@ const formatQuantity = (quantity: number) => {
   return quantity % 1 === 0 ? quantity.toString() : quantity.toFixed(1);
 };
 
+// Update a specific meal record in the list without refetching
+const updateMealRecord = (updatedRecord: MealRecord) => {
+  const index = mealRecords.value.findIndex(record => record.id === updatedRecord.id);
+  if (index !== -1) {
+    // Use splice to ensure reactivity
+    mealRecords.value.splice(index, 1, updatedRecord);
+  }
+};
+
+// Remove a specific meal record from the list without refetching
+const removeMealRecord = (recordId: number) => {
+  const index = mealRecords.value.findIndex(record => record.id === recordId);
+  if (index !== -1) {
+    mealRecords.value.splice(index, 1);
+    pagination.value.total -= 1;
+  }
+};
+
 // Expose methods to parent component
 defineExpose({
   fetchMealRecords,
+  updateMealRecord,
+  removeMealRecord,
 });
 
 // Lifecycle
