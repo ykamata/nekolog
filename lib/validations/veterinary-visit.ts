@@ -195,9 +195,44 @@ export const VeterinaryTreatmentInputSchema = z.object({
 // Input validation schemas for main entities
 export const VeterinaryVisitInputSchema = z.object({
   catId: z.coerce.number().int().positive(),
-  visitDate: z.coerce.date({
-    errorMap: () => ({ message: '診察日時を入力してください' }),
-  }),
+  visitDate: z.union([
+    z.date(),
+    z.string().transform((str) => {
+      // ローカルISO文字列(YYYY-MM-DDTHH:mm:ss)をJSTとして解釈
+      // サーバーがUTC環境で動作するため、JST時刻として+9時間してDateオブジェクトを作成
+      const localIsoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+      if (localIsoMatch) {
+        const [, year = '', month = '', day = '', hours = '', minutes = '', seconds = ''] = localIsoMatch;
+        const jstDate = new Date(
+          Number.parseInt(year, 10),
+          Number.parseInt(month, 10) - 1,
+          Number.parseInt(day, 10),
+          Number.parseInt(hours, 10),
+          Number.parseInt(minutes, 10),
+          Number.parseInt(seconds, 10),
+        );
+        // JST時刻として扱うため+9時間
+        return new Date(jstDate.getTime() + 9 * 60 * 60 * 1000);
+      }
+      // ISO文字列の場合も処理（Z付き、タイムゾーン付きを除去してローカルとして扱う）
+      const cleanStr = str.replace(/Z$/, '').replace(/[+-]\d{2}:\d{2}$/, '');
+      const isoMatch = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+      if (isoMatch) {
+        const [, year = '', month = '', day = '', hours = '', minutes = '', seconds = ''] = isoMatch;
+        const jstDate = new Date(
+          Number.parseInt(year, 10),
+          Number.parseInt(month, 10) - 1,
+          Number.parseInt(day, 10),
+          Number.parseInt(hours, 10),
+          Number.parseInt(minutes, 10),
+          Number.parseInt(seconds, 10),
+        );
+        // JST時刻として扱うため+9時間
+        return new Date(jstDate.getTime() + 9 * 60 * 60 * 1000);
+      }
+      throw new Error('無効な日時形式です');
+    }),
+  ]),
   hospitalName: z
     .string()
     .min(1, '病院名を入力してください')

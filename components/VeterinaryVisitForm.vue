@@ -100,12 +100,21 @@ watch(
   (visit) => {
     if (visit) {
       formData.catId = visit.catId;
-      formData.visitDate = new Date(visit.visitDate);
+      // visitDateはAPIからJSTのISO文字列として返されるので、そのままDateに変換
+      // toLocalISOStringで変換されたISO文字列（末尾にZなし）をJSTとして解釈
+      const visitDateStr = String(visit.visitDate);
+      if (visitDateStr.endsWith('Z')) {
+        // Zがある場合はUTCとして扱われるので、JSTに変換
+        formData.visitDate = new Date(new Date(visitDateStr).getTime() + 9 * 60 * 60 * 1000);
+      } else {
+        // Zがない場合はJSTのISO文字列として扱う
+        formData.visitDate = new Date(visitDateStr);
+      }
       formData.hospitalName = visit.hospital.name;
       formData.doctorName = visit.doctor?.name || "";
       formData.treatments = visit.treatments.map((t) => {
         // APIから返されるデータは既にflattenされている
-        return (t as any).treatment ? (t as any).treatment.name : t.name;
+        return t.treatment.name;
       });
       formData.cost = visit.cost;
       formData.notes = visit.notes || "";
@@ -377,7 +386,18 @@ const formatDateTimeLocal = (date: Date): string => {
 };
 
 const parseDateTimeLocal = (dateTimeString: string): Date => {
-  return new Date(dateTimeString);
+  // datetime-local の値 (例: "2024-01-15T14:30") をJSTとして扱う
+  // "2024-01-15T14:30" -> JST 2024-01-15 14:30:00 と解釈
+  // new Date()コンストラクタにタイムゾーンなしの文字列を渡すと、ローカルタイムゾーン（JST）として解釈される
+  const parts = dateTimeString.split('T');
+  if (parts.length !== 2) return new Date();
+
+  const [datePart, timePart] = parts;
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+
+  // new Date(year, month, day, hours, minutes)を使うとローカルタイムゾーン（JST）として扱われる
+  return new Date(year, month - 1, day, hours, minutes, 0, 0);
 };
 
 const handleSubmit = async () => {
@@ -466,7 +486,15 @@ const handleClose = () => {
 const handleReset = () => {
   if (props.visit) {
     formData.catId = props.visit.catId;
-    formData.visitDate = new Date(props.visit.visitDate);
+    // visitDateはAPIからJSTのISO文字列として返されるので、そのままDateに変換
+    const visitDateStr = String(props.visit.visitDate);
+    if (visitDateStr.endsWith('Z')) {
+      // Zがある場合はUTCとして扱われるので、JSTに変換
+      formData.visitDate = new Date(new Date(visitDateStr).getTime() + 9 * 60 * 60 * 1000);
+    } else {
+      // Zがない場合はJSTのISO文字列として扱う
+      formData.visitDate = new Date(visitDateStr);
+    }
     formData.hospitalName = props.visit.hospital.name;
     formData.doctorName = props.visit.doctor?.name || "";
     formData.treatments = props.visit.treatments.map((t) => t.treatment.name);
@@ -1065,31 +1093,11 @@ const handleDoctorBlur = () => {
   }
 
   .veterinary-visit-form {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
     padding: 2.5rem;
   }
 
-  .form-group:nth-child(1),
-  .form-group:nth-child(2),
-  .form-group:nth-child(3) {
-    grid-column: 1;
-  }
-
-  .form-group:nth-child(4),
-  .form-group:nth-child(5),
-  .form-group:nth-child(6) {
-    grid-column: 2;
-  }
-
-  .form-group:nth-child(7),
-  .form-group:nth-child(8) {
-    grid-column: 1 / -1;
-  }
-
-  .form-actions {
-    grid-column: 1 / -1;
+  .form-error-banner {
+    margin-bottom: 2rem;
   }
 
   .treatment-buttons {
