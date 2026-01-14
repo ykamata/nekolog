@@ -115,10 +115,6 @@ const formClasses = computed(() => {
   return [...baseClasses, ...responsiveClasses];
 });
 
-const canConvertToVisit = computed(() => {
-  return isEditMode.value && props.appointment && props.appointment.status !== 'COMPLETED';
-});
-
 // Methods
 const initializeForm = () => {
   // Clear errors first
@@ -421,24 +417,6 @@ const handleRetry = () => {
   submitError.value = '';
   retryCount.value = 0;
   handleSubmit();
-};
-
-const showConvertDialog = ref(false);
-
-const handleConvertToVisit = () => {
-  showConvertDialog.value = true;
-};
-
-const confirmConvertToVisit = () => {
-  if (props.appointment) {
-    emit('convertToVisit', props.appointment.id);
-    showConvertDialog.value = false;
-    handleClose();
-  }
-};
-
-const cancelConvertToVisit = () => {
-  showConvertDialog.value = false;
 };
 
 const handleClose = () => {
@@ -778,17 +756,6 @@ onMounted(() => {
 
         <!-- Form Actions -->
         <div class="form-actions">
-          <button
-            v-if="canConvertToVisit"
-            type="button"
-            class="convert-button"
-            :disabled="isSubmitting"
-            data-testid="convert-to-visit-button"
-            @click="handleConvertToVisit"
-          >
-            通院記録に変換
-          </button>
-
           <div class="action-buttons">
             <button
               type="button"
@@ -814,41 +781,6 @@ onMounted(() => {
           </div>
         </div>
       </form>
-
-      <!-- Convert Confirmation Dialog -->
-      <div
-        v-if="showConvertDialog"
-        class="convert-confirmation-dialog"
-        data-testid="convert-confirmation-dialog"
-      >
-        <div class="dialog-content">
-          <h3 class="dialog-title">
-            通院記録に変換
-          </h3>
-          <p class="dialog-message">
-            この予約を通院記録に変換しますか？<br>
-            変換後は予約として編集できなくなります。
-          </p>
-          <div class="dialog-actions">
-            <button
-              type="button"
-              class="dialog-cancel-button"
-              data-testid="convert-cancel-button"
-              @click="cancelConvertToVisit"
-            >
-              キャンセル
-            </button>
-            <button
-              type="button"
-              class="dialog-confirm-button"
-              data-testid="convert-confirm-button"
-              @click="confirmConvertToVisit"
-            >
-              変換する
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>

@@ -93,7 +93,7 @@ const fetchInitialData = async () => {
   error.value = null;
 
   try {
-    const [catsResponse, visitsResponse, appointmentsResponse] = await Promise.all([
+    const [catsResponse] = await Promise.all([
       $fetch<Cat[]>('/api/cats'),
       fetchVisits(),
       fetchAppointments(),
@@ -136,6 +136,14 @@ const fetchVisits = async (params?: GetVeterinaryVisitsParams) => {
 // Fetch visit statistics
 const fetchVisitStats = async () => {
   try {
+    // Format date as YYYY-MM-DD for API (parseLocalDateString expects this format)
+    const formatDateForAPI = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -145,15 +153,15 @@ const fetchVisitStats = async () => {
     const [monthlyVisits, yearlyVisits] = await Promise.all([
       $fetch<{ visits: VeterinaryVisitWithRelations[] }>('/api/veterinary-visits', {
         query: {
-          startDate: startOfMonth.toISOString(),
-          endDate: endOfMonth.toISOString(),
+          startDate: formatDateForAPI(startOfMonth),
+          endDate: formatDateForAPI(endOfMonth),
           catId: selectedCatId.value || undefined,
         },
       }),
       $fetch<{ visits: VeterinaryVisitWithRelations[] }>('/api/veterinary-visits', {
         query: {
-          startDate: startOfYear.toISOString(),
-          endDate: endOfYear.toISOString(),
+          startDate: formatDateForAPI(startOfYear),
+          endDate: formatDateForAPI(endOfYear),
           catId: selectedCatId.value || undefined,
         },
       }),
@@ -201,7 +209,7 @@ const handleAdd = (date?: string) => {
 
 // Handle add appointment (右クリック用)
 const handleAddAppointment = (date: Date) => {
-  selectedDate.value = date.toISOString().split('T')[0];
+  selectedDate.value = date.toISOString().split('T')[0] || null;
   showAddAppointmentModal.value = true;
 };
 
@@ -226,8 +234,16 @@ const confirmDelete = async () => {
       method: 'DELETE' as any,
     });
 
+    const deletedId = visitToDelete.value.id;
+
     // Remove from local state
-    visits.value = visits.value.filter(v => v.id !== visitToDelete.value!.id);
+    visits.value = visits.value.filter(v => v.id !== deletedId);
+
+    // If the deleted visit was being edited, close the edit modal
+    if (editingVisit.value && editingVisit.value.id === deletedId) {
+      showEditModal.value = false;
+      editingVisit.value = null;
+    }
 
     // Refresh stats
     await fetchVisitStats();
@@ -347,13 +363,13 @@ const handleAddAppointmentCancel = () => {
 };
 
 // Handle calendar date selection
-const handleDateSelected = (date: string) => {
-  selectedDate.value = date;
+const handleDateSelected = (date: Date) => {
+  selectedDate.value = date.toISOString().split('T')[0] || null;
 };
 
 // Handle calendar record creation
-const handleRecordCreate = (date: string) => {
-  handleAdd(date);
+const handleRecordCreate = (date: Date) => {
+  handleAdd(date.toISOString().split('T')[0]);
 };
 
 // Get pre-filled form data
@@ -378,12 +394,11 @@ const getEditFormData = (): Partial<CreateVeterinaryVisitInput> => {
   return {
     catId: editingVisit.value.catId,
     visitDate: editingVisit.value.visitDate,
-    hospitalName: editingVisit.value.hospital.name,
+    hospitalName: editingVisit.value.hospital?.name || '',
     doctorName: editingVisit.value.doctor?.name,
-    treatments: editingVisit.value.treatments.map(t => {
-      // APIから返されるデータは既にflattenされている
-      return (t as any).treatment ? (t as any).treatment.name : t.name;
-    }),
+    treatments: editingVisit.value.treatments
+      ?.filter(t => t && t.treatment)
+      .map(t => t.treatment.name) || [],
     cost: editingVisit.value.cost,
     notes: editingVisit.value.notes || undefined,
     hasBloodTest: editingVisit.value.hasBloodTest,
@@ -413,6 +428,12 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
+// Get cat name by ID
+const getCatName = (catId: number) => {
+  const cat = cats.value.find(c => c.id === catId);
+  return cat?.name || '不明';
+};
+
 const formatVisitDateTime = (date: Date | string) => {
   if (!date) return '不明';
   const d = new Date(date);
@@ -428,8 +449,33 @@ const formatVisitDateTime = (date: Date | string) => {
 };
 
 // Lifecycle
-onMounted(() => {
-  fetchInitialData();
+onMounted(async () => {
+  await fetchInitialData();
+
+  // クエリパラメータをチェック（予約から変換された通院記録の自動編集）
+  const route = useRoute();
+  const editVisitId = route.query.editVisitId;
+
+  if (editVisitId) {
+    // 編集対象の通院記録を検索
+    const visitToEdit = visits.value.find(v => v.id === Number(editVisitId));
+
+    if (visitToEdit) {
+      // 編集フォームを開く
+      handleEdit(visitToEdit);
+
+      // URLからクエリパラメータを削除（履歴を汚さない）
+      await navigateTo('/veterinary-visits', { replace: true });
+    }
+    else {
+      // 見つからない場合はエラーメッセージ
+      console.warn(`Visit with ID ${editVisitId} not found`);
+      error.value = '指定された通院記録が見つかりませんでした';
+
+      // URLをクリーンアップ
+      await navigateTo('/veterinary-visits', { replace: true });
+    }
+  }
 });
 </script>
 
@@ -798,7 +844,7 @@ onMounted(() => {
                 :key="treatment.id"
                 class="pill pill--treatment"
               >
-                {{ (treatment as any).treatment?.name || treatment.name || '不明' }}
+                {{ treatment.treatment.name }}
               </span>
             </div>
           </div>

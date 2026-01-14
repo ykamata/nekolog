@@ -18,13 +18,14 @@ async function findOrCreateHospital(name: string, userId: number) {
     return existing;
   }
 
-  const now = new Date();
+  // JSTの現在時刻を計算（UTC + 9時間）
+  const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
   return await prisma.veterinaryHospital.create({
     data: {
       name,
       user: { connect: { id: userId } },
-      createdAt: now,
-      updatedAt: now,
+      createdAt: nowJST,
+      updatedAt: nowJST,
     },
   });
 }
@@ -46,14 +47,15 @@ async function findOrCreateDoctor(
     return existing;
   }
 
-  const now = new Date();
+  // JSTの現在時刻を計算（UTC + 9時間）
+  const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
   return await prisma.veterinaryDoctor.create({
     data: {
       name,
       hospitalId,
       userId,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: nowJST,
+      updatedAt: nowJST,
     },
   });
 }
@@ -132,6 +134,8 @@ export default defineEventHandler(async (event) => {
     }
 
     if (updateData.visitDate !== undefined) {
+      // visitDateはクライアントからJSTで送られてくるが、DBにはそのまま保存
+      // MySQLはタイムゾーンを考慮しないため、JSTとして扱う
       visitUpdateData.visitDate = updateData.visitDate;
     }
 
@@ -181,14 +185,15 @@ export default defineEventHandler(async (event) => {
     }
 
     // Update visit in a transaction
-    const now = new Date();
+    // JSTの現在時刻を計算（UTC + 9時間）
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
     const updatedVisit = await prisma.$transaction(async (tx) => {
       // Update the visit
-      const visit = await tx.veterinaryVisit.update({
+      await tx.veterinaryVisit.update({
         where: { id },
         data: {
           ...visitUpdateData,
-          updatedAt: now,
+          updatedAt: nowJST,
         },
       });
 

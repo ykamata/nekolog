@@ -2,6 +2,7 @@
 import type { Cat } from '~/types/cat-meal';
 import type {
   VeterinaryAppointmentWithRelations,
+  VeterinaryVisitWithRelations,
   CreateVeterinaryAppointmentInput,
   GetVeterinaryAppointmentsParams,
   AppointmentStatus,
@@ -32,9 +33,7 @@ const selectedStatus = ref<AppointmentStatus | ''>('');
 // Modal states
 const showAddModal = ref(false);
 const showEditModal = ref(false);
-const showConvertModal = ref(false);
 const editingAppointment = ref<VeterinaryAppointmentWithRelations | null>(null);
-const convertingAppointment = ref<VeterinaryAppointmentWithRelations | null>(null);
 
 // Delete confirmation state
 const showDeleteConfirmation = ref(false);
@@ -85,7 +84,7 @@ const fetchInitialData = async () => {
   error.value = null;
 
   try {
-    const [catsResponse, appointmentsResponse] = await Promise.all([
+    const [catsResponse] = await Promise.all([
       $fetch<Cat[]>('/api/cats'),
       fetchAppointments(),
     ]);
@@ -137,10 +136,18 @@ const fetchAppointmentStats = async () => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
+    // Format date as YYYY-MM-DD for API (parseLocalDateString expects this format)
+    const formatDateForAPI = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     const [upcomingAppointments, allAppointments] = await Promise.all([
       $fetch<{ appointments: VeterinaryAppointmentWithRelations[] }>('/api/veterinary-appointments', {
         query: {
-          startDate: now.toISOString(),
+          startDate: formatDateForAPI(now),
           catId: selectedCatId.value || undefined,
         },
       }),
@@ -209,15 +216,6 @@ const handleDelete = (appointmentId: number) => {
   if (appointment) {
     appointmentToDelete.value = appointment;
     showDeleteConfirmation.value = true;
-  }
-};
-
-// Handle convert to visit
-const handleConvertToVisit = (appointmentId: number) => {
-  const appointment = appointments.value.find(a => a.id === appointmentId);
-  if (appointment) {
-    convertingAppointment.value = appointment;
-    showConvertModal.value = true;
   }
 };
 
@@ -312,68 +310,71 @@ const handleEditSubmit = async (data: CreateVeterinaryAppointmentInput) => {
   }
 };
 
-// Handle convert to visit
-const handleConvertSubmit = async () => {
-  if (!convertingAppointment.value) return;
-
-  try {
-    // Convert appointment to visit
-    await $fetch(`/api/veterinary-appointments/${convertingAppointment.value.id}/convert`, {
-      method: 'POST',
-    });
-
-    // Remove from appointments list
-    appointments.value = appointments.value.filter(a => a.id !== convertingAppointment.value!.id);
-
-    // Refresh stats
-    await fetchAppointmentStats();
-
-    showConvertModal.value = false;
-    convertingAppointment.value = null;
-
-    // Show success message and redirect to visits page
-    const { addToast } = useToast();
-    addToast('success', {
-      title: '変換完了',
-      message: '予約が通院記録に変換されました',
-    });
-
-    // Navigate to visits page after a short delay
-    setTimeout(() => {
-      navigateTo('/veterinary-visits');
-    }, 1500);
-  }
-  catch (err) {
-    error.value = '予約の変換に失敗しました';
-  }
-};
-
 // Handle status update
 const handleStatusUpdate = async (appointmentId: number, status: AppointmentStatus) => {
   try {
-    const response = await $fetch<{ appointment: VeterinaryAppointmentWithRelations; message: string }>(`/api/veterinary-appointments/${appointmentId}`, {
-      method: 'PUT' as any,
-      body: { status },
-    });
+    // ステータスを更新
+    const response = await $fetch<{ appointment: VeterinaryAppointmentWithRelations; message: string }>(
+      `/api/veterinary-appointments/${appointmentId}`,
+      {
+        method: 'PUT' as any,
+        body: { status },
+      },
+    );
 
-    // Update local state
+    // ローカルstateを更新
     const index = appointments.value.findIndex(a => a.id === appointmentId);
     if (index !== -1) {
       appointments.value[index] = response.appointment;
     }
 
-    // Refresh stats
+    // 統計を更新
     await fetchAppointmentStats();
 
-    // Show success message
-    const { addToast } = useToast();
-    addToast('success', {
-      title: 'ステータス更新',
-      message: `予約のステータスを「${getStatusLabel(status)}」に変更しました`,
-    });
+    // ステータスが「完了」の場合、通院記録を作成
+    if (status === 'COMPLETED') {
+      try {
+        // 通院記録を作成
+        const visitResponse = await $fetch<{ visit: VeterinaryVisitWithRelations; message: string }>(
+          `/api/veterinary-appointments/${appointmentId}/convert-on-complete`,
+          { method: 'POST' },
+        );
+
+        const createdVisit = visitResponse.visit;
+
+        // 成功メッセージ
+        const { addToast } = useToast();
+        addToast('success', {
+          title: 'ステータス更新と通院記録作成',
+          message: '予約を完了し、通院記録を作成しました。詳細を入力してください。',
+        });
+
+        // 通院記録ページに遷移（編集フォームを開く）
+        await navigateTo(`/veterinary-visits?editVisitId=${createdVisit.id}`);
+      }
+      catch (visitError) {
+        console.error('Failed to create visit from completed appointment:', visitError);
+
+        // 通院記録作成に失敗してもステータス更新は成功しているので、エラーメッセージのみ表示
+        const { addToast } = useToast();
+        addToast('error', {
+          title: 'エラー',
+          message: '通院記録の作成に失敗しました。手動で作成してください。',
+        });
+      }
+    }
+    else {
+      // 完了以外のステータス変更時は通常の成功メッセージ
+      const { addToast } = useToast();
+      addToast('success', {
+        title: 'ステータス更新',
+        message: `予約のステータスを「${getStatusLabel(status)}」に変更しました`,
+      });
+    }
   }
   catch (err) {
     error.value = 'ステータスの更新に失敗しました';
+    console.error('Failed to update status:', err);
   }
 };
 
@@ -385,11 +386,6 @@ const handleAddCancel = () => {
 const handleEditCancel = () => {
   showEditModal.value = false;
   editingAppointment.value = null;
-};
-
-const handleConvertCancel = () => {
-  showConvertModal.value = false;
-  convertingAppointment.value = null;
 };
 
 // Get pre-filled form data
@@ -656,7 +652,6 @@ onMounted(() => {
           :loading="isLoading"
           @edit="handleEdit"
           @delete="handleDelete"
-          @convert-to-visit="handleConvertToVisit"
           @update-status="handleStatusUpdate"
         />
       </div>
@@ -717,16 +712,6 @@ onMounted(() => {
       :initial-data="getEditFormData()"
       @close="handleEditCancel"
       @save="handleEditSubmit"
-    />
-
-    <!-- Convert to Visit Modal -->
-    <VeterinaryAppointmentConvertDialog
-      v-if="convertingAppointment"
-      :is-open="showConvertModal"
-      :appointment="convertingAppointment"
-      :cats="cats"
-      @close="handleConvertCancel"
-      @convert="handleConvertSubmit"
     />
 
     <!-- Delete Confirmation Dialog -->
