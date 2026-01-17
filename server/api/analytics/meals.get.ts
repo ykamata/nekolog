@@ -6,7 +6,13 @@
 import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { ChartAnalyticsQuerySchema } from '~/lib/validations/chart-analytics';
-import { toLocalDateString } from '~/utils/cat-meal';
+import {
+  toLocalDateString,
+  getStartOfDay,
+  getEndOfDay,
+  getLastNDaysRange,
+  transformPrismaMealRecord,
+} from '~/utils/cat-meal';
 import {
   processChartData,
   calculateChartSummary,
@@ -15,7 +21,6 @@ import {
   type ChartData,
   type DateRange,
 } from '~/utils/chart-data-processing';
-import { transformPrismaMealRecord } from '~/utils/cat-meal';
 import type { DailyCalorieData, FoodType } from '~/types/cat-meal';
 
 export default defineEventHandler(async (event) => {
@@ -66,24 +71,35 @@ export default defineEventHandler(async (event) => {
       catId, startDate, endDate, days, chartType, includeEmptyDates, maxDataPoints,
     });
 
-    // 日付範囲の決定
+    // 日付範囲の決定（JSTで処理）
     let finalStartDate: Date;
     let finalEndDate: Date;
 
     if (startDate || endDate) {
-      finalStartDate = startDate || new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      finalEndDate = endDate || new Date();
+      // startDateまたはendDateが指定されている場合
+      if (startDate) {
+        finalStartDate = getStartOfDay(startDate);
+      }
+      else {
+        // startDateが未指定の場合は過去N日間の開始日を使用
+        const defaultRange = getLastNDaysRange(days);
+        finalStartDate = defaultRange.startDate;
+      }
+
+      if (endDate) {
+        finalEndDate = getEndOfDay(endDate);
+      }
+      else {
+        // endDateが未指定の場合は今日の終わりを使用
+        finalEndDate = getEndOfDay(new Date());
+      }
     }
     else {
-      // デフォルトは過去N日間
-      finalEndDate = new Date();
-      finalStartDate = new Date();
-      finalStartDate.setDate(finalStartDate.getDate() - days + 1);
+      // デフォルトは過去N日間（JSTベース）
+      const defaultRange = getLastNDaysRange(days);
+      finalStartDate = defaultRange.startDate;
+      finalEndDate = defaultRange.endDate;
     }
-
-    // 時刻を調整
-    finalStartDate.setHours(0, 0, 0, 0);
-    finalEndDate.setHours(23, 59, 59, 999);
 
     // 日付範囲の妥当性チェック
     if (finalStartDate >= finalEndDate) {
