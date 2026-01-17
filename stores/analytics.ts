@@ -126,7 +126,10 @@ export const useAnalyticsStore = defineStore('analytics', () => {
       (sum, data) => sum + data.calories,
       0,
     );
-    return total / analytics.value.dailyCalories.length;
+    // ユニークな日付を取得して日数で割る（wet + dryを合算した1日分のカロリーの平均）
+    const uniqueDates = new Set(analytics.value.dailyCalories.map(data => data.date));
+    const daysCount = uniqueDates.size;
+    return daysCount > 0 ? total / daysCount : 0;
   });
 
   const chartDataForLineChart = computed(() => {

@@ -156,7 +156,10 @@ const averageCaloriesPerDay = computed(() => {
   if (!analytics30Days.value?.dailyCalories || analytics30Days.value.dailyCalories.length === 0) {
     return 0;
   }
-  return totalCalories.value / analytics30Days.value.dailyCalories.length;
+  // ユニークな日付を取得して日数で割る（wet + dryを合算した1日分のカロリーの平均）
+  const uniqueDates = new Set(analytics30Days.value.dailyCalories.map((item: { date: string }) => item.date));
+  const daysCount = uniqueDates.size;
+  return daysCount > 0 ? totalCalories.value / daysCount : 0;
 });
 
 // Fetch analytics data with retry

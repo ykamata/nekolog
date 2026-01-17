@@ -566,11 +566,18 @@ export function calculateWeeklyAverage(
 ): number {
   if (dailyCalories.length === 0) return 0;
 
+  // ユニークな日付を取得して日数を計算
+  const uniqueDates = new Set(dailyCalories.map(day => day.date));
+  const daysCount = uniqueDates.size;
+
+  // 全カロリーの合計（wet + dryを日ごとに合算した結果）
   const totalCalories = dailyCalories.reduce(
     (sum, day) => sum + day.calories,
     0,
   );
-  const weeks = Math.max(1, dailyCalories.length / 7);
+
+  // 週数を計算（日数 / 7）
+  const weeks = Math.max(1, daysCount / 7);
 
   return Math.round((totalCalories / weeks) * 100) / 100;
 }
