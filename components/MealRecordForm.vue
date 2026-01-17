@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Cat, Food, MealRecordInput } from "~/types/cat-meal";
-import { MealRecordFormSchema } from "~/lib/validations/cat-meal";
-import type { MealRecordForm } from "~/lib/validations/cat-meal";
-import { createUnifiedErrorHandler } from "~/utils/error-handling";
+import type { Cat, Food, MealRecordInput } from '~/types/cat-meal';
+import { MealRecordFormSchema } from '~/lib/validations/cat-meal';
+import type { MealRecordForm } from '~/lib/validations/cat-meal';
+import { createUnifiedErrorHandler } from '~/utils/error-handling';
 
 interface Props {
   cats: Cat[];
@@ -13,8 +13,8 @@ interface Props {
 }
 
 interface Emits {
-  (e: "submit", data: MealRecordInput): void;
-  (e: "cancel"): void;
+  (e: 'submit', data: MealRecordInput): void;
+  (e: 'cancel'): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -34,7 +34,7 @@ const formData = ref<MealRecordForm>({
     const mealTime = props.initialData?.mealTime || new Date();
     return typeof mealTime === 'string' ? new Date(mealTime) : mealTime;
   })(),
-  notes: props.initialData?.notes || "",
+  notes: props.initialData?.notes || '',
 });
 
 // Form validation state
@@ -42,37 +42,37 @@ const errors = ref<Record<string, string>>({});
 const isSubmitting = ref(false);
 
 // 統一エラーハンドラーの初期化
-const errorHandler = createUnifiedErrorHandler("MealRecordForm", {
+const errorHandler = createUnifiedErrorHandler('MealRecordForm', {
   maxRetries: 3,
   baseDelay: 1000,
   maxDelay: 5000,
 });
 
 // Quantity input mode (grams or calories)
-const quantityMode = ref<"grams" | "calories">("grams");
+const quantityMode = ref<'grams' | 'calories'>('grams');
 
 // Predefined quantity options
 const predefinedQuantities = ref([
-  { label: "1g", value: 1, unit: "grams" },
-  { label: "2g", value: 2, unit: "grams" },
-  { label: "3g", value: 3, unit: "grams" },
-  { label: "4g", value: 4, unit: "grams" },
-  { label: "5g", value: 5, unit: "grams" },
-  { label: "10g", value: 10, unit: "grams" },
+  { label: '1g', value: 1, unit: 'grams' },
+  { label: '2g', value: 2, unit: 'grams' },
+  { label: '3g', value: 3, unit: 'grams' },
+  { label: '4g', value: 4, unit: 'grams' },
+  { label: '5g', value: 5, unit: 'grams' },
+  { label: '10g', value: 10, unit: 'grams' },
 ]);
 
 // Computed properties
 // Removed unused selectedCat computed property
 
 const selectedFood = computed(() =>
-  props.foods.find((food) => food.id === formData.value.foodId)
+  props.foods.find(food => food.id === formData.value.foodId),
 );
 
 const calculatedCalories = computed(() => {
   if (!selectedFood.value || !formData.value.quantity) return 0;
   return (
     Math.round(
-      formData.value.quantity * selectedFood.value.caloriesPerGram * 10
+      formData.value.quantity * selectedFood.value.caloriesPerGram * 10,
     ) / 10
   );
 });
@@ -81,7 +81,7 @@ const calculatedGrams = computed(() => {
   if (!selectedFood.value || !formData.value.calories) return 0;
   return (
     Math.round(
-      (formData.value.calories / selectedFood.value.caloriesPerGram) * 10
+      (formData.value.calories / selectedFood.value.caloriesPerGram) * 10,
     ) / 10
   );
 });
@@ -92,9 +92,10 @@ const validateForm = (): boolean => {
     MealRecordFormSchema.parse(formData.value);
     errors.value = {};
     return true;
-  } catch (error: unknown) {
+  }
+  catch (error: unknown) {
     const newErrors: Record<string, string> = {};
-    if (error && typeof error === "object" && "errors" in error) {
+    if (error && typeof error === 'object' && 'errors' in error) {
       const zodError = error as {
         errors: Array<{ path: string[]; message: string }>;
       };
@@ -113,33 +114,34 @@ const validateForm = (): boolean => {
 // Methods
 const handleCatSelect = (cat: Cat) => {
   formData.value.catId = cat.id;
-  validateField("catId");
+  validateField('catId');
 };
 
 const handleFoodSelect = (food: Food) => {
   formData.value.foodId = food.id;
 
   // Auto-calculate calories when food is selected
-  if (quantityMode.value === "grams" && formData.value.quantity > 0) {
+  if (quantityMode.value === 'grams' && formData.value.quantity > 0) {
     formData.value.calories = calculatedCalories.value;
   }
 
-  validateField("foodId");
+  validateField('foodId');
 };
 
 const handleQuantityInput = (value: number) => {
-  if (quantityMode.value === "grams") {
+  if (quantityMode.value === 'grams') {
     formData.value.quantity = value;
     if (selectedFood.value) {
       formData.value.calories = calculatedCalories.value;
     }
-  } else {
+  }
+  else {
     formData.value.calories = value;
     if (selectedFood.value) {
       formData.value.quantity = calculatedGrams.value;
     }
   }
-  validateField("quantity");
+  validateField('quantity');
 };
 
 const handlePredefinedQuantity = (quantity: number) => {
@@ -147,30 +149,31 @@ const handlePredefinedQuantity = (quantity: number) => {
   if (selectedFood.value) {
     formData.value.calories = calculatedCalories.value;
   }
-  validateField("quantity");
+  validateField('quantity');
 };
 
 const toggleQuantityMode = () => {
-  quantityMode.value = quantityMode.value === "grams" ? "calories" : "grams";
+  quantityMode.value = quantityMode.value === 'grams' ? 'calories' : 'grams';
 };
 
 const handleDateTimeChange = (date: Date) => {
   formData.value.mealTime = date;
-  validateField("mealTime");
+  validateField('mealTime');
 };
 
 const validateField = (field: string) => {
   try {
-    const fieldSchema =
-      MealRecordFormSchema.shape[
+    const fieldSchema
+      = MealRecordFormSchema.shape[
         field as keyof typeof MealRecordFormSchema.shape
       ];
     if (fieldSchema) {
       fieldSchema.parse(formData.value[field as keyof MealRecordForm]);
       delete errors.value[field];
     }
-  } catch (error: unknown) {
-    if (error && typeof error === "object" && "errors" in error) {
+  }
+  catch (error: unknown) {
+    if (error && typeof error === 'object' && 'errors' in error) {
       const zodError = error as { errors: Array<{ message: string }> };
       if (zodError.errors && zodError.errors[0]) {
         errors.value[field] = zodError.errors[0].message;
@@ -208,16 +211,18 @@ const handleSubmit = async () => {
     console.log('✅ [MealRecordForm] Emitting submit with data:', submitData);
     console.log('🔍 [MealRecordForm] mealTime type:', typeof submitData.mealTime, submitData.mealTime instanceof Date);
 
-    emit("submit", submitData);
-  } catch (err) {
+    emit('submit', submitData);
+  }
+  catch (err) {
     console.error('❌ [MealRecordForm] Error in handleSubmit:', err);
-  } finally {
+  }
+  finally {
     isSubmitting.value = false;
   }
 };
 
 const handleCancel = () => {
-  emit("cancel");
+  emit('cancel');
 };
 
 const resetForm = () => {
@@ -227,7 +232,7 @@ const resetForm = () => {
     quantity: 0,
     calories: undefined,
     mealTime: new Date(),
-    notes: "",
+    notes: '',
   };
   errors.value = {};
 };
@@ -249,11 +254,11 @@ watch(
         quantity: newData.quantity || 0,
         calories: newData.calories,
         mealTime: mealTime,
-        notes: newData.notes || "",
+        notes: newData.notes || '',
       };
     }
   },
-  { deep: true }
+  { deep: true },
 );
 
 // Expose methods for parent component
@@ -264,10 +269,17 @@ defineExpose({
 </script>
 
 <template>
-  <form class="meal-record-form" @submit.prevent="handleSubmit">
+  <form
+    class="meal-record-form"
+    @submit.prevent="handleSubmit"
+  >
     <div class="form-header">
-      <h2 class="form-title">食事記録</h2>
-      <p class="form-description">猫の食事内容を記録してください</p>
+      <h2 class="form-title">
+        食事記録
+      </h2>
+      <p class="form-description">
+        猫の食事内容を記録してください
+      </p>
     </div>
 
     <div class="form-body">
@@ -277,11 +289,19 @@ defineExpose({
           猫の選択 <span class="required">*</span>
         </label>
         <div class="cat-selector">
-          <div v-if="cats.length === 0" class="empty-state">
+          <div
+            v-if="cats.length === 0"
+            class="empty-state"
+          >
             <p>登録されている猫がありません</p>
-            <p class="empty-hint">先に猫を登録してください</p>
+            <p class="empty-hint">
+              先に猫を登録してください
+            </p>
           </div>
-          <div v-else class="cat-options">
+          <div
+            v-else
+            class="cat-options"
+          >
             <button
               v-for="cat in cats"
               :key="cat.id"
@@ -297,8 +317,11 @@ defineExpose({
                   :src="cat.photoUrl"
                   :alt="`${cat.name}の写真`"
                   class="cat-image"
-                />
-                <div v-else class="cat-image-placeholder">
+                >
+                <div
+                  v-else
+                  class="cat-image-placeholder"
+                >
                   <span class="cat-icon">🐱</span>
                 </div>
               </div>
@@ -306,17 +329,26 @@ defineExpose({
                 <div class="cat-name">
                   {{ cat.name }}
                 </div>
-                <div v-if="cat.weight" class="cat-weight">
+                <div
+                  v-if="cat.weight"
+                  class="cat-weight"
+                >
                   {{ cat.weight }}kg
                 </div>
               </div>
-              <div v-if="cat.id === formData.catId" class="selected-indicator">
+              <div
+                v-if="cat.id === formData.catId"
+                class="selected-indicator"
+              >
                 ✓
               </div>
             </button>
           </div>
         </div>
-        <div v-if="errors.catId" class="error-message">
+        <div
+          v-if="errors.catId"
+          class="error-message"
+        >
           {{ errors.catId }}
         </div>
       </div>
@@ -333,7 +365,10 @@ defineExpose({
           placeholder="フードを選択してください"
           @select="handleFoodSelect"
         />
-        <div v-if="errors.foodId" class="error-message">
+        <div
+          v-if="errors.foodId"
+          class="error-message"
+        >
           {{ errors.foodId }}
         </div>
       </div>
@@ -367,7 +402,10 @@ defineExpose({
         </div>
 
         <!-- Predefined Quantities -->
-        <div v-if="quantityMode === 'grams'" class="predefined-quantities">
+        <div
+          v-if="quantityMode === 'grams'"
+          class="predefined-quantities"
+        >
           <button
             v-for="option in predefinedQuantities"
             :key="option.value"
@@ -402,10 +440,10 @@ defineExpose({
             max="1000"
             @input="
               handleQuantityInput(
-                parseFloat(($event.target as HTMLInputElement).value) || 0
+                parseFloat(($event.target as HTMLInputElement).value) || 0,
               )
             "
-          />
+          >
           <span class="quantity-unit">
             {{ quantityMode === "grams" ? "g" : "kcal" }}
           </span>
@@ -414,9 +452,9 @@ defineExpose({
         <!-- Conversion Display -->
         <div
           v-if="
-            selectedFood &&
-            (formData.quantity > 0 ||
-              (formData.calories && formData.calories > 0))
+            selectedFood
+              && (formData.quantity > 0
+                || (formData.calories && formData.calories > 0))
           "
           class="conversion-display"
         >
@@ -433,7 +471,10 @@ defineExpose({
           </div>
         </div>
 
-        <div v-if="errors.quantity" class="error-message">
+        <div
+          v-if="errors.quantity"
+          class="error-message"
+        >
           {{ errors.quantity }}
         </div>
       </div>
@@ -448,7 +489,10 @@ defineExpose({
           :disabled="disabled"
           @change="handleDateTimeChange"
         />
-        <div v-if="errors.mealTime" class="error-message">
+        <div
+          v-if="errors.mealTime"
+          class="error-message"
+        >
           {{ errors.mealTime }}
         </div>
       </div>
@@ -467,7 +511,10 @@ defineExpose({
         <div class="character-count">
           {{ (formData.notes || "").length }}/500
         </div>
-        <div v-if="errors.notes" class="error-message">
+        <div
+          v-if="errors.notes"
+          class="error-message"
+        >
           {{ errors.notes }}
         </div>
       </div>

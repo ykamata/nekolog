@@ -1159,37 +1159,63 @@ watch(screenSize, (newSize) => {
                 </div>
                 <div class="detail-content">
                   <div class="detail-row">
-                    <div class="detail-label">猫</div>
-                    <div class="detail-value">{{ selectedEventForDetail.catName }}</div>
+                    <div class="detail-label">
+                      猫
+                    </div>
+                    <div class="detail-value">
+                      {{ selectedEventForDetail.catName }}
+                    </div>
                   </div>
                   <div class="detail-row">
-                    <div class="detail-label">診察日時</div>
-                    <div class="detail-value">{{ new Date(selectedEventForDetail.fullData.visitDate).toLocaleString('ja-JP') }}</div>
+                    <div class="detail-label">
+                      診察日時
+                    </div>
+                    <div class="detail-value">
+                      {{ new Date(selectedEventForDetail.fullData.visitDate).toLocaleString('ja-JP') }}
+                    </div>
                   </div>
                   <div class="detail-row">
-                    <div class="detail-label">病院</div>
-                    <div class="detail-value">{{ selectedEventForDetail.fullData.hospital.name }}</div>
+                    <div class="detail-label">
+                      病院
+                    </div>
+                    <div class="detail-value">
+                      {{ selectedEventForDetail.fullData.hospital.name }}
+                    </div>
                   </div>
                   <div
                     v-if="selectedEventForDetail.fullData.doctor"
                     class="detail-row"
                   >
-                    <div class="detail-label">担当医</div>
-                    <div class="detail-value">{{ selectedEventForDetail.fullData.doctor.name }}</div>
+                    <div class="detail-label">
+                      担当医
+                    </div>
+                    <div class="detail-value">
+                      {{ selectedEventForDetail.fullData.doctor.name }}
+                    </div>
                   </div>
                   <div class="detail-row">
-                    <div class="detail-label">血液検査</div>
-                    <div class="detail-value">{{ selectedEventForDetail.fullData.hasBloodTest ? 'あり 🩸' : 'なし' }}</div>
+                    <div class="detail-label">
+                      血液検査
+                    </div>
+                    <div class="detail-value">
+                      {{ selectedEventForDetail.fullData.hasBloodTest ? 'あり 🩸' : 'なし' }}
+                    </div>
                   </div>
                   <div class="detail-row">
-                    <div class="detail-label">診察料</div>
-                    <div class="detail-value">¥{{ selectedEventForDetail.fullData.cost.toLocaleString() }}</div>
+                    <div class="detail-label">
+                      診察料
+                    </div>
+                    <div class="detail-value">
+                      ¥{{ selectedEventForDetail.fullData.cost.toLocaleString() }}
+                    </div>
                   </div>
                   <div
                     v-if="selectedEventForDetail.fullData.treatments && selectedEventForDetail.fullData.treatments.length > 0"
                     class="detail-row"
                   >
-                    <div class="detail-label">治療内容</div>
+                    <div class="detail-label">
+                      治療内容
+                    </div>
                     <div class="detail-value">
                       <ul class="treatment-list">
                         <li
@@ -1209,22 +1235,34 @@ watch(screenSize, (newSize) => {
                     v-if="selectedEventForDetail.fullData.prescriptionDetails"
                     class="detail-row"
                   >
-                    <div class="detail-label">処方内容</div>
-                    <div class="detail-value detail-value--multiline">{{ selectedEventForDetail.fullData.prescriptionDetails }}</div>
+                    <div class="detail-label">
+                      処方内容
+                    </div>
+                    <div class="detail-value detail-value--multiline">
+                      {{ selectedEventForDetail.fullData.prescriptionDetails }}
+                    </div>
                   </div>
                   <div
                     v-if="selectedEventForDetail.fullData.diagnosis"
                     class="detail-row"
                   >
-                    <div class="detail-label">診断内容</div>
-                    <div class="detail-value detail-value--multiline">{{ selectedEventForDetail.fullData.diagnosis }}</div>
+                    <div class="detail-label">
+                      診断内容
+                    </div>
+                    <div class="detail-value detail-value--multiline">
+                      {{ selectedEventForDetail.fullData.diagnosis }}
+                    </div>
                   </div>
                   <div
                     v-if="selectedEventForDetail.fullData.notes"
                     class="detail-row"
                   >
-                    <div class="detail-label">メモ</div>
-                    <div class="detail-value detail-value--multiline">{{ selectedEventForDetail.fullData.notes }}</div>
+                    <div class="detail-label">
+                      メモ
+                    </div>
+                    <div class="detail-value detail-value--multiline">
+                      {{ selectedEventForDetail.fullData.notes }}
+                    </div>
                   </div>
                 </div>
               </div>

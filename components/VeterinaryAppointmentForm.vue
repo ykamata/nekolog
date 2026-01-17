@@ -155,7 +155,7 @@ const fetchMasterData = async () => {
       ]);
       return {
         hospitals: hospitalsResponse.hospitals,
-        doctors: doctorsResponse.doctors
+        doctors: doctorsResponse.doctors,
       };
     },
     {

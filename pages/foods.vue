@@ -145,13 +145,15 @@ const confirmDelete = async () => {
 
       if (mealCount) {
         errorMessage = `このフードは${mealCount}件の食事記録で使用されています。削除する前に、関連する食事記録を削除するか、別のフードに変更してください。`;
-      } else {
+      }
+      else {
         errorMessage = err?.data?.data?.message
           || err?.data?.message
           || err?.statusMessage
           || 'このフードには関連する食事記録があるため削除できません。';
       }
-    } else {
+    }
+    else {
       // Other errors
       errorMessage = err?.data?.data?.message
         || err?.data?.message

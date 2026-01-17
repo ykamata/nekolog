@@ -391,7 +391,8 @@ const createChart = async () => {
         return;
       }
       chart.value = new ChartJS(ctx, chartConfig as any);
-    } catch (chartError) {
+    }
+    catch (chartError) {
       console.error('MealChartSimple: Chart.js作成エラー:', chartError);
       console.error('MealChartSimple: chartConfig:', JSON.stringify(chartConfig, null, 2));
       error.value = 'チャートの作成に失敗しました';
@@ -414,7 +415,8 @@ const createChart = async () => {
       try {
         chart.value.resize();
         console.log('MealChartSimple: チャートリサイズ実行');
-      } catch (resizeError) {
+      }
+      catch (resizeError) {
         console.error('MealChartSimple: リサイズエラー:', resizeError);
       }
     }
@@ -498,10 +500,10 @@ const getLineChartConfig = () => {
     // フィルター一致を確認（異なる期間の残りデータを使わない）
     const applied = chartData.appliedFilters;
     if (
-      applied?.dateRange?.startDate &&
-      applied?.dateRange?.endDate &&
-      new Date(applied.dateRange.startDate).getTime() === startDate.getTime() &&
-      new Date(applied.dateRange.endDate).getTime() === endDate.getTime()
+      applied?.dateRange?.startDate
+      && applied?.dateRange?.endDate
+      && new Date(applied.dateRange.startDate).getTime() === startDate.getTime()
+      && new Date(applied.dateRange.endDate).getTime() === endDate.getTime()
     ) {
       return chartData.dailyCalories;
     }
@@ -919,7 +921,6 @@ onMounted(async () => {
   // まずデータを取得
   await fetchData();
 });
-
 
 onBeforeUnmount(() => {
   // タイムアウトをクリア

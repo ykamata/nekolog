@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { MonthlyCalendarData, DailyCalendarData } from '~/types/daily-calendar';
-import type { Cat } from '~/types/cat-meal';
 import DailyRecordDialog from './DailyRecordDialog.vue';
 import DayDetailDialog from './DayDetailDialog.vue';
+import type { MonthlyCalendarData, DailyCalendarData } from '~/types/daily-calendar';
+import type { Cat } from '~/types/cat-meal';
 
 interface Props {
   catId?: number;

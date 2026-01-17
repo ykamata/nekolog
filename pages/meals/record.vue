@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { MealRecordInput } from "~/types/cat-meal";
+import type { MealRecordInput } from '~/types/cat-meal';
 
 // Page meta
 useSeoMeta({
-  title: "食事記録 - 猫の健康管理",
-  description: "猫の食事内容を記録します",
+  title: '食事記録 - 猫の健康管理',
+  description: '猫の食事内容を記録します',
 });
 
 // Require authentication
 definePageMeta({
-  middleware: "auth",
+  middleware: 'auth',
 });
 
 // Stores
@@ -37,9 +37,11 @@ const fetchData = async () => {
 
   try {
     await Promise.all([catsStore.fetchCats(), foodsStore.fetchFoods()]);
-  } catch {
-    error.value = "データの取得に失敗しました";
-  } finally {
+  }
+  catch {
+    error.value = 'データの取得に失敗しました';
+  }
+  finally {
     isLoading.value = false;
   }
 };
@@ -53,7 +55,7 @@ const handleSubmit = async (data: MealRecordInput) => {
   try {
     await mealsStore.createMeal(data);
 
-    successMessage.value = "食事記録を保存しました";
+    successMessage.value = '食事記録を保存しました';
 
     // Reset form after successful submission
     if (mealFormRef.value) {
@@ -64,9 +66,11 @@ const handleSubmit = async (data: MealRecordInput) => {
     setTimeout(() => {
       successMessage.value = null;
     }, 1500);
-  } catch {
-    error.value = "食事記録の保存に失敗しました";
-  } finally {
+  }
+  catch {
+    error.value = '食事記録の保存に失敗しました';
+  }
+  finally {
     isSubmitting.value = false;
   }
 };
@@ -91,33 +95,56 @@ onMounted(() => {
     <!-- Page Header -->
     <div class="page-header">
       <div class="header-content">
-        <h1 class="page-title">食事記録</h1>
-        <p class="page-description">猫の食事内容を記録してください</p>
+        <h1 class="page-title">
+          食事記録
+        </h1>
+        <p class="page-description">
+          猫の食事内容を記録してください
+        </p>
       </div>
     </div>
 
     <!-- Loading State -->
-    <div v-if="isLoading" class="loading-container">
+    <div
+      v-if="isLoading"
+      class="loading-container"
+    >
       <div class="loading-spinner" />
-      <p class="loading-text">データを読み込み中...</p>
+      <p class="loading-text">
+        データを読み込み中...
+      </p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="error-container">
+    <div
+      v-else-if="error"
+      class="error-container"
+    >
       <div class="error-content">
-        <div class="error-icon">⚠️</div>
-        <h2 class="error-title">エラーが発生しました</h2>
+        <div class="error-icon">
+          ⚠️
+        </div>
+        <h2 class="error-title">
+          エラーが発生しました
+        </h2>
         <p class="error-message">
           {{ error }}
         </p>
-        <button type="button" class="retry-button" @click="fetchData">
+        <button
+          type="button"
+          class="retry-button"
+          @click="fetchData"
+        >
           再試行
         </button>
       </div>
     </div>
 
     <!-- Success Message -->
-    <div v-if="successMessage" class="success-banner">
+    <div
+      v-if="successMessage"
+      class="success-banner"
+    >
       <div class="success-content">
         <span class="success-icon">✅</span>
         <span class="success-text">{{ successMessage }}</span>
@@ -125,7 +152,10 @@ onMounted(() => {
     </div>
 
     <!-- Main Content -->
-    <div v-else class="page-content">
+    <div
+      v-else
+      class="page-content"
+    >
       <!-- Quick Stats (Mobile) -->
       <div class="quick-stats">
         <div class="stat-item">
@@ -153,17 +183,28 @@ onMounted(() => {
 
       <!-- Quick Actions (Mobile) -->
       <div class="quick-actions">
-        <h3 class="quick-actions-title">クイックアクション</h3>
+        <h3 class="quick-actions-title">
+          クイックアクション
+        </h3>
         <div class="action-buttons">
-          <NuxtLink to="/cats" class="action-button">
+          <NuxtLink
+            to="/cats"
+            class="action-button"
+          >
             <span class="action-icon">🐱</span>
             <span class="action-text">猫を追加</span>
           </NuxtLink>
-          <NuxtLink to="/foods" class="action-button">
+          <NuxtLink
+            to="/foods"
+            class="action-button"
+          >
             <span class="action-icon">🥫</span>
             <span class="action-text">フードを追加</span>
           </NuxtLink>
-          <NuxtLink to="/meals/history" class="action-button">
+          <NuxtLink
+            to="/meals/history"
+            class="action-button"
+          >
             <span class="action-icon">📋</span>
             <span class="action-text">履歴を見る</span>
           </NuxtLink>

@@ -125,7 +125,9 @@ const handleBackdropClick = (event: MouseEvent) => {
               >
                 <div class="section-header">
                   <span class="section-icon">🍽️</span>
-                  <h3 class="section-title">食事</h3>
+                  <h3 class="section-title">
+                    食事
+                  </h3>
                 </div>
                 <div class="section-content">
                   <div class="detail-item">
@@ -146,7 +148,9 @@ const handleBackdropClick = (event: MouseEvent) => {
               >
                 <div class="section-header">
                   <span class="section-icon">💧💩</span>
-                  <h3 class="section-title">排泄</h3>
+                  <h3 class="section-title">
+                    排泄
+                  </h3>
                 </div>
                 <div class="section-content">
                   <!-- Urine -->
@@ -188,7 +192,9 @@ const handleBackdropClick = (event: MouseEvent) => {
               >
                 <div class="section-header">
                   <span class="section-icon">💊</span>
-                  <h3 class="section-title">頓服薬</h3>
+                  <h3 class="section-title">
+                    頓服薬
+                  </h3>
                 </div>
                 <div class="section-content">
                   <div class="detail-item">
@@ -204,7 +210,9 @@ const handleBackdropClick = (event: MouseEvent) => {
               >
                 <div class="section-header">
                   <span class="section-icon">📝</span>
-                  <h3 class="section-title">メモ</h3>
+                  <h3 class="section-title">
+                    メモ
+                  </h3>
                 </div>
                 <div class="section-content">
                   <div class="memo-text">
@@ -221,7 +229,9 @@ const handleBackdropClick = (event: MouseEvent) => {
               >
                 <div class="section-header">
                   <span class="section-icon">🚦</span>
-                  <h3 class="section-title">健康シグナル</h3>
+                  <h3 class="section-title">
+                    健康シグナル
+                  </h3>
                 </div>
                 <div class="section-content">
                   <div class="detail-item">
@@ -236,7 +246,9 @@ const handleBackdropClick = (event: MouseEvent) => {
                     class="detail-item signal-note-item"
                   >
                     <span class="detail-label">補足メモ:</span>
-                    <div class="signal-note-text">{{ dayData.signalNote }}</div>
+                    <div class="signal-note-text">
+                      {{ dayData.signalNote }}
+                    </div>
                   </div>
                 </div>
               </div>

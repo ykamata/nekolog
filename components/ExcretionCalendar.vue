@@ -238,8 +238,8 @@
 </template>
 
 <script setup lang="ts">
-import { toLocalDateString } from '~/utils/cat-meal';
 import ExcretionCalendarDetailModal from './ExcretionCalendarDetailModal.vue';
+import { toLocalDateString } from '~/utils/cat-meal';
 import type { Cat } from '~/types/index';
 import type { ExcretionRecord, ExcretionCalendarDay, ExcretionRecordFilter, ExcretionCalendarStats } from '~/types/excretion';
 

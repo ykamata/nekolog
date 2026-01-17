@@ -48,7 +48,8 @@ export default defineNuxtPlugin(async () => {
     }
 
     console.log('Chart.js プラグインが登録されました');
-  } catch (error) {
+  }
+  catch (error) {
     console.error('Chart.js プラグインの読み込みに失敗しました:', error);
     throw error;
   }

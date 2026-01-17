@@ -214,7 +214,7 @@ export const MealRecordInputSchema = z.object({
           parseInt(day),
           parseInt(hours),
           parseInt(minutes),
-          parseInt(seconds)
+          parseInt(seconds),
         );
       }
       // その他の形式はnew Dateに任せる（ISO 8601 with timezone など）

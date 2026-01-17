@@ -97,11 +97,13 @@ export default defineEventHandler(async (event) => {
       recordedAt: toLocalISOString(excretionRecord.recordedAt),
       createdAt: toLocalISOString(excretionRecord.createdAt),
       updatedAt: toLocalISOString(excretionRecord.updatedAt),
-      cat: excretionRecord.cat ? {
-        ...excretionRecord.cat,
-        createdAt: toLocalISOString(excretionRecord.cat.createdAt),
-        updatedAt: toLocalISOString(excretionRecord.cat.updatedAt),
-      } : undefined,
+      cat: excretionRecord.cat
+        ? {
+            ...excretionRecord.cat,
+            createdAt: toLocalISOString(excretionRecord.cat.createdAt),
+            updatedAt: toLocalISOString(excretionRecord.cat.updatedAt),
+          }
+        : undefined,
     };
 
     return {

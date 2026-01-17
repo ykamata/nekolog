@@ -117,16 +117,20 @@ export default defineEventHandler(async (event) => {
       mealTime: toLocalISOString(record.mealTime),
       createdAt: toLocalISOString(record.createdAt),
       updatedAt: toLocalISOString(record.updatedAt),
-      cat: record.cat ? {
-        ...record.cat,
-        createdAt: toLocalISOString(record.cat.createdAt),
-        updatedAt: toLocalISOString(record.cat.updatedAt),
-      } : undefined,
-      food: record.food ? {
-        ...record.food,
-        createdAt: toLocalISOString(record.food.createdAt),
-        updatedAt: toLocalISOString(record.food.updatedAt),
-      } : undefined,
+      cat: record.cat
+        ? {
+            ...record.cat,
+            createdAt: toLocalISOString(record.cat.createdAt),
+            updatedAt: toLocalISOString(record.cat.updatedAt),
+          }
+        : undefined,
+      food: record.food
+        ? {
+            ...record.food,
+            createdAt: toLocalISOString(record.food.createdAt),
+            updatedAt: toLocalISOString(record.food.updatedAt),
+          }
+        : undefined,
     }));
 
     // Add response caching headers for better performance

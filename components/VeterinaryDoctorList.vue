@@ -597,8 +597,8 @@ const handleSearchInput = () => {
 
 const handleHospitalFilter = () => {
   currentPage.value = 1;
-  const value =
-    hospitalFilter.value === '' || hospitalFilter.value === null
+  const value
+    = hospitalFilter.value === '' || hospitalFilter.value === null
       ? undefined
       : Number(hospitalFilter.value);
   hospitalFilter.value = value ?? '';

@@ -42,7 +42,7 @@ const dateValue = computed({
       currentDate.getHours(),
       currentDate.getMinutes(),
       currentDate.getSeconds(),
-      currentDate.getMilliseconds()
+      currentDate.getMilliseconds(),
     );
     emit('change', newDate);
   },
@@ -70,7 +70,7 @@ const timeValue = computed({
       hours,
       minutes,
       0,
-      0
+      0,
     );
     emit('change', newDate);
   },

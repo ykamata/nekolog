@@ -139,16 +139,20 @@ export default defineEventHandler(async (event) => {
       mealTime: toLocalISOString(mealRecord.mealTime),
       createdAt: toLocalISOString(mealRecord.createdAt),
       updatedAt: toLocalISOString(mealRecord.updatedAt),
-      cat: mealRecord.cat ? {
-        ...mealRecord.cat,
-        createdAt: toLocalISOString(mealRecord.cat.createdAt),
-        updatedAt: toLocalISOString(mealRecord.cat.updatedAt),
-      } : undefined,
-      food: mealRecord.food ? {
-        ...mealRecord.food,
-        createdAt: toLocalISOString(mealRecord.food.createdAt),
-        updatedAt: toLocalISOString(mealRecord.food.updatedAt),
-      } : undefined,
+      cat: mealRecord.cat
+        ? {
+            ...mealRecord.cat,
+            createdAt: toLocalISOString(mealRecord.cat.createdAt),
+            updatedAt: toLocalISOString(mealRecord.cat.updatedAt),
+          }
+        : undefined,
+      food: mealRecord.food
+        ? {
+            ...mealRecord.food,
+            createdAt: toLocalISOString(mealRecord.food.createdAt),
+            updatedAt: toLocalISOString(mealRecord.food.updatedAt),
+          }
+        : undefined,
     };
 
     console.log('📤 [PUT /api/meals/:id] Response mealRecord dates (after conversion):', {

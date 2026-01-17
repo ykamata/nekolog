@@ -37,10 +37,10 @@ export const dailyNoteUpdateSchema = z.object({
 // Daily note filter schema
 export const dailyNoteFilterSchema = z.object({
   catId: z.string().transform(Number).pipe(z.number().int().positive()).optional(),
-  startDate: z.string().transform((val) => new Date(val)).pipe(z.date()).optional(),
-  endDate: z.string().transform((val) => new Date(val)).pipe(z.date()).optional(),
-  hasEmergencyMedication: z.string().transform((val) => val === 'true').pipe(z.boolean()).optional(),
-  hasMemo: z.string().transform((val) => val === 'true').pipe(z.boolean()).optional(),
+  startDate: z.string().transform(val => new Date(val)).pipe(z.date()).optional(),
+  endDate: z.string().transform(val => new Date(val)).pipe(z.date()).optional(),
+  hasEmergencyMedication: z.string().transform(val => val === 'true').pipe(z.boolean()).optional(),
+  hasMemo: z.string().transform(val => val === 'true').pipe(z.boolean()).optional(),
 });
 
 // Calendar data query schema

@@ -273,7 +273,7 @@ export function parseJSTDateTime(dateTimeString: string | Date): Date {
       Number(day),
       Number(hours),
       Number(minutes),
-      Number(seconds)
+      Number(seconds),
     );
   }
 

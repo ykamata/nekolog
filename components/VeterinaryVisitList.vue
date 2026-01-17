@@ -754,7 +754,10 @@ const prevPage = () => {
 
           <div class="table-cell">
             <div class="cat-info">
-              <div class="cat-avatar" :aria-label="getCatName(visit.catId)">
+              <div
+                class="cat-avatar"
+                :aria-label="getCatName(visit.catId)"
+              >
                 <img
                   v-if="getCatAvatar(visit.catId)"
                   :src="getCatAvatar(visit.catId)!"

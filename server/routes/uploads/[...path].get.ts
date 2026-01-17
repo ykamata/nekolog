@@ -1,7 +1,7 @@
-import { createError, defineEventHandler } from 'h3';
 import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { createError, defineEventHandler } from 'h3';
 
 // Static file handler for /uploads directory
 export default defineEventHandler(async (event) => {

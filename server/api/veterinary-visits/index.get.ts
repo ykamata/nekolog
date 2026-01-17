@@ -1,7 +1,7 @@
-import { z } from "zod";
-import { prisma } from "~/lib/prisma";
-import { VeterinaryVisitFilterSchema } from "~/lib/validations/veterinary-visit";
-import { parseLocalDateString, parseLocalDateStringEndOfDay, toLocalISOString } from "~/utils/cat-meal";
+import { z } from 'zod';
+import { prisma } from '~/lib/prisma';
+import { VeterinaryVisitFilterSchema } from '~/lib/validations/veterinary-visit';
+import { parseLocalDateString, parseLocalDateStringEndOfDay, toLocalISOString } from '~/utils/cat-meal';
 
 // クエリパラメータのスキーマ（文字列から適切な型に変換）
 const querySchema = z.object({
@@ -11,35 +11,35 @@ const querySchema = z.object({
   startDate: z
     .string()
     .optional()
-    .transform((val) => (val ? parseLocalDateString(val) : undefined)),
+    .transform(val => (val ? parseLocalDateString(val) : undefined)),
   endDate: z
     .string()
     .optional()
-    .transform((val) => (val ? parseLocalDateStringEndOfDay(val) : undefined)),
+    .transform(val => (val ? parseLocalDateStringEndOfDay(val) : undefined)),
   hasBloodTest: z
     .string()
     .optional()
-    .transform((val) =>
-      val === "true" ? true : val === "false" ? false : undefined
+    .transform(val =>
+      val === 'true' ? true : val === 'false' ? false : undefined,
     ),
   limit: z
     .string()
     .transform(Number)
     .pipe(z.number().int().positive().max(100))
     .optional()
-    .default("20"),
+    .default('20'),
   offset: z
     .string()
     .transform(Number)
     .pipe(z.number().int().min(0))
     .optional()
-    .default("0"),
+    .default('0'),
 });
 
 export default defineEventHandler(async (event) => {
   try {
     // Only allow GET method
-    assertMethod(event, "GET");
+    assertMethod(event, 'GET');
 
     // Parse and validate query parameters
     const query = getQuery(event);
@@ -87,7 +87,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // デバッグログ
-    console.log("🔍 GET /api/veterinary-visits クエリ条件:", {
+    console.log('🔍 GET /api/veterinary-visits クエリ条件:', {
       parsedQuery,
       where,
       limit,
@@ -98,7 +98,7 @@ export default defineEventHandler(async (event) => {
     const [visits, total] = await Promise.all([
       prisma.veterinaryVisit.findMany({
         where,
-        orderBy: { visitDate: "desc" },
+        orderBy: { visitDate: 'desc' },
         take: limit,
         skip: offset,
         include: {
@@ -142,33 +142,33 @@ export default defineEventHandler(async (event) => {
     ]);
 
     // Transform the data (保持: visit.treatments[].treatment に名前が入る構造を維持) and convert dates
-    const transformedVisits = visits.map((visit) => ({
+    const transformedVisits = visits.map(visit => ({
       ...visit,
       visitDate: toLocalISOString(visit.visitDate),
       createdAt: toLocalISOString(visit.createdAt),
       updatedAt: toLocalISOString(visit.updatedAt),
       // cat, hospital, doctor are already selected with specific fields only
       // No date transformation needed as they don't include date fields in the select
-      treatments: visit.treatments.map((vt) => ({
+      treatments: visit.treatments.map(vt => ({
         ...vt,
         treatment: vt.treatment,
       })),
     }));
 
     // Add optimized caching headers based on data freshness
-    const cacheMaxAge =
-      hasBloodTest !== undefined || startDate || endDate ? 30 : 300; // 30s for filtered, 5min for general
+    const cacheMaxAge
+      = hasBloodTest !== undefined || startDate || endDate ? 30 : 300; // 30s for filtered, 5min for general
     setHeader(
       event,
-      "Cache-Control",
-      `public, max-age=${cacheMaxAge}, s-maxage=${cacheMaxAge * 2}`
+      'Cache-Control',
+      `public, max-age=${cacheMaxAge}, s-maxage=${cacheMaxAge * 2}`,
     );
-    setHeader(event, "ETag", `"visits-${total}-${offset}-${limit}"`);
+    setHeader(event, 'ETag', `"visits-${total}-${offset}-${limit}"`);
 
     // Add performance headers
-    setHeader(event, "X-Total-Count", total.toString());
-    setHeader(event, "X-Page-Size", limit.toString());
-    setHeader(event, "X-Current-Offset", offset.toString());
+    setHeader(event, 'X-Total-Count', total.toString());
+    setHeader(event, 'X-Page-Size', limit.toString());
+    setHeader(event, 'X-Current-Offset', offset.toString());
 
     return {
       visits: transformedVisits,
@@ -180,21 +180,22 @@ export default defineEventHandler(async (event) => {
         total,
       },
     };
-  } catch (error) {
+  }
+  catch (error) {
     // Handle validation errors
     if (error instanceof z.ZodError) {
       throw createError({
         statusCode: 400,
-        statusMessage: "クエリパラメータが無効です",
+        statusMessage: 'クエリパラメータが無効です',
         data: error.errors,
       });
     }
 
     // Handle unexpected errors
-    console.error("Error fetching veterinary visits:", error);
+    console.error('Error fetching veterinary visits:', error);
     throw createError({
       statusCode: 500,
-      statusMessage: "通院記録の取得に失敗しました",
+      statusMessage: '通院記録の取得に失敗しました',
     });
   }
 });

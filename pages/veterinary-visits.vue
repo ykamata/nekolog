@@ -793,7 +793,9 @@ onMounted(async () => {
       <div class="visit-detail-dialog">
         <div class="visit-detail-header">
           <div>
-            <p class="visit-detail-subtitle">通院記録の詳細</p>
+            <p class="visit-detail-subtitle">
+              通院記録の詳細
+            </p>
             <h3 class="visit-detail-title">
               {{ viewingVisit.hospital?.name || '病院情報なし' }}
             </h3>
@@ -813,31 +815,41 @@ onMounted(async () => {
           data-testid="visit-detail"
         >
           <div class="detail-row">
-            <div class="detail-label">猫</div>
+            <div class="detail-label">
+              猫
+            </div>
             <div class="detail-value">
               {{ viewingVisit.cat?.name || getCatName(viewingVisit.catId) }}
             </div>
           </div>
           <div class="detail-row">
-            <div class="detail-label">診察日時</div>
+            <div class="detail-label">
+              診察日時
+            </div>
             <div class="detail-value">
               {{ formatVisitDateTime(viewingVisit.visitDate) }}
             </div>
           </div>
           <div class="detail-row">
-            <div class="detail-label">病院</div>
+            <div class="detail-label">
+              病院
+            </div>
             <div class="detail-value">
               {{ viewingVisit.hospital?.name || '未登録' }}
             </div>
           </div>
           <div class="detail-row">
-            <div class="detail-label">先生</div>
+            <div class="detail-label">
+              先生
+            </div>
             <div class="detail-value">
               {{ viewingVisit.doctor?.name || '未登録' }}
             </div>
           </div>
           <div class="detail-row">
-            <div class="detail-label">処方</div>
+            <div class="detail-label">
+              処方
+            </div>
             <div class="detail-value">
               <span
                 v-for="treatment in viewingVisit.treatments"
@@ -849,13 +861,17 @@ onMounted(async () => {
             </div>
           </div>
           <div class="detail-row">
-            <div class="detail-label">費用</div>
+            <div class="detail-label">
+              費用
+            </div>
             <div class="detail-value">
               {{ (viewingVisit.cost || 0).toLocaleString() }}円
             </div>
           </div>
           <div class="detail-row">
-            <div class="detail-label">血液検査</div>
+            <div class="detail-label">
+              血液検査
+            </div>
             <div class="detail-value">
               <span
                 v-if="viewingVisit.hasBloodTest"
@@ -863,11 +879,16 @@ onMounted(async () => {
               >
                 血液検査あり
               </span>
-              <span v-else class="pill pill--muted">なし</span>
+              <span
+                v-else
+                class="pill pill--muted"
+              >なし</span>
             </div>
           </div>
           <div class="detail-row">
-            <div class="detail-label">メモ</div>
+            <div class="detail-label">
+              メモ
+            </div>
             <div class="detail-value">
               {{ viewingVisit.notes || 'なし' }}
             </div>

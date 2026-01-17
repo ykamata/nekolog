@@ -158,7 +158,6 @@ onMounted(async () => {
     // 初期期間を設定
     analyticsStore.setDateRange(chartFilters.value.dateRange.start, chartFilters.value.dateRange.end);
     analyticsStore.setChartDisplayMode(chartFilters.value.chartType === 'stacked-bar' ? 'bar' : chartFilters.value.chartType);
-
   }
   catch (err) {
     // エラーは fetchCats 内で処理済み

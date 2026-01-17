@@ -19,7 +19,8 @@ export default defineEventHandler(async (event) => {
       service: 'nekolog',
       database: 'connected',
     };
-  } catch (error) {
+  }
+  catch (error) {
     // Database connection failed
     setResponseStatus(event, 503);
     return {

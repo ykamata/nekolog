@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Food } from "~/types/cat-meal";
-import { FoodType } from "~/types/cat-meal";
+import type { Food } from '~/types/cat-meal';
+import { FoodType } from '~/types/cat-meal';
 
 interface Props {
   foods: Food[];
@@ -9,8 +9,8 @@ interface Props {
 }
 
 interface Emits {
-  (e: "select" | "edit" | "delete", food: Food): void;
-  (e: "add"): void;
+  (e: 'select' | 'edit' | 'delete', food: Food): void;
+  (e: 'add'): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -21,10 +21,10 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>();
 
 // Filter and search state
-const searchQuery = ref("");
+const searchQuery = ref('');
 const selectedType = ref<FoodType | null>(null);
-const sortBy = ref<"name" | "type" | "calories" | "price">("name");
-const sortOrder = ref<"asc" | "desc">("asc");
+const sortBy = ref<'name' | 'type' | 'calories' | 'price'>('name');
+const sortOrder = ref<'asc' | 'desc'>('asc');
 
 // Computed properties
 const filteredAndSortedFoods = computed(() => {
@@ -34,15 +34,15 @@ const filteredAndSortedFoods = computed(() => {
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(
-      (food) =>
-        food.name.toLowerCase().includes(query) ||
-        (food.brand && food.brand.toLowerCase().includes(query))
+      food =>
+        food.name.toLowerCase().includes(query)
+        || (food.brand && food.brand.toLowerCase().includes(query)),
     );
   }
 
   // Filter by type
   if (selectedType.value) {
-    filtered = filtered.filter((food) => food.type === selectedType.value);
+    filtered = filtered.filter(food => food.type === selectedType.value);
   }
 
   // Sort
@@ -51,19 +51,19 @@ const filteredAndSortedFoods = computed(() => {
     let bValue: string | number;
 
     switch (sortBy.value) {
-      case "name":
+      case 'name':
         aValue = a.name.toLowerCase();
         bValue = b.name.toLowerCase();
         break;
-      case "type":
+      case 'type':
         aValue = a.type;
         bValue = b.type;
         break;
-      case "calories":
+      case 'calories':
         aValue = a.caloriesPerGram;
         bValue = b.caloriesPerGram;
         break;
-      case "price":
+      case 'price':
         aValue = a.pricePerUnit || 0;
         bValue = b.pricePerUnit || 0;
         break;
@@ -72,8 +72,8 @@ const filteredAndSortedFoods = computed(() => {
         bValue = b.name.toLowerCase();
     }
 
-    if (aValue < bValue) return sortOrder.value === "asc" ? -1 : 1;
-    if (aValue > bValue) return sortOrder.value === "asc" ? 1 : -1;
+    if (aValue < bValue) return sortOrder.value === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortOrder.value === 'asc' ? 1 : -1;
     return 0;
   });
 
@@ -81,51 +81,52 @@ const filteredAndSortedFoods = computed(() => {
 });
 
 const foodTypeOptions = computed(() => [
-  { value: null, label: "すべて" },
-  { value: FoodType.DRY, label: "ドライフード" },
-  { value: FoodType.WET, label: "ウェットフード" },
+  { value: null, label: 'すべて' },
+  { value: FoodType.DRY, label: 'ドライフード' },
+  { value: FoodType.WET, label: 'ウェットフード' },
 ]);
 
 const sortOptions = computed(() => [
-  { value: "name", label: "名前" },
-  { value: "type", label: "タイプ" },
-  { value: "calories", label: "カロリー" },
-  { value: "price", label: "価格" },
+  { value: 'name', label: '名前' },
+  { value: 'type', label: 'タイプ' },
+  { value: 'calories', label: 'カロリー' },
+  { value: 'price', label: '価格' },
 ]);
 
 // Methods
 const handleSelectFood = (food: Food) => {
-  emit("select", food);
+  emit('select', food);
 };
 
 const handleEditFood = (food: Food) => {
-  emit("edit", food);
+  emit('edit', food);
 };
 
 const handleDeleteFood = (food: Food) => {
-  emit("delete", food);
+  emit('delete', food);
 };
 
 const handleAddFood = () => {
-  emit("add");
+  emit('add');
 };
 
 const handleSortChange = (event: Event) => {
   const target = event.target as HTMLSelectElement;
-  const newSortBy = target.value as "name" | "type" | "calories" | "price";
+  const newSortBy = target.value as 'name' | 'type' | 'calories' | 'price';
 
   if (sortBy.value === newSortBy) {
     // Toggle sort order if same field
-    sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
-  } else {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+  }
+  else {
     sortBy.value = newSortBy;
-    sortOrder.value = "asc";
+    sortOrder.value = 'asc';
   }
 };
 
 // Format functions
 const formatFoodType = (type: FoodType): string => {
-  return type === FoodType.DRY ? "ドライフード" : "ウェットフード";
+  return type === FoodType.DRY ? 'ドライフード' : 'ウェットフード';
 };
 
 const formatCalories = (caloriesPerGram: number): string => {
@@ -133,26 +134,28 @@ const formatCalories = (caloriesPerGram: number): string => {
 };
 
 const formatPrice = (price?: number): string => {
-  if (!price) return "未設定";
+  if (!price) return '未設定';
   return `¥${price.toLocaleString()}`;
 };
 
 const getFoodTypeColor = (type: FoodType): string => {
-  return type === FoodType.DRY ? "#8bc34a" : "#ff9800";
+  return type === FoodType.DRY ? '#8bc34a' : '#ff9800';
 };
 
 const clearFilters = () => {
-  searchQuery.value = "";
+  searchQuery.value = '';
   selectedType.value = null;
-  sortBy.value = "name";
-  sortOrder.value = "asc";
+  sortBy.value = 'name';
+  sortOrder.value = 'asc';
 };
 </script>
 
 <template>
   <div class="food-list">
     <div class="food-list__header">
-      <h2 class="food-list__title">フード管理</h2>
+      <h2 class="food-list__title">
+        フード管理
+      </h2>
       <button
         v-if="showActions"
         :disabled="loading"
@@ -171,12 +174,17 @@ const clearFilters = () => {
           type="text"
           class="search-input"
           placeholder="フード名やブランドで検索..."
-        />
-        <div class="search-icon">🔍</div>
+        >
+        <div class="search-icon">
+          🔍
+        </div>
       </div>
 
       <div class="filter-container">
-        <select v-model="selectedType" class="filter-select">
+        <select
+          v-model="selectedType"
+          class="filter-select"
+        >
           <option
             v-for="option in foodTypeOptions"
             :key="option.value || 'all'"
@@ -188,7 +196,11 @@ const clearFilters = () => {
       </div>
 
       <div class="sort-container">
-        <select :value="sortBy" class="sort-select" @change="handleSortChange">
+        <select
+          :value="sortBy"
+          class="sort-select"
+          @change="handleSortChange"
+        >
           <option
             v-for="option in sortOptions"
             :key="option.value"
@@ -215,7 +227,10 @@ const clearFilters = () => {
       </button>
     </div>
 
-    <div v-if="loading" class="food-list__loading">
+    <div
+      v-if="loading"
+      class="food-list__loading"
+    >
       <div class="loading-spinner" />
       <p>フード情報を読み込み中...</p>
     </div>
@@ -225,7 +240,9 @@ const clearFilters = () => {
       class="food-list__empty"
     >
       <div class="empty-state">
-        <div class="empty-state__icon">🍽️</div>
+        <div class="empty-state__icon">
+          🍽️
+        </div>
         <h3 class="empty-state__title">
           {{
             searchQuery || selectedType
@@ -250,7 +267,10 @@ const clearFilters = () => {
       </div>
     </div>
 
-    <div v-else class="food-list__grid">
+    <div
+      v-else
+      class="food-list__grid"
+    >
       <div
         v-for="food in filteredAndSortedFoods"
         :key="food.id"
@@ -264,8 +284,14 @@ const clearFilters = () => {
           >
             {{ formatFoodType(food.type) }}
           </div>
-          <div v-if="showActions" class="food-card__menu">
-            <button class="menu-btn" @click.stop="handleEditFood(food)">
+          <div
+            v-if="showActions"
+            class="food-card__menu"
+          >
+            <button
+              class="menu-btn"
+              @click.stop="handleEditFood(food)"
+            >
               ✏️
             </button>
             <button
@@ -282,7 +308,10 @@ const clearFilters = () => {
             {{ food.name }}
           </h3>
 
-          <div v-if="food.brand" class="food-card__brand">
+          <div
+            v-if="food.brand"
+            class="food-card__brand"
+          >
             {{ food.brand }}
           </div>
 
@@ -311,13 +340,14 @@ const clearFilters = () => {
               class="food-card__info-item"
             >
               <span class="food-card__info-label">使用回数:</span>
-              <span class="food-card__info-value"
-                >{{ food._count.meals }}回</span
-              >
+              <span class="food-card__info-value">{{ food._count.meals }}回</span>
             </div>
           </div>
 
-          <div v-if="showActions" class="food-card__actions">
+          <div
+            v-if="showActions"
+            class="food-card__actions"
+          >
             <button
               class="btn btn--small btn--secondary"
               @click.stop="handleEditFood(food)"

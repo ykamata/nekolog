@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Food } from "~/types/cat-meal";
-import { FoodType } from "~/types/cat-meal";
+import type { Food } from '~/types/cat-meal';
+import { FoodType } from '~/types/cat-meal';
 
 interface Props {
   foods: Food[];
@@ -13,14 +13,14 @@ interface Props {
 }
 
 interface Emits {
-  (e: "select", food: Food): void;
-  (e: "search", query: string): void;
-  (e: "filter", type: FoodType | null): void;
+  (e: 'select', food: Food): void;
+  (e: 'search', query: string): void;
+  (e: 'filter', type: FoodType | null): void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   loading: false,
-  placeholder: "フードを選択してください",
+  placeholder: 'フードを選択してください',
   disabled: false,
   showSearch: true,
   showTypeFilter: true,
@@ -29,14 +29,14 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>();
 
 // State
-const searchQuery = ref("");
-const selectedType = ref<FoodType | "">(""as FoodType | "");
+const searchQuery = ref('');
+const selectedType = ref<FoodType | ''>('' as FoodType | '');
 const isDropdownOpen = ref(false);
 const recentSelections = ref<number[]>([]);
 
 // Computed properties
 const selectedFood = computed(() => {
-  return props.foods.find((food) => food.id === props.selectedFoodId);
+  return props.foods.find(food => food.id === props.selectedFoodId);
 });
 
 const filteredFoods = computed(() => {
@@ -46,15 +46,15 @@ const filteredFoods = computed(() => {
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase();
     filtered = filtered.filter(
-      (food) =>
-        food.name.toLowerCase().includes(query) ||
-        (food.brand && food.brand.toLowerCase().includes(query))
+      food =>
+        food.name.toLowerCase().includes(query)
+        || (food.brand && food.brand.toLowerCase().includes(query)),
     );
   }
 
   // Filter by type
-  if (selectedType.value !== "") {
-    filtered = filtered.filter((food) => food.type === selectedType.value);
+  if (selectedType.value !== '') {
+    filtered = filtered.filter(food => food.type === selectedType.value);
   }
 
   // Sort by recent selections first, then by name
@@ -71,14 +71,14 @@ const filteredFoods = computed(() => {
 
 const recentFoods = computed(() => {
   return recentSelections.value
-    .map((id) => props.foods.find((food) => food.id === id))
+    .map(id => props.foods.find(food => food.id === id))
     .filter(Boolean) as Food[];
 });
 
 const foodTypeOptions = computed(() => [
-  { value: "", label: "すべて" },
-  { value: FoodType.DRY, label: "ドライフード" },
-  { value: FoodType.WET, label: "ウェットフード" },
+  { value: '', label: 'すべて' },
+  { value: FoodType.DRY, label: 'ドライフード' },
+  { value: FoodType.WET, label: 'ウェットフード' },
 ]);
 
 // Methods
@@ -95,19 +95,19 @@ const handleFoodSelect = (food: Food) => {
     recentSelections.value = recentSelections.value.slice(0, 5);
   }
 
-  emit("select", food);
+  emit('select', food);
   isDropdownOpen.value = false;
 };
 
 const handleSearchInput = (event: Event) => {
   const target = event.target as HTMLInputElement;
   searchQuery.value = target.value;
-  emit("search", target.value);
+  emit('search', target.value);
 };
 
-const handleTypeFilter = (type: FoodType | "") => {
+const handleTypeFilter = (type: FoodType | '') => {
   selectedType.value = type;
-  emit("filter", type === "" ? null : type);
+  emit('filter', type === '' ? null : type);
 };
 
 const toggleDropdown = () => {
@@ -122,8 +122,8 @@ const closeDropdown = () => {
 
 // Format food display
 const formatFoodDisplay = (food: Food): string => {
-  const brand = food.brand ? `${food.brand} ` : "";
-  const type = food.type === FoodType.DRY ? "[ドライ]" : "[ウェット]";
+  const brand = food.brand ? `${food.brand} ` : '';
+  const type = food.type === FoodType.DRY ? '[ドライ]' : '[ウェット]';
   return `${brand}${food.name} ${type}`;
 };
 
@@ -132,35 +132,36 @@ const formatCalories = (caloriesPerGram: number): string => {
 };
 
 const formatPrice = (price?: number): string => {
-  if (!price) return "";
+  if (!price) return '';
   return `¥${price.toLocaleString()}`;
 };
 
 // Close dropdown when clicking outside
 const handleClickOutside = (event: Event) => {
   const target = event.target as HTMLElement;
-  const container = document.querySelector(".food-selector");
+  const container = document.querySelector('.food-selector');
   if (container && !container.contains(target)) {
     closeDropdown();
   }
 };
 
 onMounted(() => {
-  document.addEventListener("click", handleClickOutside);
+  document.addEventListener('click', handleClickOutside);
 
   // Load recent selections from localStorage
   try {
-    const stored = localStorage.getItem("recentFoodSelections");
+    const stored = localStorage.getItem('recentFoodSelections');
     if (stored) {
       recentSelections.value = JSON.parse(stored);
     }
-  } catch {
+  }
+  catch {
     // Ignore localStorage errors
   }
 });
 
 onUnmounted(() => {
-  document.removeEventListener("click", handleClickOutside);
+  document.removeEventListener('click', handleClickOutside);
 });
 
 // Save recent selections to localStorage
@@ -169,22 +170,29 @@ watch(
   (newSelections) => {
     try {
       localStorage.setItem(
-        "recentFoodSelections",
-        JSON.stringify(newSelections)
+        'recentFoodSelections',
+        JSON.stringify(newSelections),
       );
-    } catch {
+    }
+    catch {
       // Ignore localStorage errors
     }
   },
-  { deep: true }
+  { deep: true },
 );
 </script>
 
 <template>
   <div class="food-selector">
     <!-- Search and Filter Controls -->
-    <div v-if="showSearch || showTypeFilter" class="selector-controls">
-      <div v-if="showSearch" class="search-container">
+    <div
+      v-if="showSearch || showTypeFilter"
+      class="selector-controls"
+    >
+      <div
+        v-if="showSearch"
+        class="search-container"
+      >
         <input
           :value="searchQuery"
           type="text"
@@ -192,18 +200,23 @@ watch(
           placeholder="フード名やブランドで検索..."
           :disabled="disabled"
           @input="handleSearchInput"
-        />
-        <div class="search-icon">🔍</div>
+        >
+        <div class="search-icon">
+          🔍
+        </div>
       </div>
 
-      <div v-if="showTypeFilter" class="filter-container">
+      <div
+        v-if="showTypeFilter"
+        class="filter-container"
+      >
         <select
           :value="selectedType"
           class="type-filter"
           :disabled="disabled"
           @change="
             handleTypeFilter(
-              ($event.target as HTMLSelectElement).value as FoodType | ''
+              ($event.target as HTMLSelectElement).value as FoodType | '',
             )
           "
         >
@@ -227,7 +240,10 @@ watch(
       }"
       @click="toggleDropdown"
     >
-      <div v-if="selectedFood" class="selected-food-content">
+      <div
+        v-if="selectedFood"
+        class="selected-food-content"
+      >
         <div class="selected-food-main">
           <span class="selected-food-name">{{
             formatFoodDisplay(selectedFood)
@@ -236,11 +252,17 @@ watch(
             formatCalories(selectedFood.caloriesPerGram)
           }}</span>
         </div>
-        <div v-if="selectedFood.pricePerUnit" class="selected-food-price">
+        <div
+          v-if="selectedFood.pricePerUnit"
+          class="selected-food-price"
+        >
           {{ formatPrice(selectedFood.pricePerUnit) }}
         </div>
       </div>
-      <div v-else class="selected-food-placeholder">
+      <div
+        v-else
+        class="selected-food-placeholder"
+      >
         {{ placeholder }}
       </div>
       <div
@@ -252,24 +274,40 @@ watch(
     </div>
 
     <!-- Dropdown List -->
-    <div v-if="isDropdownOpen" class="dropdown-list">
-      <div v-if="loading" class="dropdown-loading">
+    <div
+      v-if="isDropdownOpen"
+      class="dropdown-list"
+    >
+      <div
+        v-if="loading"
+        class="dropdown-loading"
+      >
         <div class="loading-spinner" />
         <span>読み込み中...</span>
       </div>
 
-      <div v-else-if="filteredFoods.length === 0" class="dropdown-empty">
-        <div class="empty-icon">🍽️</div>
+      <div
+        v-else-if="filteredFoods.length === 0"
+        class="dropdown-empty"
+      >
+        <div class="empty-icon">
+          🍽️
+        </div>
         <p>該当するフードが見つかりません</p>
       </div>
 
-      <div v-else class="dropdown-content">
+      <div
+        v-else
+        class="dropdown-content"
+      >
         <!-- Recent Selections -->
         <div
           v-if="recentFoods.length > 0 && !searchQuery && selectedType === ''"
           class="recent-section"
         >
-          <div class="section-header">最近選択したフード</div>
+          <div class="section-header">
+            最近選択したフード
+          </div>
           <button
             v-for="food in recentFoods"
             :key="`recent-${food.id}`"
@@ -285,12 +323,17 @@ watch(
                 <span class="food-item-calories">{{
                   formatCalories(food.caloriesPerGram)
                 }}</span>
-                <span v-if="food.pricePerUnit" class="food-item-price">{{
+                <span
+                  v-if="food.pricePerUnit"
+                  class="food-item-price"
+                >{{
                   formatPrice(food.pricePerUnit)
                 }}</span>
               </div>
             </div>
-            <div class="recent-badge">最近</div>
+            <div class="recent-badge">
+              最近
+            </div>
           </button>
           <div class="section-divider" />
         </div>
@@ -322,12 +365,18 @@ watch(
                 <span class="food-item-calories">{{
                   formatCalories(food.caloriesPerGram)
                 }}</span>
-                <span v-if="food.pricePerUnit" class="food-item-price">{{
+                <span
+                  v-if="food.pricePerUnit"
+                  class="food-item-price"
+                >{{
                   formatPrice(food.pricePerUnit)
                 }}</span>
               </div>
             </div>
-            <div v-if="food.id === selectedFoodId" class="selected-badge">
+            <div
+              v-if="food.id === selectedFoodId"
+              class="selected-badge"
+            >
               ✓
             </div>
           </button>

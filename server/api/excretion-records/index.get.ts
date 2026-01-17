@@ -78,11 +78,13 @@ export default defineEventHandler(async (event) => {
       recordedAt: toLocalISOString(record.recordedAt),
       createdAt: toLocalISOString(record.createdAt),
       updatedAt: toLocalISOString(record.updatedAt),
-      cat: record.cat ? {
-        ...record.cat,
-        createdAt: toLocalISOString(record.cat.createdAt),
-        updatedAt: toLocalISOString(record.cat.updatedAt),
-      } : undefined,
+      cat: record.cat
+        ? {
+            ...record.cat,
+            createdAt: toLocalISOString(record.cat.createdAt),
+            updatedAt: toLocalISOString(record.cat.updatedAt),
+          }
+        : undefined,
     }));
 
     // Add response caching headers for better performance

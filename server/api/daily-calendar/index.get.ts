@@ -105,17 +105,17 @@ export default defineEventHandler(async (event) => {
       });
 
       // Find health signal for this date
-      const healthSignal = healthSignals.find((signal: { date: Date, catId: number }) => {
+      const healthSignal = healthSignals.find((signal: { date: Date; catId: number }) => {
         const signalDate = new Date(signal.date);
-        return toLocalDateString(signalDate) === dateStr &&
-               (!catId || signal.catId === catId);
+        return toLocalDateString(signalDate) === dateStr
+          && (!catId || signal.catId === catId);
       });
 
       // Get meals for this day
       const dayMeals = mealRecords.filter((meal) => {
         const mealDate = new Date(meal.mealTime);
-        return toLocalDateString(mealDate) === dateStr &&
-               (!catId || meal.catId === catId);
+        return toLocalDateString(mealDate) === dateStr
+          && (!catId || meal.catId === catId);
       });
 
       // Calculate total calories
@@ -124,14 +124,14 @@ export default defineEventHandler(async (event) => {
       // Get excretions for this day
       const dayExcretions = excretionRecords.filter((excretion) => {
         const excretionDate = new Date(excretion.recordedAt);
-        return toLocalDateString(excretionDate) === dateStr &&
-               (!catId || excretion.catId === catId);
+        return toLocalDateString(excretionDate) === dateStr
+          && (!catId || excretion.catId === catId);
       });
 
       // Get excretion times (extract time portion from datetime string)
       const urineTimes = dayExcretions
         .filter(e => e.type === 'URINE')
-        .map(e => {
+        .map((e) => {
           // Extract HH:mm from datetime string (YYYY-MM-DDTHH:mm:ss or ISO string)
           const timeStr = e.recordedAt instanceof Date
             ? e.recordedAt.toISOString()
@@ -142,7 +142,7 @@ export default defineEventHandler(async (event) => {
 
       const fecesTimes = dayExcretions
         .filter(e => e.type === 'FECES')
-        .map(e => {
+        .map((e) => {
           // Extract HH:mm from datetime string (YYYY-MM-DDTHH:mm:ss or ISO string)
           const timeStr = e.recordedAt instanceof Date
             ? e.recordedAt.toISOString()
