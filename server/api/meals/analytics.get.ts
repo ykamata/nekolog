@@ -7,6 +7,7 @@ import {
 } from '~/utils/cat-meal';
 
 // JSTで日付の開始時刻（0:00:00）を取得するヘルパー
+// DBにはJSTの値がそのまま保存されているため、タイムゾーン変換なしで返す
 const getJSTStartOfDay = (date: Date): Date => {
   // JSTでの年月日を取得
   const jstOffset = 9 * 60 * 60 * 1000; // 9時間をミリ秒で
@@ -14,11 +15,12 @@ const getJSTStartOfDay = (date: Date): Date => {
   const year = jstDate.getUTCFullYear();
   const month = jstDate.getUTCMonth();
   const day = jstDate.getUTCDate();
-  // JSTの0:00:00をUTCで表現（JST 0:00 = UTC 前日15:00）
-  return new Date(Date.UTC(year, month, day, 0, 0, 0, 0) - jstOffset);
+  // DBにはJSTがそのまま保存されているので、JSTの0:00:00をそのままDateオブジェクトとして返す
+  return new Date(year, month, day, 0, 0, 0, 0);
 };
 
 // JSTで日付の終了時刻（23:59:59.999）を取得するヘルパー
+// DBにはJSTの値がそのまま保存されているため、タイムゾーン変換なしで返す
 const getJSTEndOfDay = (date: Date): Date => {
   // JSTでの年月日を取得
   const jstOffset = 9 * 60 * 60 * 1000; // 9時間をミリ秒で
@@ -26,8 +28,21 @@ const getJSTEndOfDay = (date: Date): Date => {
   const year = jstDate.getUTCFullYear();
   const month = jstDate.getUTCMonth();
   const day = jstDate.getUTCDate();
-  // JSTの23:59:59.999をUTCで表現（JST 23:59:59.999 = UTC 同日14:59:59.999）
-  return new Date(Date.UTC(year, month, day, 23, 59, 59, 999) - jstOffset);
+  // DBにはJSTがそのまま保存されているので、JSTの23:59:59.999をそのままDateオブジェクトとして返す
+  return new Date(year, month, day, 23, 59, 59, 999);
+};
+
+// DateオブジェクトをJSTのISO文字列に変換するヘルパー
+// getJSTStartOfDay/getJSTEndOfDayが返すDateはローカル時刻としてJSTを表しているので
+// そのままローカル時刻の値を文字列化する
+const toJSTISOString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
 };
 
 const querySchema = z.object({
@@ -158,8 +173,9 @@ export default defineEventHandler(async (event) => {
 
       // startDateの処理
       if (startDate) {
-        where.mealTime.gte = startDate;
-        finalStartDate = startDate;
+        // 指定された日付の0:00:00から取得
+        finalStartDate = getJSTStartOfDay(startDate);
+        where.mealTime.gte = finalStartDate;
       }
       else {
         // デフォルト: days日前のJST 0:00:00
@@ -170,8 +186,9 @@ export default defineEventHandler(async (event) => {
 
       // endDateの処理
       if (endDate) {
-        where.mealTime.lte = endDate;
-        finalEndDate = endDate;
+        // 指定された日付の23:59:59.999までを含める
+        finalEndDate = getJSTEndOfDay(endDate);
+        where.mealTime.lte = finalEndDate;
       }
       else {
         // デフォルト: 今日のJST 23:59:59.999
@@ -463,8 +480,8 @@ export default defineEventHandler(async (event) => {
           totalCalories: 0,
           averageCaloriesPerMeal: 0,
           dateRange: {
-            startDate: finalStartDate,
-            endDate: finalEndDate,
+            startDate: toJSTISOString(finalStartDate),
+            endDate: toJSTISOString(finalEndDate),
           },
         },
         performanceInfo: {
@@ -634,8 +651,8 @@ export default defineEventHandler(async (event) => {
         totalCalories: Math.round(totalCalories * 100) / 100,
         averageCaloriesPerMeal,
         dateRange: {
-          startDate: finalStartDate,
-          endDate: finalEndDate,
+          startDate: toJSTISOString(finalStartDate),
+          endDate: toJSTISOString(finalEndDate),
         },
       },
       performanceInfo,
