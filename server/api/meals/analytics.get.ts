@@ -6,6 +6,30 @@ import {
   fillMissingDatesForFoodType,
 } from '~/utils/cat-meal';
 
+// JSTで日付の開始時刻（0:00:00）を取得するヘルパー
+const getJSTStartOfDay = (date: Date): Date => {
+  // JSTでの年月日を取得
+  const jstOffset = 9 * 60 * 60 * 1000; // 9時間をミリ秒で
+  const jstDate = new Date(date.getTime() + jstOffset);
+  const year = jstDate.getUTCFullYear();
+  const month = jstDate.getUTCMonth();
+  const day = jstDate.getUTCDate();
+  // JSTの0:00:00をUTCで表現（JST 0:00 = UTC 前日15:00）
+  return new Date(Date.UTC(year, month, day, 0, 0, 0, 0) - jstOffset);
+};
+
+// JSTで日付の終了時刻（23:59:59.999）を取得するヘルパー
+const getJSTEndOfDay = (date: Date): Date => {
+  // JSTでの年月日を取得
+  const jstOffset = 9 * 60 * 60 * 1000; // 9時間をミリ秒で
+  const jstDate = new Date(date.getTime() + jstOffset);
+  const year = jstDate.getUTCFullYear();
+  const month = jstDate.getUTCMonth();
+  const day = jstDate.getUTCDate();
+  // JSTの23:59:59.999をUTCで表現（JST 23:59:59.999 = UTC 同日14:59:59.999）
+  return new Date(Date.UTC(year, month, day, 23, 59, 59, 999) - jstOffset);
+};
+
 const querySchema = z.object({
   catId: z.coerce.number().positive().optional(),
   startDate: z
@@ -128,6 +152,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Set date range - either from parameters or last N days
+    // 日付はJSTとして扱う
     if (startDate || endDate) {
       where.mealTime = {};
 
@@ -137,8 +162,9 @@ export default defineEventHandler(async (event) => {
         finalStartDate = startDate;
       }
       else {
-        finalStartDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-        finalStartDate.setHours(0, 0, 0, 0);
+        // デフォルト: days日前のJST 0:00:00
+        const defaultStart = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+        finalStartDate = getJSTStartOfDay(defaultStart);
         where.mealTime.gte = finalStartDate;
       }
 
@@ -148,18 +174,17 @@ export default defineEventHandler(async (event) => {
         finalEndDate = endDate;
       }
       else {
-        finalEndDate = new Date();
-        finalEndDate.setHours(23, 59, 59, 999);
+        // デフォルト: 今日のJST 23:59:59.999
+        finalEndDate = getJSTEndOfDay(new Date());
         where.mealTime.lte = finalEndDate;
       }
     }
     else {
-      // Default to last N days
-      finalEndDate = new Date();
-      finalStartDate = new Date();
-      finalStartDate.setDate(finalStartDate.getDate() - days + 1);
-      finalStartDate.setHours(0, 0, 0, 0);
-      finalEndDate.setHours(23, 59, 59, 999);
+      // Default to last N days (JSTベース)
+      finalEndDate = getJSTEndOfDay(new Date());
+      const startDateBase = new Date();
+      startDateBase.setDate(startDateBase.getDate() - days + 1);
+      finalStartDate = getJSTStartOfDay(startDateBase);
 
       where.mealTime = {
         gte: finalStartDate,
