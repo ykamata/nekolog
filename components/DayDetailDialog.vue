@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DailyCalendarData } from '~/types/daily-calendar';
+import type { Medication } from '~/types/medication';
 
 interface Props {
   isOpen: boolean;
@@ -13,6 +14,40 @@ interface Emits {
 
 const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
+
+// State
+const medicationName = ref<string | null>(null);
+const isLoadingMedication = ref(false);
+
+// Methods
+const fetchMedicationName = async () => {
+  const medicationId = props.dayData?.dailyNote?.medicationId;
+  if (!medicationId) {
+    medicationName.value = null;
+    return;
+  }
+
+  isLoadingMedication.value = true;
+  try {
+    const response = await $fetch<{ medications: Medication[] }>('/api/medications');
+    const medication = response.medications.find(m => m.id === medicationId);
+    medicationName.value = medication?.name || null;
+  }
+  catch (err) {
+    console.error('薬情報取得エラー:', err);
+    medicationName.value = null;
+  }
+  finally {
+    isLoadingMedication.value = false;
+  }
+};
+
+// Watch for dialog open
+watch(() => props.isOpen, (newVal) => {
+  if (newVal && props.dayData?.hasEmergencyMedication) {
+    fetchMedicationName();
+  }
+});
 
 // Computed
 const formattedDate = computed(() => {
@@ -198,7 +233,19 @@ const handleBackdropClick = (event: MouseEvent) => {
                 </div>
                 <div class="section-content">
                   <div class="detail-item">
-                    <span class="status-badge status-badge--success">投与済み</span>
+                    <span class="detail-label">薬名:</span>
+                    <span
+                      v-if="isLoadingMedication"
+                      class="detail-value"
+                    >読み込み中...</span>
+                    <span
+                      v-else-if="medicationName"
+                      class="detail-value"
+                    >{{ medicationName }}</span>
+                    <span
+                      v-else
+                      class="detail-value"
+                    >不明</span>
                   </div>
                 </div>
               </div>

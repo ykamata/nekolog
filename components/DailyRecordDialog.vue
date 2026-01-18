@@ -47,6 +47,7 @@ const isLoadingCats = ref(false);
 const isLoadingFoods = ref(false);
 const isLoadingMedications = ref(false);
 const isSaving = ref(false);
+const isDeleting = ref(false);
 
 // Computed
 const formattedDate = computed(() => {
@@ -335,6 +336,99 @@ const saveHealthSignal = async () => {
   }
 };
 
+const deleteMedication = async () => {
+  if (!props.dayData?.dailyNote?.id) {
+    emit('showMessage', '削除する頓服薬がありません', 'error');
+    return;
+  }
+
+  isDeleting.value = true;
+  try {
+    await $fetch(`/api/daily-notes/${props.dayData.dailyNote.id}`, {
+      method: 'PUT',
+      body: {
+        medicationId: null,
+        emergencyMedication: false,
+      },
+    });
+
+    emit('showMessage', '頓服薬を削除しました', 'success');
+    emit('refresh');
+    emit('close');
+  }
+  catch (err) {
+    console.error('頓服薬削除エラー:', err);
+    emit('showMessage', '頓服薬の削除に失敗しました', 'error');
+  }
+  finally {
+    isDeleting.value = false;
+  }
+};
+
+const deleteMemo = async () => {
+  if (!props.dayData?.dailyNote?.id) {
+    emit('showMessage', '削除するメモがありません', 'error');
+    return;
+  }
+
+  isDeleting.value = true;
+  try {
+    await $fetch(`/api/daily-notes/${props.dayData.dailyNote.id}`, {
+      method: 'PUT',
+      body: {
+        memo: null,
+      },
+    });
+
+    emit('showMessage', 'メモを削除しました', 'success');
+    emit('refresh');
+    emit('close');
+  }
+  catch (err) {
+    console.error('メモ削除エラー:', err);
+    emit('showMessage', 'メモの削除に失敗しました', 'error');
+  }
+  finally {
+    isDeleting.value = false;
+  }
+};
+
+const deleteHealthSignal = async () => {
+  if (!props.dayData?.signalColor) {
+    emit('showMessage', '削除する健康シグナルがありません', 'error');
+    return;
+  }
+
+  isDeleting.value = true;
+  try {
+    // Get the health signal ID by fetching it first
+    const signals = await $fetch<{ id: number }[]>('/api/health-signals', {
+      params: {
+        catId: selectedCatId.value,
+        startDate: props.date,
+        endDate: props.date,
+      },
+    });
+
+    if (signals && signals.length > 0 && signals[0]) {
+      await $fetch(`/api/health-signals/${signals[0].id}`, {
+        method: 'DELETE',
+      });
+    }
+
+    emit('showMessage', '健康シグナルを削除しました', 'success');
+    emit('refresh');
+    emit('close');
+  }
+  catch (err) {
+    console.error('健康シグナル削除エラー:', err);
+    emit('showMessage', '健康シグナルの削除に失敗しました', 'error');
+  }
+  finally {
+    isDeleting.value = false;
+  }
+};
+
 // Watch props changes
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
@@ -605,6 +699,15 @@ watch(() => props.dayData, () => {
                   キャンセル
                 </button>
                 <button
+                  v-if="dayData?.hasEmergencyMedication"
+                  type="button"
+                  class="btn btn--danger"
+                  :disabled="isDeleting"
+                  @click="deleteMedication"
+                >
+                  {{ isDeleting ? '削除中...' : '削除' }}
+                </button>
+                <button
                   type="button"
                   class="btn btn--primary"
                   :disabled="isSaving || !selectedMedicationId"
@@ -637,6 +740,15 @@ watch(() => props.dayData, () => {
                   @click="handleClose"
                 >
                   キャンセル
+                </button>
+                <button
+                  v-if="dayData?.hasMemo"
+                  type="button"
+                  class="btn btn--danger"
+                  :disabled="isDeleting"
+                  @click="deleteMemo"
+                >
+                  {{ isDeleting ? '削除中...' : '削除' }}
                 </button>
                 <button
                   type="button"
@@ -713,6 +825,15 @@ watch(() => props.dayData, () => {
                   @click="handleClose"
                 >
                   キャンセル
+                </button>
+                <button
+                  v-if="dayData?.signalColor"
+                  type="button"
+                  class="btn btn--danger"
+                  :disabled="isDeleting"
+                  @click="deleteHealthSignal"
+                >
+                  {{ isDeleting ? '削除中...' : '削除' }}
                 </button>
                 <button
                   type="button"
@@ -1155,6 +1276,15 @@ watch(() => props.dayData, () => {
 
 .btn--secondary:hover {
   background-color: #e0e0e0;
+}
+
+.btn--danger {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn--danger:hover:not(:disabled) {
+  background-color: #d32f2f;
 }
 
 /* Modal transitions */
