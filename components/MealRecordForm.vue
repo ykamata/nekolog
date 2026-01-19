@@ -24,11 +24,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 
-// Form state
-const formData = ref<MealRecordForm>({
+// Form state - quantityは未入力状態をundefinedで表現（バリデーション時にpositive numberが必要）
+const formData = ref<Partial<MealRecordForm> & Omit<MealRecordForm, 'quantity'>>({
   catId: props.initialData?.catId || 0,
   foodId: props.initialData?.foodId || 0,
-  quantity: props.initialData?.quantity || 0,
+  quantity: props.initialData?.quantity,
   calories: props.initialData?.calories,
   mealTime: (() => {
     const mealTime = props.initialData?.mealTime || new Date();
@@ -121,23 +121,23 @@ const handleFoodSelect = (food: Food) => {
   formData.value.foodId = food.id;
 
   // Auto-calculate calories when food is selected
-  if (quantityMode.value === 'grams' && formData.value.quantity > 0) {
+  if (quantityMode.value === 'grams' && formData.value.quantity && formData.value.quantity > 0) {
     formData.value.calories = calculatedCalories.value;
   }
 
   validateField('foodId');
 };
 
-const handleQuantityInput = (value: number) => {
+const handleQuantityInput = (value: number | undefined) => {
   if (quantityMode.value === 'grams') {
     formData.value.quantity = value;
-    if (selectedFood.value) {
+    if (selectedFood.value && value !== undefined) {
       formData.value.calories = calculatedCalories.value;
     }
   }
   else {
     formData.value.calories = value;
-    if (selectedFood.value) {
+    if (selectedFood.value && value !== undefined) {
       formData.value.quantity = calculatedGrams.value;
     }
   }
@@ -199,10 +199,11 @@ const handleSubmit = async () => {
   isSubmitting.value = true;
 
   try {
+    // バリデーション通過後なのでquantityは必ず存在する
     const submitData: MealRecordInput = {
       catId: formData.value.catId,
       foodId: formData.value.foodId,
-      quantity: formData.value.quantity,
+      quantity: formData.value.quantity!,
       calories: formData.value.calories || calculatedCalories.value,
       mealTime: formData.value.mealTime,
       notes: formData.value.notes || undefined,
@@ -229,7 +230,7 @@ const resetForm = () => {
   formData.value = {
     catId: 0,
     foodId: 0,
-    quantity: 0,
+    quantity: undefined,
     calories: undefined,
     mealTime: new Date(),
     notes: '',
@@ -251,7 +252,7 @@ watch(
       formData.value = {
         catId: newData.catId || 0,
         foodId: newData.foodId || 0,
-        quantity: newData.quantity || 0,
+        quantity: newData.quantity,
         calories: newData.calories,
         mealTime: mealTime,
         notes: newData.notes || '',
@@ -426,22 +427,22 @@ defineExpose({
           <input
             :value="
               quantityMode === 'grams'
-                ? formData.quantity
-                : formData.calories || 0
+                ? (formData.quantity ?? '')
+                : (formData.calories ?? '')
             "
             type="number"
             class="quantity-input"
-            :placeholder="
-              quantityMode === 'grams' ? 'グラム数を入力' : 'カロリー数を入力'
-            "
+            :placeholder="quantityMode === 'grams' ? '20' : 'カロリー数を入力'"
             :disabled="disabled"
             step="0.1"
             min="0"
             max="1000"
+            inputmode="decimal"
             @input="
-              handleQuantityInput(
-                parseFloat(($event.target as HTMLInputElement).value) || 0,
-              )
+              (e: Event) => {
+                const val = parseFloat((e.target as HTMLInputElement).value);
+                handleQuantityInput(isNaN(val) ? undefined : val);
+              }
             "
           >
           <span class="quantity-unit">
@@ -453,7 +454,7 @@ defineExpose({
         <div
           v-if="
             selectedFood
-              && (formData.quantity > 0
+              && ((formData.quantity && formData.quantity > 0)
                 || (formData.calories && formData.calories > 0))
           "
           class="conversion-display"
