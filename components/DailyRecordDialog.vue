@@ -19,7 +19,9 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 // State
-const activeTab = ref<'meal' | 'excretion' | 'medication' | 'memo' | 'signal'>('meal');
+const activeTab = ref<'meal' | 'excretion' | 'medication' | 'memo' | 'signal'>(
+  'meal'
+);
 const cats = ref<Cat[]>([]);
 const foods = ref<Food[]>([]);
 const medications = ref<Medication[]>([]);
@@ -35,7 +37,7 @@ const signalNote = ref('');
 
 // Meal form
 const mealFoodId = ref<number | null>(null);
-const mealQuantity = ref<number>(0);
+const mealQuantity = ref<number | null>(null);
 const mealTime = ref('');
 
 // Excretion form
@@ -59,7 +61,7 @@ const formattedDate = computed(() => {
 // Computed - selected food info for auto-calculation
 const selectedFood = computed(() => {
   if (!mealFoodId.value) return null;
-  return foods.value.find(f => f.id === mealFoodId.value) || null;
+  return foods.value.find((f) => f.id === mealFoodId.value) || null;
 });
 
 // Watch quantity and food to calculate calories
@@ -77,11 +79,9 @@ const fetchCats = async () => {
     if (data.length > 0 && !selectedCatId.value) {
       selectedCatId.value = data[0]?.id ?? null;
     }
-  }
-  catch (err) {
+  } catch (err) {
     console.error('猫データ取得エラー:', err);
-  }
-  finally {
+  } finally {
     isLoadingCats.value = false;
   }
 };
@@ -91,11 +91,9 @@ const fetchFoods = async () => {
   try {
     const data = await $fetch<Food[]>('/api/foods');
     foods.value = data;
-  }
-  catch (err) {
+  } catch (err) {
     console.error('フードデータ取得エラー:', err);
-  }
-  finally {
+  } finally {
     isLoadingFoods.value = false;
   }
 };
@@ -103,26 +101,50 @@ const fetchFoods = async () => {
 const fetchMedications = async () => {
   isLoadingMedications.value = true;
   try {
-    const data = await $fetch<{ medications: Medication[] }>('/api/medications');
+    const data = await $fetch<{ medications: Medication[] }>(
+      '/api/medications'
+    );
     medications.value = data.medications;
-  }
-  catch (err) {
+  } catch (err) {
     console.error('薬データ取得エラー:', err);
-  }
-  finally {
+  } finally {
     isLoadingMedications.value = false;
   }
 };
 
+const resetFormFields = () => {
+  // Reset meal form
+  mealFoodId.value = null;
+  mealQuantity.value = null;
+
+  // Reset excretion form
+  excretionType.value = 'URINE';
+
+  // Set default time to current time
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  mealTime.value = timeStr;
+  excretionTime.value = timeStr;
+};
+
 const loadDayData = () => {
-  if (!props.dayData) return;
+  // Always reset form fields when dialog opens
+  resetFormFields();
+
+  if (!props.dayData) {
+    // No day data, reset medication and memo as well
+    selectedMedicationId.value = null;
+    memo.value = '';
+    signalColor.value = null;
+    signalNote.value = '';
+    return;
+  }
 
   const note = props.dayData.dailyNote;
   if (note) {
     selectedMedicationId.value = note.medicationId || null;
     memo.value = note.memo || '';
-  }
-  else {
+  } else {
     selectedMedicationId.value = null;
     memo.value = '';
   }
@@ -130,12 +152,6 @@ const loadDayData = () => {
   // Load health signal data
   signalColor.value = props.dayData.signalColor || null;
   signalNote.value = props.dayData.signalNote || '';
-
-  // Set default time to current time
-  const now = new Date();
-  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-  mealTime.value = timeStr;
-  excretionTime.value = timeStr;
 };
 
 const handleClose = () => {
@@ -164,8 +180,7 @@ const saveDailyNote = async () => {
     });
 
     console.log('✅ デイリーノート保存成功');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('❌ デイリーノート保存エラー:', err);
     throw err;
   }
@@ -207,12 +222,10 @@ const saveMeal = async () => {
     emit('showMessage', '食事記録を保存しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('食事記録保存エラー:', err);
     emit('showMessage', '食事記録の保存に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isSaving.value = false;
   }
 };
@@ -241,12 +254,10 @@ const saveExcretion = async () => {
     emit('showMessage', '排泄記録を保存しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('排泄記録保存エラー:', err);
     emit('showMessage', '排泄記録の保存に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isSaving.value = false;
   }
 };
@@ -268,12 +279,10 @@ const saveMedication = async () => {
     emit('showMessage', '頓服薬を保存しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('保存エラー:', err);
     emit('showMessage', '頓服薬の保存に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isSaving.value = false;
   }
 };
@@ -290,12 +299,10 @@ const saveMemo = async () => {
     emit('showMessage', 'メモを保存しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('保存エラー:', err);
     emit('showMessage', 'メモの保存に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isSaving.value = false;
   }
 };
@@ -326,12 +333,10 @@ const saveHealthSignal = async () => {
     emit('showMessage', '健康シグナルを保存しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('健康シグナル保存エラー:', err);
     emit('showMessage', '健康シグナルの保存に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isSaving.value = false;
   }
 };
@@ -355,12 +360,10 @@ const deleteMedication = async () => {
     emit('showMessage', '頓服薬を削除しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('頓服薬削除エラー:', err);
     emit('showMessage', '頓服薬の削除に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isDeleting.value = false;
   }
 };
@@ -383,12 +386,10 @@ const deleteMemo = async () => {
     emit('showMessage', 'メモを削除しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('メモ削除エラー:', err);
     emit('showMessage', 'メモの削除に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isDeleting.value = false;
   }
 };
@@ -419,52 +420,46 @@ const deleteHealthSignal = async () => {
     emit('showMessage', '健康シグナルを削除しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('健康シグナル削除エラー:', err);
     emit('showMessage', '健康シグナルの削除に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isDeleting.value = false;
   }
 };
 
 // Watch props changes
-watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    fetchCats();
-    fetchFoods();
-    fetchMedications();
-    loadDayData();
+watch(
+  () => props.isOpen,
+  (newVal) => {
+    if (newVal) {
+      fetchCats();
+      fetchFoods();
+      fetchMedications();
+      loadDayData();
+    }
   }
-});
+);
 
-watch(() => props.dayData, () => {
-  if (props.isOpen) {
-    loadDayData();
+watch(
+  () => props.dayData,
+  () => {
+    if (props.isOpen) {
+      loadDayData();
+    }
   }
-});
+);
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div
-        v-if="isOpen"
-        class="modal-overlay"
-        @click="handleBackdropClick"
-      >
+      <div v-if="isOpen" class="modal-overlay" @click="handleBackdropClick">
         <div class="modal-container">
           <!-- Header -->
           <div class="modal-header">
-            <h2 class="modal-title">
-              {{ formattedDate }}の記録
-            </h2>
-            <button
-              type="button"
-              class="modal-close"
-              @click="handleClose"
-            >
+            <h2 class="modal-title">{{ formattedDate }}の記録</h2>
+            <button type="button" class="modal-close" @click="handleClose">
               ✕
             </button>
           </div>
@@ -472,15 +467,8 @@ watch(() => props.dayData, () => {
           <!-- Cat Selector -->
           <div class="cat-selector">
             <label class="cat-label">猫を選択:</label>
-            <select
-              v-model="selectedCatId"
-              class="cat-select"
-            >
-              <option
-                v-for="cat in cats"
-                :key="cat.id"
-                :value="cat.id"
-              >
+            <select v-model="selectedCatId" class="cat-select">
+              <option v-for="cat in cats" :key="cat.id" :value="cat.id">
                 {{ cat.name }}
               </option>
             </select>
@@ -533,10 +521,7 @@ watch(() => props.dayData, () => {
           <!-- Tab Content -->
           <div class="tab-content">
             <!-- Meal Tab -->
-            <div
-              v-if="activeTab === 'meal'"
-              class="tab-panel"
-            >
+            <div v-if="activeTab === 'meal'" class="tab-panel">
               <div class="form-group">
                 <label class="form-label">フード</label>
                 <select
@@ -547,22 +532,21 @@ watch(() => props.dayData, () => {
                   <option :value="null">
                     {{ isLoadingFoods ? '読み込み中...' : 'フードを選択' }}
                   </option>
-                  <option
-                    v-for="food in foods"
-                    :key="food.id"
-                    :value="food.id"
-                  >
-                    {{ food.name }} ({{ food.type === 'DRY' ? 'ドライ' : 'ウェット' }})
+                  <option v-for="food in foods" :key="food.id" :value="food.id">
+                    {{ food.name }} ({{
+                      food.type === 'DRY' ? 'ドライ' : 'ウェット'
+                    }})
                     {{ food.brand ? `- ${food.brand}` : '' }}
                   </option>
                 </select>
-                <div
-                  v-if="selectedFood"
-                  class="food-info"
-                >
+                <div v-if="selectedFood" class="food-info">
                   <small class="food-info-text">
                     カロリー: {{ selectedFood.caloriesPerGram }}kcal/g
-                    {{ mealQuantity > 0 ? `(${Math.round(mealQuantity * selectedFood.caloriesPerGram)}kcal)` : '' }}
+                    {{
+                      mealQuantity && mealQuantity > 0
+                        ? `(${Math.round(mealQuantity * selectedFood.caloriesPerGram)}kcal)`
+                        : ''
+                    }}
                   </small>
                 </div>
               </div>
@@ -573,19 +557,15 @@ watch(() => props.dayData, () => {
                   v-model.number="mealQuantity"
                   type="number"
                   class="form-input"
-                  placeholder="50"
+                  placeholder="20"
                   min="0"
                   step="1"
-                >
+                />
               </div>
 
               <div class="form-group">
                 <label class="form-label">時刻</label>
-                <input
-                  v-model="mealTime"
-                  type="time"
-                  class="form-input"
-                >
+                <input v-model="mealTime" type="time" class="form-input" />
               </div>
 
               <div class="form-actions">
@@ -608,10 +588,7 @@ watch(() => props.dayData, () => {
             </div>
 
             <!-- Excretion Tab -->
-            <div
-              v-if="activeTab === 'excretion'"
-              class="tab-panel"
-            >
+            <div v-if="activeTab === 'excretion'" class="tab-panel">
               <div class="form-group">
                 <label class="form-label">種類</label>
                 <div class="radio-group">
@@ -621,7 +598,7 @@ watch(() => props.dayData, () => {
                       type="radio"
                       value="URINE"
                       class="radio-input"
-                    >
+                    />
                     <span class="radio-text">💧 おしっこ</span>
                   </label>
                   <label class="radio-label">
@@ -630,7 +607,7 @@ watch(() => props.dayData, () => {
                       type="radio"
                       value="FECES"
                       class="radio-input"
-                    >
+                    />
                     <span class="radio-text">💩 うんち</span>
                   </label>
                 </div>
@@ -638,11 +615,7 @@ watch(() => props.dayData, () => {
 
               <div class="form-group">
                 <label class="form-label">時刻</label>
-                <input
-                  v-model="excretionTime"
-                  type="time"
-                  class="form-input"
-                >
+                <input v-model="excretionTime" type="time" class="form-input" />
               </div>
 
               <div class="form-actions">
@@ -665,10 +638,7 @@ watch(() => props.dayData, () => {
             </div>
 
             <!-- Medication Tab -->
-            <div
-              v-if="activeTab === 'medication'"
-              class="tab-panel"
-            >
+            <div v-if="activeTab === 'medication'" class="tab-panel">
               <div class="form-group">
                 <label class="form-label">頓服薬</label>
                 <select
@@ -677,7 +647,11 @@ watch(() => props.dayData, () => {
                   :disabled="isLoadingMedications"
                 >
                   <option :value="null">
-                    {{ isLoadingMedications ? '読み込み中...' : '頓服薬を選択してください' }}
+                    {{
+                      isLoadingMedications
+                        ? '読み込み中...'
+                        : '頓服薬を選択してください'
+                    }}
                   </option>
                   <option
                     v-for="med in medications"
@@ -719,10 +693,7 @@ watch(() => props.dayData, () => {
             </div>
 
             <!-- Memo Tab -->
-            <div
-              v-if="activeTab === 'memo'"
-              class="tab-panel"
-            >
+            <div v-if="activeTab === 'memo'" class="tab-panel">
               <div class="form-group">
                 <label class="form-label">メモ・特記事項</label>
                 <textarea
@@ -762,17 +733,16 @@ watch(() => props.dayData, () => {
             </div>
 
             <!-- Health Signal Tab -->
-            <div
-              v-if="activeTab === 'signal'"
-              class="tab-panel"
-            >
+            <div v-if="activeTab === 'signal'" class="tab-panel">
               <div class="form-group">
                 <label class="form-label">健康シグナルカラー *</label>
                 <div class="signal-color-buttons">
                   <button
                     type="button"
                     class="signal-button signal-button--prismatic"
-                    :class="{ 'signal-button--active': signalColor === 'PRISMATIC' }"
+                    :class="{
+                      'signal-button--active': signalColor === 'PRISMATIC',
+                    }"
                     @click="signalColor = 'PRISMATIC'"
                   >
                     <span class="signal-icon">✨</span>
@@ -781,7 +751,9 @@ watch(() => props.dayData, () => {
                   <button
                     type="button"
                     class="signal-button signal-button--green"
-                    :class="{ 'signal-button--active': signalColor === 'GREEN' }"
+                    :class="{
+                      'signal-button--active': signalColor === 'GREEN',
+                    }"
                     @click="signalColor = 'GREEN'"
                   >
                     <span class="signal-icon">🟢</span>
@@ -790,7 +762,9 @@ watch(() => props.dayData, () => {
                   <button
                     type="button"
                     class="signal-button signal-button--yellow"
-                    :class="{ 'signal-button--active': signalColor === 'YELLOW' }"
+                    :class="{
+                      'signal-button--active': signalColor === 'YELLOW',
+                    }"
                     @click="signalColor = 'YELLOW'"
                   >
                     <span class="signal-icon">🟡</span>
@@ -1121,19 +1095,20 @@ watch(() => props.dayData, () => {
 .signal-button--prismatic {
   border: 3px solid transparent;
   border-image: linear-gradient(
-    90deg,
-    #ff0000,
-    #ff9a00,
-    #d0de21,
-    #4fdc4a,
-    #3fdad8,
-    #2fc9e2,
-    #1c7fee,
-    #5f15f2,
-    #ba0cf8,
-    #fb07d9,
-    #ff0000
-  ) 1;
+      90deg,
+      #ff0000,
+      #ff9a00,
+      #d0de21,
+      #4fdc4a,
+      #3fdad8,
+      #2fc9e2,
+      #1c7fee,
+      #5f15f2,
+      #ba0cf8,
+      #fb07d9,
+      #ff0000
+    )
+    1;
   position: relative;
   overflow: hidden;
 }
@@ -1172,8 +1147,9 @@ watch(() => props.dayData, () => {
   );
   background-size: 200% 100%;
   animation: rainbow-flow-button 3s ease infinite;
-  box-shadow: 0 0 0 4px rgba(186, 12, 248, 0.2),
-              0 0 20px rgba(186, 12, 248, 0.3);
+  box-shadow:
+    0 0 0 4px rgba(186, 12, 248, 0.2),
+    0 0 20px rgba(186, 12, 248, 0.3);
 }
 
 .signal-button--green {
@@ -1186,7 +1162,11 @@ watch(() => props.dayData, () => {
 }
 
 .signal-button--green.signal-button--active {
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(129, 199, 132, 0.15) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(76, 175, 80, 0.2) 0%,
+    rgba(129, 199, 132, 0.15) 100%
+  );
   border-color: #4caf50;
   box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.1);
 }
@@ -1201,7 +1181,11 @@ watch(() => props.dayData, () => {
 }
 
 .signal-button--yellow.signal-button--active {
-  background: linear-gradient(135deg, rgba(255, 193, 7, 0.25) 0%, rgba(255, 224, 130, 0.2) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 193, 7, 0.25) 0%,
+    rgba(255, 224, 130, 0.2) 100%
+  );
   border-color: #ffc107;
   box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.1);
 }
@@ -1216,7 +1200,11 @@ watch(() => props.dayData, () => {
 }
 
 .signal-button--red.signal-button--active {
-  background: linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(239, 154, 154, 0.15) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(244, 67, 54, 0.2) 0%,
+    rgba(239, 154, 154, 0.15) 100%
+  );
   border-color: #f44336;
   box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.1);
 }
