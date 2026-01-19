@@ -560,6 +560,7 @@ watch(
                   placeholder="20"
                   min="0"
                   step="1"
+                  inputmode="decimal"
                 />
               </div>
 
