@@ -389,15 +389,15 @@ export function generateDataQualityReport(data: {
   dates: string[];
   calories: number[];
 }): {
-    overall: 'excellent' | 'good' | 'fair' | 'poor';
-    score: number; // 0-100
-    issues: Array<{
-      type: 'error' | 'warning' | 'info';
-      message: string;
-      count?: number;
-    }>;
-    recommendations: string[];
-  } {
+  overall: 'excellent' | 'good' | 'fair' | 'poor';
+  score: number; // 0-100
+  issues: Array<{
+    type: 'error' | 'warning' | 'info';
+    message: string;
+    count?: number;
+  }>;
+  recommendations: string[];
+} {
   const issues: Array<{
     type: 'error' | 'warning' | 'info';
     message: string;
@@ -784,12 +784,12 @@ export class UnifiedErrorHandler {
       onFinalError?: (error: unknown) => void;
     } = {},
   ): Promise<{
-      success: boolean;
-      data?: T;
-      error?: ApiError;
-      userMessage: string;
-      retryCount: number;
-    }> {
+    success: boolean;
+    data?: T;
+    error?: ApiError;
+    userMessage: string;
+    retryCount: number;
+  }> {
     const {
       retryable = true,
       fallbackMessage,
@@ -904,13 +904,13 @@ export class UnifiedErrorHandler {
       onRetry?: (attempt: number) => void;
     } = {},
   ): Promise<{
-      success: boolean;
-      data?: T;
-      validationErrors?: Record<string, string>;
-      submitError?: ApiError;
-      userMessage: string;
-      retryCount: number;
-    }> {
+    success: boolean;
+    data?: T;
+    validationErrors?: Record<string, string>;
+    submitError?: ApiError;
+    userMessage: string;
+    retryCount: number;
+  }> {
     const {
       retryable = true,
       successMessage = '正常に保存されました。',
@@ -993,12 +993,12 @@ export class UnifiedErrorHandler {
       onRetry?: (attempt: number) => void;
     } = {},
   ): Promise<{
-      success: boolean;
-      data?: T;
-      error?: ApiError;
-      userMessage: string;
-      retryCount: number;
-    }> {
+    success: boolean;
+    data?: T;
+    error?: ApiError;
+    userMessage: string;
+    retryCount: number;
+  }> {
     const {
       retryable = true,
       fallbackMessage = 'データの取得に失敗しました。',

@@ -42,21 +42,21 @@ export async function seedProductionMasterData(prisma: PrismaClient) {
     });
     const createdUser = existing
       ? await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          email: user.email,
-          name: user.name,
-          password: hashedPassword,
-        },
-      })
+          where: { id: user.id },
+          data: {
+            email: user.email,
+            name: user.name,
+            password: hashedPassword,
+          },
+        })
       : await prisma.user.create({
-        data: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          password: hashedPassword,
-        },
-      });
+          data: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            password: hashedPassword,
+          },
+        });
     createdUsers.push({ id: createdUser.id, email: createdUser.email });
     userCount++;
   }

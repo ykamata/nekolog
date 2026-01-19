@@ -593,9 +593,9 @@ export function sampleMealRecords(
   mealRecords: MealRecord[],
   maxRecords: number = 2000,
 ): {
-    sampledRecords: MealRecord[];
-    samplingInfo: { applied: boolean; originalCount: number; sampledCount: number };
-  } {
+  sampledRecords: MealRecord[];
+  samplingInfo: { applied: boolean; originalCount: number; sampledCount: number };
+} {
   if (mealRecords.length <= maxRecords) {
     return {
       sampledRecords: mealRecords,
@@ -664,9 +664,9 @@ export function sampleDailyCalories(
   dailyCalories: DailyCalorieData[],
   maxDataPoints: number = 200,
 ): {
-    sampledData: DailyCalorieData[];
-    samplingInfo: { applied: boolean; originalCount: number; sampledCount: number };
-  } {
+  sampledData: DailyCalorieData[];
+  samplingInfo: { applied: boolean; originalCount: number; sampledCount: number };
+} {
   if (dailyCalories.length <= maxDataPoints) {
     return {
       sampledData: dailyCalories,

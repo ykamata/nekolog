@@ -12,22 +12,22 @@ interface ErrorLog {
   suggestions?: string[];
 }
 
-type ErrorType =
-  | 'chart_init_failed'
-  | 'chart_render_failed'
-  | 'data_fetch_failed'
-  | 'data_processing_failed'
-  | 'canvas_not_found'
-  | 'memory_leak'
-  | 'performance_degradation'
-  | 'network_error'
-  | 'validation_error'
-  | 'unknown_error';
+type ErrorType
+  = | 'chart_init_failed'
+    | 'chart_render_failed'
+    | 'data_fetch_failed'
+    | 'data_processing_failed'
+    | 'canvas_not_found'
+    | 'memory_leak'
+    | 'performance_degradation'
+    | 'network_error'
+    | 'validation_error'
+    | 'unknown_error';
 
-type ErrorCategory =
-  | 'critical'
-  | 'warning'
-  | 'info';
+type ErrorCategory
+  = | 'critical'
+    | 'warning'
+    | 'info';
 
 interface ErrorPattern {
   pattern: RegExp;

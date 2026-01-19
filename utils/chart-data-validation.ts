@@ -25,14 +25,14 @@ export interface DataSuggestion {
   priority: 'high' | 'medium' | 'low';
 }
 
-export type NoDataReason =
-  | 'no_data_at_all'
-  | 'no_data_for_period'
-  | 'no_data_for_cat'
-  | 'no_data_for_cat_and_period'
-  | 'data_loading'
-  | 'data_error'
-  | 'filters_too_restrictive';
+export type NoDataReason
+  = | 'no_data_at_all'
+    | 'no_data_for_period'
+    | 'no_data_for_cat'
+    | 'no_data_for_cat_and_period'
+    | 'data_loading'
+    | 'data_error'
+    | 'filters_too_restrictive';
 
 /**
  * チャートデータの検証を行う
@@ -435,14 +435,14 @@ export function detectEdgeCases(
     expectedMinimumRecords?: number;
   } = {},
 ): {
-    hasEdgeCases: boolean;
-    cases: Array<{
-      type: 'future_dates' | 'old_dates' | 'duplicate_dates' | 'invalid_dates' | 'sparse_data';
-      message: string;
-      severity: 'low' | 'medium' | 'high';
-      affectedCount: number;
-    }>;
-  } {
+  hasEdgeCases: boolean;
+  cases: Array<{
+    type: 'future_dates' | 'old_dates' | 'duplicate_dates' | 'invalid_dates' | 'sparse_data';
+    message: string;
+    severity: 'low' | 'medium' | 'high';
+    affectedCount: number;
+  }>;
+} {
   const cases: any[] = [];
   const { dateRange, expectedMinimumRecords = 7 } = options;
 
