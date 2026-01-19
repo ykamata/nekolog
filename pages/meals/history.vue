@@ -158,6 +158,18 @@ const _toggleViewMode = () => {
 onMounted(() => {
   fetchInitialData();
 });
+
+// ページ表示のたびにMealRecordListのデータを再取得
+const nuxtApp = useNuxtApp();
+const unsubscribe = nuxtApp.hook('page:finish', () => {
+  if (mealListRef.value) {
+    mealListRef.value.fetchMealRecords(true);
+  }
+});
+
+onUnmounted(() => {
+  unsubscribe();
+});
 </script>
 
 <template>
