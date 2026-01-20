@@ -437,7 +437,6 @@ defineExpose({
             step="0.1"
             min="0"
             max="1000"
-            inputmode="decimal"
             @input="
               (e: Event) => {
                 const val = parseFloat((e.target as HTMLInputElement).value);
