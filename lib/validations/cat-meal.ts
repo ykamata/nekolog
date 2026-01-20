@@ -80,7 +80,8 @@ export const MealRecordSchema = z.object({
   quantity: z
     .number()
     .positive('量は正の数値で入力してください')
-    .max(1000, '量は1000g以下で入力してください'),
+    .max(1000, '量は1000g以下で入力してください')
+    .refine(val => Number.isInteger(val * 100), '量は小数点以下2桁まで入力できます'),
   calories: z
     .number()
     .positive('カロリーは正の数値で入力してください')
@@ -194,7 +195,8 @@ export const MealRecordInputSchema = z.object({
   quantity: z
     .number()
     .positive('量は正の数値で入力してください')
-    .max(1000, '量は1000g以下で入力してください'),
+    .max(1000, '量は1000g以下で入力してください')
+    .refine(val => Number.isInteger(val * 100), '量は小数点以下2桁まで入力できます'),
   calories: z
     .number()
     .positive('カロリーは正の数値で入力してください')
@@ -265,7 +267,8 @@ export const MealRecordFormSchema = z.object({
   quantity: z
     .number()
     .positive('量は正の数値で入力してください')
-    .max(1000, '量は1000g以下で入力してください'),
+    .max(1000, '量は1000g以下で入力してください')
+    .refine(val => Number.isInteger(val * 100), '量は小数点以下2桁まで入力できます'),
   calories: z
     .number()
     .positive('カロリーは正の数値で入力してください')

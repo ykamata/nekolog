@@ -40,18 +40,22 @@
   // Forward ports
   "forwardPorts": [3000, 3306, 24679],
   "portsAttributes": {
+    "0-2999": { "onAutoForward": "ignore" },
     "3000": {
       "label": "Application",
       "onAutoForward": "notify"
     },
+    "3001-3305": { "onAutoForward": "ignore" },
     "3306": {
       "label": "MySQL",
       "onAutoForward": "silent"
     },
+    "3307-24678": { "onAutoForward": "ignore" },
     "24679": {
       "label": "HMR WebSocket",
       "onAutoForward": "silent"
-    }
+    },
+    "24680-65535": { "onAutoForward": "ignore" }
   },
 
   // Use 'postCreateCommand' to run commands after the container is created

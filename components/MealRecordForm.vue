@@ -434,7 +434,7 @@ defineExpose({
             class="quantity-input"
             :placeholder="quantityMode === 'grams' ? '20' : 'カロリー数を入力'"
             :disabled="disabled"
-            step="0.1"
+            step="0.01"
             min="0"
             max="1000"
             @input="
