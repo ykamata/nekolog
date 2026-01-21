@@ -188,6 +188,34 @@ describe('Zod Validation Schemas', () => {
       const result = MealRecordSchema.parse(mealRecordWithoutNotes);
       expect(result.notes).toBeUndefined();
     });
+
+    it('should accept quantities with up to 2 decimal places', () => {
+      const testCases = [
+        8.7,   // floating-point edge case
+        10.5,
+        12.34, // 2 decimals
+        100,   // integer
+        0.1,
+        0.01,
+      ];
+
+      testCases.forEach((quantity) => {
+        const record = { ...validMealRecord, quantity };
+        expect(() => MealRecordSchema.parse(record)).not.toThrow();
+      });
+    });
+
+    it('should reject quantities with more than 2 decimal places', () => {
+      const testCases = [
+        8.123,   // 3 decimals
+        10.5678, // 4 decimals
+      ];
+
+      testCases.forEach((quantity) => {
+        const record = { ...validMealRecord, quantity };
+        expect(() => MealRecordSchema.parse(record)).toThrow('量は小数点以下2桁まで入力できます');
+      });
+    });
   });
 
   describe('Input Schemas', () => {
