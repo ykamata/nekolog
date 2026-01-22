@@ -48,8 +48,12 @@ const errorHandler = createUnifiedErrorHandler('MealRecordForm', {
   maxDelay: 5000,
 });
 
-// Quantity input mode (grams or calories)
-const quantityMode = ref<'grams' | 'calories'>('grams');
+// Quantity input mode (grams, calories, or scale)
+const quantityMode = ref<'grams' | 'calories' | 'scale'>('grams');
+
+// Scale mode: 5.00 - X.xx = food amount
+const scaleBaseWeight = ref<number>(5.00);
+const scaleCurrentWeight = ref<number | undefined>(undefined);
 
 // Predefined quantity options
 const predefinedQuantities = ref([
@@ -84,6 +88,13 @@ const calculatedGrams = computed(() => {
       (formData.value.calories / selectedFood.value.caloriesPerGram) * 10,
     ) / 10
   );
+});
+
+// Scale mode: calculate food amount from weight difference (5.00 - current weight)
+const calculatedScaleQuantity = computed(() => {
+  if (scaleCurrentWeight.value === undefined) return undefined;
+  const diff = Math.round((scaleBaseWeight.value - scaleCurrentWeight.value) * 100) / 100;
+  return diff > 0 ? diff : 0;
 });
 
 // Validation
@@ -121,7 +132,7 @@ const handleFoodSelect = (food: Food) => {
   formData.value.foodId = food.id;
 
   // Auto-calculate calories when food is selected
-  if (quantityMode.value === 'grams' && formData.value.quantity && formData.value.quantity > 0) {
+  if ((quantityMode.value === 'grams' || quantityMode.value === 'scale') && formData.value.quantity && formData.value.quantity > 0) {
     formData.value.calories = calculatedCalories.value;
   }
 
@@ -135,11 +146,27 @@ const handleQuantityInput = (value: number | undefined) => {
       formData.value.calories = calculatedCalories.value;
     }
   }
-  else {
+  else if (quantityMode.value === 'calories') {
     formData.value.calories = value;
     if (selectedFood.value && value !== undefined) {
       formData.value.quantity = calculatedGrams.value;
     }
+  }
+  validateField('quantity');
+};
+
+// Scale mode: handle current weight input
+const handleScaleWeightInput = (value: number | undefined) => {
+  scaleCurrentWeight.value = value;
+  if (calculatedScaleQuantity.value !== undefined) {
+    formData.value.quantity = calculatedScaleQuantity.value;
+    if (selectedFood.value) {
+      formData.value.calories = calculatedCalories.value;
+    }
+  }
+  else {
+    formData.value.quantity = undefined;
+    formData.value.calories = undefined;
   }
   validateField('quantity');
 };
@@ -152,8 +179,12 @@ const handlePredefinedQuantity = (quantity: number) => {
   validateField('quantity');
 };
 
-const toggleQuantityMode = () => {
-  quantityMode.value = quantityMode.value === 'grams' ? 'calories' : 'grams';
+const setQuantityMode = (mode: 'grams' | 'calories' | 'scale') => {
+  quantityMode.value = mode;
+  // Reset scale values when switching modes
+  if (mode !== 'scale') {
+    scaleCurrentWeight.value = undefined;
+  }
 };
 
 const handleDateTimeChange = (date: Date) => {
@@ -387,7 +418,7 @@ defineExpose({
             class="mode-button"
             :class="{ 'mode-button--active': quantityMode === 'grams' }"
             :disabled="disabled"
-            @click="toggleQuantityMode"
+            @click="setQuantityMode('grams')"
           >
             グラム (g)
           </button>
@@ -396,9 +427,18 @@ defineExpose({
             class="mode-button"
             :class="{ 'mode-button--active': quantityMode === 'calories' }"
             :disabled="disabled"
-            @click="toggleQuantityMode"
+            @click="setQuantityMode('calories')"
           >
             カロリー (kcal)
+          </button>
+          <button
+            type="button"
+            class="mode-button"
+            :class="{ 'mode-button--active': quantityMode === 'scale' }"
+            :disabled="disabled"
+            @click="setQuantityMode('scale')"
+          >
+            計量器参考
           </button>
         </div>
 
@@ -422,8 +462,11 @@ defineExpose({
           </button>
         </div>
 
-        <!-- Manual Quantity Input -->
-        <div class="quantity-input-container">
+        <!-- Manual Quantity Input (grams/calories mode) -->
+        <div
+          v-if="quantityMode !== 'scale'"
+          class="quantity-input-container"
+        >
           <input
             :value="
               quantityMode === 'grams'
@@ -449,6 +492,42 @@ defineExpose({
           </span>
         </div>
 
+        <!-- Scale Mode Input -->
+        <div
+          v-if="quantityMode === 'scale'"
+          class="scale-input-container"
+        >
+          <div class="scale-formula">
+            <span class="scale-base-weight">{{ scaleBaseWeight.toFixed(2) }}</span>
+            <span class="scale-operator">-</span>
+            <div class="scale-current-input-wrapper">
+              <input
+                :value="scaleCurrentWeight ?? ''"
+                type="number"
+                class="scale-current-input"
+                placeholder="0.00"
+                :disabled="disabled"
+                step="0.01"
+                min="0"
+                max="5"
+                @input="
+                  (e: Event) => {
+                    const val = parseFloat((e.target as HTMLInputElement).value);
+                    handleScaleWeightInput(isNaN(val) ? undefined : val);
+                  }
+                "
+              >
+              <span class="scale-unit">g</span>
+            </div>
+          </div>
+          <div
+            v-if="calculatedScaleQuantity !== undefined && calculatedScaleQuantity > 0"
+            class="scale-result"
+          >
+            食事量: <strong>{{ calculatedScaleQuantity.toFixed(2) }}g</strong>
+          </div>
+        </div>
+
         <!-- Conversion Display -->
         <div
           v-if="
@@ -459,7 +538,7 @@ defineExpose({
           class="conversion-display"
         >
           <div class="conversion-info">
-            <span v-if="quantityMode === 'grams'">
+            <span v-if="quantityMode === 'grams' || quantityMode === 'scale'">
               {{ formData.quantity }}g = {{ calculatedCalories }}kcal
             </span>
             <span v-else>
@@ -807,6 +886,86 @@ defineExpose({
   color: #666;
   font-size: 0.9rem;
   pointer-events: none;
+}
+
+/* Scale Mode Input */
+.scale-input-container {
+  margin-bottom: 1rem;
+}
+
+.scale-formula {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.scale-base-weight {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #333;
+  min-width: 3rem;
+  text-align: right;
+}
+
+.scale-operator {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #666;
+}
+
+.scale-current-input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.scale-current-input {
+  width: 100%;
+  padding: 0.75rem;
+  padding-right: 2.5rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 1rem;
+  text-align: left;
+  padding-left: 1rem;
+}
+
+.scale-current-input:focus {
+  outline: none;
+  border-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.scale-current-input:disabled {
+  background: #f8f8f8;
+  opacity: 0.6;
+}
+
+.scale-unit {
+  position: absolute;
+  right: 0.75rem;
+  color: #666;
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.scale-result {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #e8f5e9;
+  border-radius: 4px;
+  border-left: 3px solid #4caf50;
+  font-size: 1rem;
+  color: #2e7d32;
+}
+
+.scale-result strong {
+  font-weight: 600;
 }
 
 .conversion-display {
