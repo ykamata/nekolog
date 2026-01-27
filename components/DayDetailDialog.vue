@@ -29,25 +29,28 @@ const fetchMedicationName = async () => {
 
   isLoadingMedication.value = true;
   try {
-    const response = await $fetch<{ medications: Medication[] }>('/api/medications');
-    const medication = response.medications.find(m => m.id === medicationId);
+    const response = await $fetch<{ medications: Medication[] }>(
+      '/api/medications'
+    );
+    const medication = response.medications.find((m) => m.id === medicationId);
     medicationName.value = medication?.name || null;
-  }
-  catch (err) {
+  } catch (err) {
     console.error('薬情報取得エラー:', err);
     medicationName.value = null;
-  }
-  finally {
+  } finally {
     isLoadingMedication.value = false;
   }
 };
 
 // Watch for dialog open
-watch(() => props.isOpen, (newVal) => {
-  if (newVal && props.dayData?.hasEmergencyMedication) {
-    fetchMedicationName();
+watch(
+  () => props.isOpen,
+  (newVal) => {
+    if (newVal && props.dayData?.hasEmergencyMedication) {
+      fetchMedicationName();
+    }
   }
-});
+);
 
 // Computed
 const formattedDate = computed(() => {
@@ -67,11 +70,11 @@ const signalColorText = computed(() => {
   if (!props.dayData?.signalColor) return '';
   switch (props.dayData.signalColor) {
     case 'GREEN':
-      return '正常';
+      return '良い';
     case 'YELLOW':
-      return '注意';
+      return 'まあまあ';
     case 'RED':
-      return '警告';
+      return 'ダメ';
     default:
       return '';
   }
@@ -120,22 +123,14 @@ const handleBackdropClick = (event: MouseEvent) => {
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div
-        v-if="isOpen"
-        class="modal-overlay"
-        @click="handleBackdropClick"
-      >
+      <div v-if="isOpen" class="modal-overlay" @click="handleBackdropClick">
         <div class="modal-container">
           <!-- Header -->
           <div class="modal-header">
             <h2 class="modal-title">
               {{ formattedDate }} {{ formattedWeekday }}
             </h2>
-            <button
-              type="button"
-              class="modal-close"
-              @click="handleClose"
-            >
+            <button type="button" class="modal-close" @click="handleClose">
               ✕
             </button>
           </div>
@@ -143,26 +138,25 @@ const handleBackdropClick = (event: MouseEvent) => {
           <!-- Content -->
           <div class="modal-content">
             <div
-              v-if="!dayData || (dayData.mealCount === 0 && dayData.excretionCount.total === 0 && !dayData.hasEmergencyMedication && !dayData.hasMemo && !dayData.signalColor)"
+              v-if="
+                !dayData ||
+                (dayData.mealCount === 0 &&
+                  dayData.excretionCount.total === 0 &&
+                  !dayData.hasEmergencyMedication &&
+                  !dayData.hasMemo &&
+                  !dayData.signalColor)
+              "
               class="no-data"
             >
               <p>この日の記録はありません</p>
             </div>
 
-            <div
-              v-else
-              class="detail-sections"
-            >
+            <div v-else class="detail-sections">
               <!-- Meal Section -->
-              <div
-                v-if="dayData.totalCalories > 0"
-                class="detail-section"
-              >
+              <div v-if="dayData.totalCalories > 0" class="detail-section">
                 <div class="section-header">
                   <span class="section-icon">🍽️</span>
-                  <h3 class="section-title">
-                    食事
-                  </h3>
+                  <h3 class="section-title">食事</h3>
                 </div>
                 <div class="section-content">
                   <div class="detail-item">
@@ -171,7 +165,9 @@ const handleBackdropClick = (event: MouseEvent) => {
                   </div>
                   <div class="detail-item">
                     <span class="detail-label">合計カロリー:</span>
-                    <span class="detail-value highlight">{{ dayData.totalCalories }}kcal</span>
+                    <span class="detail-value highlight"
+                      >{{ dayData.totalCalories }}kcal</span
+                    >
                   </div>
                 </div>
               </div>
@@ -183,9 +179,7 @@ const handleBackdropClick = (event: MouseEvent) => {
               >
                 <div class="section-header">
                   <span class="section-icon">💧💩</span>
-                  <h3 class="section-title">
-                    排泄
-                  </h3>
+                  <h3 class="section-title">排泄</h3>
                 </div>
                 <div class="section-content">
                   <!-- Urine -->
@@ -199,7 +193,8 @@ const handleBackdropClick = (event: MouseEvent) => {
                         v-for="(time, index) in dayData.excretionTimes.urine"
                         :key="index"
                         class="time-badge"
-                      >{{ time }}</span>
+                        >{{ time }}</span
+                      >
                     </div>
                   </div>
 
@@ -214,38 +209,29 @@ const handleBackdropClick = (event: MouseEvent) => {
                         v-for="(time, index) in dayData.excretionTimes.feces"
                         :key="index"
                         class="time-badge"
-                      >{{ time }}</span>
+                        >{{ time }}</span
+                      >
                     </div>
                   </div>
                 </div>
               </div>
 
               <!-- Medication Section -->
-              <div
-                v-if="dayData.hasEmergencyMedication"
-                class="detail-section"
-              >
+              <div v-if="dayData.hasEmergencyMedication" class="detail-section">
                 <div class="section-header">
                   <span class="section-icon">💊</span>
-                  <h3 class="section-title">
-                    頓服薬
-                  </h3>
+                  <h3 class="section-title">頓服薬</h3>
                 </div>
                 <div class="section-content">
                   <div class="detail-item">
                     <span class="detail-label">薬名:</span>
-                    <span
-                      v-if="isLoadingMedication"
-                      class="detail-value"
-                    >読み込み中...</span>
-                    <span
-                      v-else-if="medicationName"
-                      class="detail-value"
-                    >{{ medicationName }}</span>
-                    <span
-                      v-else
-                      class="detail-value"
-                    >不明</span>
+                    <span v-if="isLoadingMedication" class="detail-value"
+                      >読み込み中...</span
+                    >
+                    <span v-else-if="medicationName" class="detail-value">{{
+                      medicationName
+                    }}</span>
+                    <span v-else class="detail-value">不明</span>
                   </div>
                 </div>
               </div>
@@ -257,9 +243,7 @@ const handleBackdropClick = (event: MouseEvent) => {
               >
                 <div class="section-header">
                   <span class="section-icon">📝</span>
-                  <h3 class="section-title">
-                    メモ
-                  </h3>
+                  <h3 class="section-title">メモ</h3>
                 </div>
                 <div class="section-content">
                   <div class="memo-text">
@@ -276,9 +260,7 @@ const handleBackdropClick = (event: MouseEvent) => {
               >
                 <div class="section-header">
                   <span class="section-icon">🚦</span>
-                  <h3 class="section-title">
-                    健康シグナル
-                  </h3>
+                  <h3 class="section-title">健康シグナル</h3>
                 </div>
                 <div class="section-content">
                   <div class="detail-item">
@@ -545,17 +527,29 @@ const handleBackdropClick = (event: MouseEvent) => {
 
 .signal-section.signal-color--green {
   border-left-color: #4caf50;
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.08) 0%, rgba(129, 199, 132, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(76, 175, 80, 0.08) 0%,
+    rgba(129, 199, 132, 0.05) 100%
+  );
 }
 
 .signal-section.signal-color--yellow {
   border-left-color: #ffc107;
-  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 224, 130, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 193, 7, 0.1) 0%,
+    rgba(255, 224, 130, 0.05) 100%
+  );
 }
 
 .signal-section.signal-color--red {
   border-left-color: #f44336;
-  background: linear-gradient(135deg, rgba(244, 67, 54, 0.08) 0%, rgba(239, 154, 154, 0.05) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(244, 67, 54, 0.08) 0%,
+    rgba(239, 154, 154, 0.05) 100%
+  );
 }
 
 .signal-value {

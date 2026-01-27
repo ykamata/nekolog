@@ -311,9 +311,9 @@ enum ExcretionType {
 }
 
 enum HealthSignalColor {
-  GREEN     // 正常
-  YELLOW    // 注意
-  RED       // 警告
+  GREEN     // 良い
+  YELLOW    // まあまあ
+  RED       // ダメ
   PRISMATIC // 最高の状態（虹色）
 }
 

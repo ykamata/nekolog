@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import DailyRecordDialog from './DailyRecordDialog.vue';
 import DayDetailDialog from './DayDetailDialog.vue';
-import type { MonthlyCalendarData, DailyCalendarData } from '~/types/daily-calendar';
+import type {
+  MonthlyCalendarData,
+  DailyCalendarData,
+} from '~/types/daily-calendar';
 import type { Cat } from '~/types/cat-meal';
 
 interface Props {
@@ -46,7 +49,11 @@ const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
 const calendarDays = computed(() => {
   if (!calendarData.value) return [];
 
-  const firstDay = new Date(currentYear.value, currentMonth.value - 1, 1).getDay();
+  const firstDay = new Date(
+    currentYear.value,
+    currentMonth.value - 1,
+    1
+  ).getDay();
   const daysInMonth = calendarData.value.days.length;
 
   // Add empty slots for days before the first day of the month
@@ -66,8 +73,7 @@ const fetchCats = async () => {
     if (data.length > 0 && !selectedCatId.value) {
       selectedCatId.value = data[0]?.id ?? null;
     }
-  }
-  catch (err) {
+  } catch (err) {
     console.error('猫データ取得エラー:', err);
   }
 };
@@ -92,12 +98,10 @@ const fetchCalendarData = async () => {
     });
 
     calendarData.value = data;
-  }
-  catch (err) {
+  } catch (err) {
     console.error('カレンダーデータ取得エラー:', err);
     error.value = 'カレンダーデータの取得に失敗しました';
-  }
-  finally {
+  } finally {
     isLoading.value = false;
   }
 };
@@ -106,8 +110,7 @@ const goToPreviousMonth = () => {
   if (currentMonth.value === 1) {
     currentMonth.value = 12;
     currentYear.value--;
-  }
-  else {
+  } else {
     currentMonth.value--;
   }
   fetchCalendarData();
@@ -117,8 +120,7 @@ const goToNextMonth = () => {
   if (currentMonth.value === 12) {
     currentMonth.value = 1;
     currentYear.value++;
-  }
-  else {
+  } else {
     currentMonth.value++;
   }
   fetchCalendarData();
@@ -198,15 +200,21 @@ const getSignalColorClass = (color?: string | null) => {
 };
 
 // Watch catId changes
-watch(() => props.catId, () => {
-  fetchCalendarData();
-});
-
-watch(() => selectedCatId.value, () => {
-  if (selectedCatId.value) {
+watch(
+  () => props.catId,
+  () => {
     fetchCalendarData();
   }
-});
+);
+
+watch(
+  () => selectedCatId.value,
+  () => {
+    if (selectedCatId.value) {
+      fetchCalendarData();
+    }
+  }
+);
 
 // Lifecycle
 onMounted(() => {
@@ -221,20 +229,10 @@ onMounted(() => {
     <div class="calendar-header">
       <div class="calendar-controls">
         <!-- Cat Selector -->
-        <div
-          v-if="!catId"
-          class="cat-selector"
-        >
+        <div v-if="!catId" class="cat-selector">
           <label class="cat-label">猫:</label>
-          <select
-            v-model="selectedCatId"
-            class="cat-select"
-          >
-            <option
-              v-for="cat in cats"
-              :key="cat.id"
-              :value="cat.id"
-            >
+          <select v-model="selectedCatId" class="cat-select">
+            <option v-for="cat in cats" :key="cat.id" :value="cat.id">
               {{ cat.name }}
             </option>
           </select>
@@ -242,31 +240,19 @@ onMounted(() => {
 
         <!-- Month Navigation -->
         <div class="calendar-nav">
-          <button
-            type="button"
-            class="nav-button"
-            @click="goToPreviousMonth"
-          >
+          <button type="button" class="nav-button" @click="goToPreviousMonth">
             ‹
           </button>
           <h2 class="month-title">
             {{ monthName }}
           </h2>
-          <button
-            type="button"
-            class="nav-button"
-            @click="goToNextMonth"
-          >
+          <button type="button" class="nav-button" @click="goToNextMonth">
             ›
           </button>
         </div>
 
         <!-- Today Button -->
-        <button
-          type="button"
-          class="today-button"
-          @click="goToToday"
-        >
+        <button type="button" class="today-button" @click="goToToday">
           今日
         </button>
       </div>
@@ -282,49 +268,41 @@ onMounted(() => {
           'calendar-message--error': messageType === 'error',
         }"
       >
-        <span class="message-icon">{{ messageType === 'success' ? '✓' : '✕' }}</span>
+        <span class="message-icon">{{
+          messageType === 'success' ? '✓' : '✕'
+        }}</span>
         <span class="message-text">{{ message }}</span>
       </div>
     </Transition>
 
     <!-- Loading State -->
-    <div
-      v-if="isLoading"
-      class="calendar-loading"
-    >
+    <div v-if="isLoading" class="calendar-loading">
       <div class="loading-spinner" />
       <p>カレンダーを読み込み中...</p>
     </div>
 
     <!-- Error State -->
-    <div
-      v-else-if="error"
-      class="calendar-error"
-    >
+    <div v-else-if="error" class="calendar-error">
       <p class="error-message">
         {{ error }}
       </p>
-      <button
-        type="button"
-        class="retry-button"
-        @click="fetchCalendarData"
-      >
+      <button type="button" class="retry-button" @click="fetchCalendarData">
         再試行
       </button>
     </div>
 
     <!-- Calendar Grid -->
-    <div
-      v-else
-      class="calendar-content"
-    >
+    <div v-else class="calendar-content">
       <!-- Week day headers -->
       <div class="calendar-weekdays">
         <div
           v-for="day in weekDays"
           :key="day"
           class="weekday"
-          :class="{ 'weekday--sunday': day === '日', 'weekday--saturday': day === '土' }"
+          :class="{
+            'weekday--sunday': day === '日',
+            'weekday--saturday': day === '土',
+          }"
         >
           {{ day }}
         </div>
@@ -339,16 +317,18 @@ onMounted(() => {
           :class="{
             'calendar-day--empty': !day,
             'calendar-day--today': day && isToday(day.date),
-            'calendar-day--has-data': day && (day.mealCount > 0 || day.excretionCount.total > 0 || day.hasMemo || day.hasEmergencyMedication),
+            'calendar-day--has-data':
+              day &&
+              (day.mealCount > 0 ||
+                day.excretionCount.total > 0 ||
+                day.hasMemo ||
+                day.hasEmergencyMedication),
             [getSignalColorClass(day?.signalColor)]: day && day.signalColor,
           }"
           @click="day && handleDayClick(day)"
           @contextmenu="day && handleDayRightClick($event, day)"
         >
-          <div
-            v-if="day"
-            class="day-content"
-          >
+          <div v-if="day" class="day-content">
             <!-- Day header with number and icons -->
             <div class="day-header">
               <span class="day-number">{{ new Date(day.date).getDate() }}</span>
@@ -357,12 +337,11 @@ onMounted(() => {
                   v-if="day.hasEmergencyMedication"
                   class="icon-badge"
                   title="頓服薬あり"
-                >💊</span>
-                <span
-                  v-if="day.hasMemo"
-                  class="icon-badge"
-                  title="メモあり"
-                >📝</span>
+                  >💊</span
+                >
+                <span v-if="day.hasMemo" class="icon-badge" title="メモあり"
+                  >📝</span
+                >
               </div>
             </div>
 
@@ -380,7 +359,10 @@ onMounted(() => {
 
               <!-- Excretion times -->
               <div
-                v-if="day.excretionTimes.urine.length > 0 || day.excretionTimes.feces.length > 0"
+                v-if="
+                  day.excretionTimes.urine.length > 0 ||
+                  day.excretionTimes.feces.length > 0
+                "
                 class="detail-row detail-excretion"
               >
                 <!-- Urine times -->
@@ -390,7 +372,9 @@ onMounted(() => {
                   :title="`おしっこ: ${day.excretionTimes.urine.join(', ')}`"
                 >
                   <span class="excretion-icon">💧</span>
-                  <span class="excretion-values">{{ day.excretionTimes.urine.join(', ') }}</span>
+                  <span class="excretion-values">{{
+                    day.excretionTimes.urine.join(', ')
+                  }}</span>
                 </div>
 
                 <!-- Feces times -->
@@ -400,7 +384,9 @@ onMounted(() => {
                   :title="`うんち: ${day.excretionTimes.feces.join(', ')}`"
                 >
                   <span class="excretion-icon">💩</span>
-                  <span class="excretion-values">{{ day.excretionTimes.feces.join(', ') }}</span>
+                  <span class="excretion-values">{{
+                    day.excretionTimes.feces.join(', ')
+                  }}</span>
                 </div>
               </div>
             </div>
@@ -411,9 +397,7 @@ onMounted(() => {
 
     <!-- Legend -->
     <div class="calendar-legend">
-      <div class="legend-title">
-        凡例
-      </div>
+      <div class="legend-title">凡例</div>
       <div class="legend-items">
         <div class="legend-item">
           <span class="legend-icon">🍽️</span>
@@ -433,9 +417,7 @@ onMounted(() => {
         </div>
       </div>
       <div class="legend-separator" />
-      <div class="legend-subtitle">
-        健康シグナル
-      </div>
+      <div class="legend-subtitle">健康シグナル</div>
       <div class="legend-items">
         <div class="legend-item">
           <span class="legend-color-box signal-prismatic-box" />
@@ -443,15 +425,15 @@ onMounted(() => {
         </div>
         <div class="legend-item">
           <span class="legend-color-box signal-green-box" />
-          <span class="legend-label">正常</span>
+          <span class="legend-label">良い</span>
         </div>
         <div class="legend-item">
           <span class="legend-color-box signal-yellow-box" />
-          <span class="legend-label">注意</span>
+          <span class="legend-label">まあまあ</span>
         </div>
         <div class="legend-item">
           <span class="legend-color-box signal-red-box" />
-          <span class="legend-label">警告</span>
+          <span class="legend-label">ダメ</span>
         </div>
       </div>
     </div>
@@ -667,8 +649,12 @@ onMounted(() => {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-message {
@@ -752,7 +738,11 @@ onMounted(() => {
 
 /* Health Signal Colors */
 .calendar-day.signal-green {
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(129, 199, 132, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(76, 175, 80, 0.15) 0%,
+    rgba(129, 199, 132, 0.1) 100%
+  );
   border-color: #4caf50;
 }
 
@@ -762,7 +752,11 @@ onMounted(() => {
 }
 
 .calendar-day.signal-yellow {
-  background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 224, 130, 0.15) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 193, 7, 0.2) 0%,
+    rgba(255, 224, 130, 0.15) 100%
+  );
   border-color: #ffc107;
 }
 
@@ -772,7 +766,11 @@ onMounted(() => {
 }
 
 .calendar-day.signal-red {
-  background: linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(239, 154, 154, 0.15) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(244, 67, 54, 0.2) 0%,
+    rgba(239, 154, 154, 0.15) 100%
+  );
   border-color: #f44336;
 }
 
@@ -828,22 +826,24 @@ onMounted(() => {
   animation: rainbow-flow 3s ease infinite;
   border: 2px solid transparent;
   border-image: linear-gradient(
-    90deg,
-    #ff0000,
-    #ff9a00,
-    #d0de21,
-    #4fdc4a,
-    #3fdad8,
-    #2fc9e2,
-    #1c7fee,
-    #5f15f2,
-    #ba0cf8,
-    #fb07d9,
-    #ff0000
-  ) 1;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5),
-              0 0 25px rgba(186, 12, 248, 0.3),
-              inset 0 0 20px rgba(255, 255, 255, 0.2);
+      90deg,
+      #ff0000,
+      #ff9a00,
+      #d0de21,
+      #4fdc4a,
+      #3fdad8,
+      #2fc9e2,
+      #1c7fee,
+      #5f15f2,
+      #ba0cf8,
+      #fb07d9,
+      #ff0000
+    )
+    1;
+  box-shadow:
+    0 0 15px rgba(255, 255, 255, 0.5),
+    0 0 25px rgba(186, 12, 248, 0.3),
+    inset 0 0 20px rgba(255, 255, 255, 0.2);
   overflow: hidden;
 }
 
@@ -867,45 +867,50 @@ onMounted(() => {
 }
 
 .calendar-day.signal-prismatic.calendar-day--has-data {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 0, 0, 0.15) 0%,
-    rgba(255, 154, 0, 0.15) 10%,
-    rgba(208, 222, 33, 0.15) 20%,
-    rgba(79, 220, 74, 0.15) 30%,
-    rgba(63, 218, 216, 0.15) 40%,
-    rgba(47, 201, 226, 0.15) 50%,
-    rgba(28, 127, 238, 0.15) 60%,
-    rgba(95, 21, 242, 0.15) 70%,
-    rgba(186, 12, 248, 0.15) 80%,
-    rgba(251, 7, 217, 0.15) 90%,
-    rgba(255, 0, 0, 0.15) 100%
-  ),
-  white;
-  background-size: 200% 200%, 100% 100%;
+  background:
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.15) 0%,
+      rgba(255, 154, 0, 0.15) 10%,
+      rgba(208, 222, 33, 0.15) 20%,
+      rgba(79, 220, 74, 0.15) 30%,
+      rgba(63, 218, 216, 0.15) 40%,
+      rgba(47, 201, 226, 0.15) 50%,
+      rgba(28, 127, 238, 0.15) 60%,
+      rgba(95, 21, 242, 0.15) 70%,
+      rgba(186, 12, 248, 0.15) 80%,
+      rgba(251, 7, 217, 0.15) 90%,
+      rgba(255, 0, 0, 0.15) 100%
+    ),
+    white;
+  background-size:
+    200% 200%,
+    100% 100%;
   animation: rainbow-flow 3s ease infinite;
   border-left: 4px solid;
   border-image: linear-gradient(
-    180deg,
-    #ff0000,
-    #ff9a00,
-    #d0de21,
-    #4fdc4a,
-    #3fdad8,
-    #2fc9e2,
-    #1c7fee,
-    #5f15f2,
-    #ba0cf8,
-    #fb07d9
-  ) 1;
+      180deg,
+      #ff0000,
+      #ff9a00,
+      #d0de21,
+      #4fdc4a,
+      #3fdad8,
+      #2fc9e2,
+      #1c7fee,
+      #5f15f2,
+      #ba0cf8,
+      #fb07d9
+    )
+    1;
 }
 
 .calendar-day.signal-prismatic:hover {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.6),
-              0 0 35px rgba(186, 12, 248, 0.5),
-              0 8px 16px rgba(0, 0, 0, 0.2),
-              inset 0 0 25px rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 0 20px rgba(255, 255, 255, 0.6),
+    0 0 35px rgba(186, 12, 248, 0.5),
+    0 8px 16px rgba(0, 0, 0, 0.2),
+    inset 0 0 25px rgba(255, 255, 255, 0.3);
 }
 
 .day-content {
@@ -1069,30 +1074,43 @@ onMounted(() => {
   animation: rainbow-flow 3s ease infinite;
   border: 1px solid;
   border-image: linear-gradient(
-    90deg,
-    #ff0000,
-    #ff9a00,
-    #d0de21,
-    #4fdc4a,
-    #2fc9e2,
-    #5f15f2,
-    #ba0cf8,
-    #ff0000
-  ) 1;
+      90deg,
+      #ff0000,
+      #ff9a00,
+      #d0de21,
+      #4fdc4a,
+      #2fc9e2,
+      #5f15f2,
+      #ba0cf8,
+      #ff0000
+    )
+    1;
 }
 
 .signal-green-box {
-  background: linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(129, 199, 132, 0.2) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(76, 175, 80, 0.3) 0%,
+    rgba(129, 199, 132, 0.2) 100%
+  );
   border-color: #4caf50;
 }
 
 .signal-yellow-box {
-  background: linear-gradient(135deg, rgba(255, 193, 7, 0.4) 0%, rgba(255, 224, 130, 0.3) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 193, 7, 0.4) 0%,
+    rgba(255, 224, 130, 0.3) 100%
+  );
   border-color: #ffc107;
 }
 
 .signal-red-box {
-  background: linear-gradient(135deg, rgba(244, 67, 54, 0.4) 0%, rgba(239, 154, 154, 0.3) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(244, 67, 54, 0.4) 0%,
+    rgba(239, 154, 154, 0.3) 100%
+  );
   border-color: #f44336;
 }
 

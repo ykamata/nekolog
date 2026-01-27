@@ -20,7 +20,7 @@ const emit = defineEmits<Emits>();
 
 // State
 const activeTab = ref<'meal' | 'excretion' | 'medication' | 'memo' | 'signal'>(
-  'meal',
+  'meal'
 );
 const cats = ref<Cat[]>([]);
 const foods = ref<Food[]>([]);
@@ -61,7 +61,7 @@ const formattedDate = computed(() => {
 // Computed - selected food info for auto-calculation
 const selectedFood = computed(() => {
   if (!mealFoodId.value) return null;
-  return foods.value.find(f => f.id === mealFoodId.value) || null;
+  return foods.value.find((f) => f.id === mealFoodId.value) || null;
 });
 
 // Watch quantity and food to calculate calories
@@ -79,11 +79,9 @@ const fetchCats = async () => {
     if (data.length > 0 && !selectedCatId.value) {
       selectedCatId.value = data[0]?.id ?? null;
     }
-  }
-  catch (err) {
+  } catch (err) {
     console.error('猫データ取得エラー:', err);
-  }
-  finally {
+  } finally {
     isLoadingCats.value = false;
   }
 };
@@ -93,11 +91,9 @@ const fetchFoods = async () => {
   try {
     const data = await $fetch<Food[]>('/api/foods');
     foods.value = data;
-  }
-  catch (err) {
+  } catch (err) {
     console.error('フードデータ取得エラー:', err);
-  }
-  finally {
+  } finally {
     isLoadingFoods.value = false;
   }
 };
@@ -106,14 +102,12 @@ const fetchMedications = async () => {
   isLoadingMedications.value = true;
   try {
     const data = await $fetch<{ medications: Medication[] }>(
-      '/api/medications',
+      '/api/medications'
     );
     medications.value = data.medications;
-  }
-  catch (err) {
+  } catch (err) {
     console.error('薬データ取得エラー:', err);
-  }
-  finally {
+  } finally {
     isLoadingMedications.value = false;
   }
 };
@@ -150,8 +144,7 @@ const loadDayData = () => {
   if (note) {
     selectedMedicationId.value = note.medicationId || null;
     memo.value = note.memo || '';
-  }
-  else {
+  } else {
     selectedMedicationId.value = null;
     memo.value = '';
   }
@@ -187,8 +180,7 @@ const saveDailyNote = async () => {
     });
 
     console.log('✅ デイリーノート保存成功');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('❌ デイリーノート保存エラー:', err);
     throw err;
   }
@@ -230,12 +222,10 @@ const saveMeal = async () => {
     emit('showMessage', '食事記録を保存しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('食事記録保存エラー:', err);
     emit('showMessage', '食事記録の保存に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isSaving.value = false;
   }
 };
@@ -264,12 +254,10 @@ const saveExcretion = async () => {
     emit('showMessage', '排泄記録を保存しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('排泄記録保存エラー:', err);
     emit('showMessage', '排泄記録の保存に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isSaving.value = false;
   }
 };
@@ -291,12 +279,10 @@ const saveMedication = async () => {
     emit('showMessage', '頓服薬を保存しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('保存エラー:', err);
     emit('showMessage', '頓服薬の保存に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isSaving.value = false;
   }
 };
@@ -313,12 +299,10 @@ const saveMemo = async () => {
     emit('showMessage', 'メモを保存しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('保存エラー:', err);
     emit('showMessage', 'メモの保存に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isSaving.value = false;
   }
 };
@@ -349,12 +333,10 @@ const saveHealthSignal = async () => {
     emit('showMessage', '健康シグナルを保存しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('健康シグナル保存エラー:', err);
     emit('showMessage', '健康シグナルの保存に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isSaving.value = false;
   }
 };
@@ -378,12 +360,10 @@ const deleteMedication = async () => {
     emit('showMessage', '頓服薬を削除しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('頓服薬削除エラー:', err);
     emit('showMessage', '頓服薬の削除に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isDeleting.value = false;
   }
 };
@@ -406,12 +386,10 @@ const deleteMemo = async () => {
     emit('showMessage', 'メモを削除しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('メモ削除エラー:', err);
     emit('showMessage', 'メモの削除に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isDeleting.value = false;
   }
 };
@@ -442,12 +420,10 @@ const deleteHealthSignal = async () => {
     emit('showMessage', '健康シグナルを削除しました', 'success');
     emit('refresh');
     emit('close');
-  }
-  catch (err) {
+  } catch (err) {
     console.error('健康シグナル削除エラー:', err);
     emit('showMessage', '健康シグナルの削除に失敗しました', 'error');
-  }
-  finally {
+  } finally {
     isDeleting.value = false;
   }
 };
@@ -462,7 +438,7 @@ watch(
       fetchMedications();
       loadDayData();
     }
-  },
+  }
 );
 
 watch(
@@ -471,29 +447,19 @@ watch(
     if (props.isOpen) {
       loadDayData();
     }
-  },
+  }
 );
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div
-        v-if="isOpen"
-        class="modal-overlay"
-        @click="handleBackdropClick"
-      >
+      <div v-if="isOpen" class="modal-overlay" @click="handleBackdropClick">
         <div class="modal-container">
           <!-- Header -->
           <div class="modal-header">
-            <h2 class="modal-title">
-              {{ formattedDate }}の記録
-            </h2>
-            <button
-              type="button"
-              class="modal-close"
-              @click="handleClose"
-            >
+            <h2 class="modal-title">{{ formattedDate }}の記録</h2>
+            <button type="button" class="modal-close" @click="handleClose">
               ✕
             </button>
           </div>
@@ -501,15 +467,8 @@ watch(
           <!-- Cat Selector -->
           <div class="cat-selector">
             <label class="cat-label">猫を選択:</label>
-            <select
-              v-model="selectedCatId"
-              class="cat-select"
-            >
-              <option
-                v-for="cat in cats"
-                :key="cat.id"
-                :value="cat.id"
-              >
+            <select v-model="selectedCatId" class="cat-select">
+              <option v-for="cat in cats" :key="cat.id" :value="cat.id">
                 {{ cat.name }}
               </option>
             </select>
@@ -562,10 +521,7 @@ watch(
           <!-- Tab Content -->
           <div class="tab-content">
             <!-- Meal Tab -->
-            <div
-              v-if="activeTab === 'meal'"
-              class="tab-panel"
-            >
+            <div v-if="activeTab === 'meal'" class="tab-panel">
               <div class="form-group">
                 <label class="form-label">フード</label>
                 <select
@@ -576,21 +532,14 @@ watch(
                   <option :value="null">
                     {{ isLoadingFoods ? '読み込み中...' : 'フードを選択' }}
                   </option>
-                  <option
-                    v-for="food in foods"
-                    :key="food.id"
-                    :value="food.id"
-                  >
+                  <option v-for="food in foods" :key="food.id" :value="food.id">
                     {{ food.name }} ({{
                       food.type === 'DRY' ? 'ドライ' : 'ウェット'
                     }})
                     {{ food.brand ? `- ${food.brand}` : '' }}
                   </option>
                 </select>
-                <div
-                  v-if="selectedFood"
-                  class="food-info"
-                >
+                <div v-if="selectedFood" class="food-info">
                   <small class="food-info-text">
                     カロリー: {{ selectedFood.caloriesPerGram }}kcal/g
                     {{
@@ -611,16 +560,12 @@ watch(
                   placeholder="20"
                   min="0"
                   step="1"
-                >
+                />
               </div>
 
               <div class="form-group">
                 <label class="form-label">時刻</label>
-                <input
-                  v-model="mealTime"
-                  type="time"
-                  class="form-input"
-                >
+                <input v-model="mealTime" type="time" class="form-input" />
               </div>
 
               <div class="form-actions">
@@ -643,10 +588,7 @@ watch(
             </div>
 
             <!-- Excretion Tab -->
-            <div
-              v-if="activeTab === 'excretion'"
-              class="tab-panel"
-            >
+            <div v-if="activeTab === 'excretion'" class="tab-panel">
               <div class="form-group">
                 <label class="form-label">種類</label>
                 <div class="radio-group">
@@ -656,7 +598,7 @@ watch(
                       type="radio"
                       value="URINE"
                       class="radio-input"
-                    >
+                    />
                     <span class="radio-text">💧 おしっこ</span>
                   </label>
                   <label class="radio-label">
@@ -665,7 +607,7 @@ watch(
                       type="radio"
                       value="FECES"
                       class="radio-input"
-                    >
+                    />
                     <span class="radio-text">💩 うんち</span>
                   </label>
                 </div>
@@ -673,11 +615,7 @@ watch(
 
               <div class="form-group">
                 <label class="form-label">時刻</label>
-                <input
-                  v-model="excretionTime"
-                  type="time"
-                  class="form-input"
-                >
+                <input v-model="excretionTime" type="time" class="form-input" />
               </div>
 
               <div class="form-actions">
@@ -700,10 +638,7 @@ watch(
             </div>
 
             <!-- Medication Tab -->
-            <div
-              v-if="activeTab === 'medication'"
-              class="tab-panel"
-            >
+            <div v-if="activeTab === 'medication'" class="tab-panel">
               <div class="form-group">
                 <label class="form-label">頓服薬</label>
                 <select
@@ -758,10 +693,7 @@ watch(
             </div>
 
             <!-- Memo Tab -->
-            <div
-              v-if="activeTab === 'memo'"
-              class="tab-panel"
-            >
+            <div v-if="activeTab === 'memo'" class="tab-panel">
               <div class="form-group">
                 <label class="form-label">メモ・特記事項</label>
                 <textarea
@@ -801,10 +733,7 @@ watch(
             </div>
 
             <!-- Health Signal Tab -->
-            <div
-              v-if="activeTab === 'signal'"
-              class="tab-panel"
-            >
+            <div v-if="activeTab === 'signal'" class="tab-panel">
               <div class="form-group">
                 <label class="form-label">健康シグナルカラー *</label>
                 <div class="signal-color-buttons">
@@ -828,7 +757,7 @@ watch(
                     @click="signalColor = 'GREEN'"
                   >
                     <span class="signal-icon">🟢</span>
-                    <span class="signal-text">正常</span>
+                    <span class="signal-text">良い</span>
                   </button>
                   <button
                     type="button"
@@ -839,7 +768,7 @@ watch(
                     @click="signalColor = 'YELLOW'"
                   >
                     <span class="signal-icon">🟡</span>
-                    <span class="signal-text">注意</span>
+                    <span class="signal-text">まあまあ</span>
                   </button>
                   <button
                     type="button"
@@ -848,7 +777,7 @@ watch(
                     @click="signalColor = 'RED'"
                   >
                     <span class="signal-icon">🔴</span>
-                    <span class="signal-text">警告</span>
+                    <span class="signal-text">ダメ</span>
                   </button>
                 </div>
               </div>
