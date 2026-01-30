@@ -62,6 +62,14 @@ export default defineNuxtConfig({
           'cache-control': 'public, max-age=31536000, immutable',
         },
       },
+      // Disable caching for HTML pages to prevent bfcache issues on iOS Safari
+      '/meals/**': {
+        headers: {
+          'cache-control': 'no-cache, no-store, must-revalidate',
+          'pragma': 'no-cache',
+          'expires': '0',
+        },
+      },
     },
   },
 
