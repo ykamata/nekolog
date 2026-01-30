@@ -43,9 +43,37 @@ const filter = ref<MealRecordFilter>({
 });
 
 // Selected date range shortcut (for styling active state)
-const selectedDateRange = ref<number>(-1); // -1 = all, 0 = today, 1 = yesterday, etc.
+const selectedDateRange = ref<number>(-1); // -1 = all, 0 = today, 1 = yesterday, etc., -2 = custom
 
-// Date range shortcuts
+// Custom date range inputs (YYYY-MM-DD format for input[type="date"])
+const customStartDate = ref<string>('');
+const customEndDate = ref<string>('');
+
+// Format date to YYYY-MM-DD for input[type="date"] (using local timezone)
+const formatDateForInput = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Parse date string (YYYY-MM-DD) to Date object at start of day (local timezone)
+const parseLocalDateStart = (dateStr: string): Date | null => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day, 0, 0, 0, 0);
+};
+
+// Parse date string (YYYY-MM-DD) to Date object at end of day (local timezone)
+const parseLocalDateEnd = (dateStr: string): Date | null => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day, 23, 59, 59, 999);
+};
+
+// Date range shortcuts (-2 = custom date range)
 const dateRangeShortcuts = [
   { label: 'すべて', days: -1 },
   { label: '今日', days: 0 },
@@ -53,6 +81,7 @@ const dateRangeShortcuts = [
   { label: '過去3日', days: 3 },
   { label: '過去1週間', days: 7 },
   { label: '過去1ヶ月', days: 30 },
+  { label: 'カスタム', days: -2 },
 ];
 
 // Computed
@@ -141,6 +170,8 @@ const clearFilters = async () => {
     offset: 0,
   };
   selectedDateRange.value = -1; // Reset to "all"
+  customStartDate.value = '';
+  customEndDate.value = '';
   await fetchMealRecords(true);
   emit('filter-change', filter.value);
 };
@@ -157,6 +188,19 @@ const handleDateRangeShortcut = async (days: number) => {
     // All - clear date filters
     filter.value.startDate = undefined;
     filter.value.endDate = undefined;
+    customStartDate.value = '';
+    customEndDate.value = '';
+  }
+  else if (days === -2) {
+    // Custom - don't change filters yet, wait for user input
+    // Initialize with current filter dates if present
+    if (filter.value.startDate) {
+      customStartDate.value = formatDateForInput(filter.value.startDate);
+    }
+    if (filter.value.endDate) {
+      customEndDate.value = formatDateForInput(filter.value.endDate);
+    }
+    return; // Don't apply filter automatically
   }
   else {
     const now = new Date();
@@ -220,6 +264,31 @@ const handleFoodTypeFilter = async (foodType: 'DRY' | 'WET' | undefined) => {
   filter.value.foodType = foodType as any;
   await applyFilter();
 };
+
+// Handle custom date input changes
+const handleCustomDateChange = async (type: 'start' | 'end', value: string) => {
+  if (type === 'start') {
+    customStartDate.value = value;
+  }
+  else {
+    customEndDate.value = value;
+  }
+
+  // Parse dates and update filter
+  const startDate = parseLocalDateStart(customStartDate.value);
+  const endDate = parseLocalDateEnd(customEndDate.value);
+
+  filter.value.startDate = startDate || undefined;
+  filter.value.endDate = endDate || undefined;
+
+  // Only apply filter if at least one date is set
+  if (startDate || endDate) {
+    await applyFilter();
+  }
+};
+
+// Get today's date in YYYY-MM-DD format for max attribute
+const todayForInput = computed(() => formatDateForInput(new Date()));
 
 const handleEdit = (record: MealRecord) => {
   emit('edit', record);
@@ -327,7 +396,7 @@ watch(
           <select
             class="filter-select"
             :value="filter.catId || ''"
-            @change="handleCatFilter($event.target.value ? Number($event.target.value) : undefined)"
+            @change="handleCatFilter(($event.target as HTMLSelectElement).value ? Number(($event.target as HTMLSelectElement).value) : undefined)"
           >
             <option value="">
               すべて
@@ -348,7 +417,7 @@ watch(
           <select
             class="filter-select"
             :value="selectedDateRange"
-            @change="handleDateRangeShortcut(Number($event.target.value))"
+            @change="handleDateRangeShortcut(Number(($event.target as HTMLSelectElement)?.value))"
           >
             <option
               v-for="shortcut in dateRangeShortcuts"
@@ -366,7 +435,7 @@ watch(
           <select
             class="filter-select"
             :value="filter.foodType || ''"
-            @change="handleFoodTypeFilter($event.target.value || undefined)"
+            @change="handleFoodTypeFilter((($event.target as HTMLSelectElement)?.value as 'DRY' | 'WET') || undefined)"
           >
             <option value="">
               すべて
@@ -378,6 +447,34 @@ watch(
               ウェット
             </option>
           </select>
+        </div>
+      </div>
+
+      <!-- Mobile Custom Date Inputs -->
+      <div
+        v-if="selectedDateRange === -2"
+        class="custom-date-inputs-mobile"
+      >
+        <div class="date-input-group">
+          <label class="date-input-label">開始日</label>
+          <input
+            type="date"
+            class="date-input"
+            :value="customStartDate"
+            :max="customEndDate || todayForInput"
+            @input="handleCustomDateChange('start', ($event.target as HTMLInputElement).value)"
+          >
+        </div>
+        <div class="date-input-group">
+          <label class="date-input-label">終了日</label>
+          <input
+            type="date"
+            class="date-input"
+            :value="customEndDate"
+            :min="customStartDate"
+            :max="todayForInput"
+            @input="handleCustomDateChange('end', ($event.target as HTMLInputElement).value)"
+          >
         </div>
       </div>
 
@@ -422,6 +519,34 @@ watch(
             >
               {{ shortcut.label }}
             </button>
+          </div>
+          <!-- Custom Date Range Inputs -->
+          <div
+            v-if="selectedDateRange === -2"
+            class="custom-date-inputs"
+          >
+            <div class="date-input-group">
+              <label class="date-input-label">開始日</label>
+              <input
+                type="date"
+                class="date-input"
+                :value="customStartDate"
+                :max="customEndDate || todayForInput"
+                @input="handleCustomDateChange('start', ($event.target as HTMLInputElement).value)"
+              >
+            </div>
+            <span class="date-separator">〜</span>
+            <div class="date-input-group">
+              <label class="date-input-label">終了日</label>
+              <input
+                type="date"
+                class="date-input"
+                :value="customEndDate"
+                :min="customStartDate"
+                :max="todayForInput"
+                @input="handleCustomDateChange('end', ($event.target as HTMLInputElement).value)"
+              >
+            </div>
           </div>
         </div>
 
@@ -861,6 +986,60 @@ watch(
   color: white;
 }
 
+/* Custom Date Inputs (Desktop) */
+.custom-date-inputs {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.date-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.date-input-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #666;
+}
+
+.date-input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #333;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.date-input:hover {
+  border-color: #4caf50;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #4caf50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+}
+
+.date-separator {
+  font-size: 1rem;
+  color: #666;
+  padding-bottom: 0.5rem;
+}
+
+/* Custom Date Inputs (Mobile) - Hidden by default */
+.custom-date-inputs-mobile {
+  display: none;
+}
+
 /* Loading State */
 .loading-state {
   text-align: center;
@@ -1209,6 +1388,29 @@ watch(
     outline: none;
     border-color: #4caf50;
     box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.1);
+  }
+
+  /* モバイル用カスタム日付入力 */
+  .custom-date-inputs-mobile {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed #e2e8f0;
+  }
+
+  .custom-date-inputs-mobile .date-input-group {
+    flex: 1;
+  }
+
+  .custom-date-inputs-mobile .date-input-label {
+    font-size: 0.75rem;
+  }
+
+  .custom-date-inputs-mobile .date-input {
+    width: 100%;
+    padding: 0.5rem 0.375rem;
+    font-size: 0.85rem;
   }
 
   .filter-actions {
