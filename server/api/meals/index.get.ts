@@ -133,9 +133,6 @@ export default defineEventHandler(async (event) => {
         : undefined,
     }));
 
-    // Add response caching headers for better performance
-    setHeader(event, 'Cache-Control', 'public, max-age=60, s-maxage=120');
-
     // フロントエンドが期待する形式でレスポンスを返す
     return {
       mealRecords: convertedRecords,
