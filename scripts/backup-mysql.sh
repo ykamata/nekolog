@@ -9,8 +9,10 @@ set -euo pipefail
 
 # Configuration
 BACKUP_DIR="/var/opt/nekolog/backups"
+LOG_FILE="${BACKUP_DIR}/backup.log"
 RETENTION_DAYS=7
-CONTAINER_NAME="nekolog-mysql"
+LOG_MAX_SIZE=10485760  # 10MB in bytes
+CONTAINER_NAME="nekolog-mysql-prod"
 DB_NAME="nekolog"
 DB_USER="ykamata"
 DB_PASS="ykamata"
@@ -18,13 +20,30 @@ DATE=$(date +%Y%m%d_%H%M%S)
 BACKUP_FILE="${BACKUP_DIR}/nekolog_${DATE}.sql.gz"
 
 # Create backup directory if not exists
-mkdir -p "${BACKUP_DIR}"
+#mkdir -p "${BACKUP_DIR}"
+#prepare the directory beforehand
 
 # Log function
 log() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "${LOG_FILE}"
 }
 
+# Rotate log file if it exceeds max size
+rotate_log() {
+    if [[ -f "${LOG_FILE}" ]]; then
+        local size
+        size=$(stat -c%s "${LOG_FILE}" 2>/dev/null || echo 0)
+        if [[ ${size} -gt ${LOG_MAX_SIZE} ]]; then
+            # Keep up to 3 rotated logs
+            [[ -f "${LOG_FILE}.2" ]] && rm -f "${LOG_FILE}.2"
+            [[ -f "${LOG_FILE}.1" ]] && mv "${LOG_FILE}.1" "${LOG_FILE}.2"
+            mv "${LOG_FILE}" "${LOG_FILE}.1"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] Log rotated" > "${LOG_FILE}"
+        fi
+    fi
+}
+
+rotate_log
 log "Starting MySQL backup..."
 
 # Check if MySQL container is running
