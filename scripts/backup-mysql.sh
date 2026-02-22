@@ -8,7 +8,7 @@
 set -euo pipefail
 
 # Configuration
-BACKUP_DIR="/app/backups"
+BACKUP_DIR="/var/opt/nekolog/backups"
 RETENTION_DAYS=7
 CONTAINER_NAME="nekolog-mysql"
 DB_NAME="nekolog"
