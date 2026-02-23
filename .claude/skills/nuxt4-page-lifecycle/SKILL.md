@@ -1,3 +1,8 @@
+---
+name: nuxt4-lifecycle
+description: Nuxt 4のページライフサイクルについて質問されたとき、SSRとクライアントサイドの実行順序を説明するとき、onMountedやuseFetchの使い分けを説明するとき、ハイドレーションについて説明するとき
+---
+
 # Nuxt 4 ページインスタンスのライフサイクル
 
 ## 概要

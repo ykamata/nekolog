@@ -51,8 +51,7 @@ const errorHandler = createUnifiedErrorHandler('MealRecordForm', {
 // Quantity input mode (grams, calories, or scale)
 const quantityMode = ref<'grams' | 'calories' | 'scale'>('grams');
 
-// Scale mode: 5.00 - X.xx = food amount
-const scaleBaseWeight = ref<number>(5.00);
+// Scale mode: base weight calculated from food calories (target: 20kcal)
 const scaleCurrentWeight = ref<number | undefined>(undefined);
 
 // Predefined quantity options
@@ -71,6 +70,15 @@ const predefinedQuantities = ref([
 const selectedFood = computed(() =>
   props.foods.find(food => food.id === formData.value.foodId),
 );
+
+// Scale mode: calculate base weight from food calories (target: 20kcal)
+const scaleBaseWeight = computed(() => {
+  if (!selectedFood.value) return 5.00; // デフォルト値
+  // 20kcal ÷ カロリー/g = グラム数
+  const baseWeight = 20 / selectedFood.value.caloriesPerGram;
+  // 小数点以下2桁に丸める
+  return Math.round(baseWeight * 100) / 100;
+});
 
 const calculatedCalories = computed(() => {
   if (!selectedFood.value || !formData.value.quantity) return 0;
