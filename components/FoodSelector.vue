@@ -8,13 +8,11 @@ interface Props {
   loading?: boolean;
   placeholder?: string;
   disabled?: boolean;
-  showSearch?: boolean;
   showTypeFilter?: boolean;
 }
 
 interface Emits {
   (e: 'select', food: Food): void;
-  (e: 'search', query: string): void;
   (e: 'filter', type: FoodType | null): void;
 }
 
@@ -22,14 +20,12 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   placeholder: 'フードを選択してください',
   disabled: false,
-  showSearch: true,
   showTypeFilter: true,
 });
 
 const emit = defineEmits<Emits>();
 
 // State
-const searchQuery = ref('');
 const selectedType = ref<FoodType | ''>('' as FoodType | '');
 const isDropdownOpen = ref(false);
 const recentSelections = ref<number[]>([]);
@@ -41,16 +37,6 @@ const selectedFood = computed(() => {
 
 const filteredFoods = computed(() => {
   let filtered = props.foods;
-
-  // Filter by search query
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(
-      food =>
-        food.name.toLowerCase().includes(query)
-        || (food.brand && food.brand.toLowerCase().includes(query)),
-    );
-  }
 
   // Filter by type
   if (selectedType.value !== '') {
@@ -97,12 +83,6 @@ const handleFoodSelect = (food: Food) => {
 
   emit('select', food);
   isDropdownOpen.value = false;
-};
-
-const handleSearchInput = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  searchQuery.value = target.value;
-  emit('search', target.value);
 };
 
 const handleTypeFilter = (type: FoodType | '') => {
@@ -184,50 +164,31 @@ watch(
 
 <template>
   <div class="food-selector">
-    <!-- Search and Filter Controls -->
+    <!-- Type Filter Controls -->
     <div
-      v-if="showSearch || showTypeFilter"
+      v-if="showTypeFilter"
       class="selector-controls"
     >
-      <div
-        v-if="showSearch"
-        class="search-container"
-      >
-        <input
-          :value="searchQuery"
-          type="text"
-          class="search-input"
-          placeholder="フード名やブランドで検索..."
-          :disabled="disabled"
-          @input="handleSearchInput"
-        >
-        <div class="search-icon">
-          🔍
-        </div>
-      </div>
-
-      <div
-        v-if="showTypeFilter"
-        class="filter-container"
-      >
-        <select
-          :value="selectedType"
-          class="type-filter"
-          :disabled="disabled"
-          @change="
-            handleTypeFilter(
-              ($event.target as HTMLSelectElement).value as FoodType | '',
-            )
-          "
-        >
-          <option
+      <div class="filter-container">
+        <div class="type-filter-radio-group">
+          <label
             v-for="option in foodTypeOptions"
             :key="option.value || 'all'"
-            :value="option.value"
+            class="type-filter-radio"
+            :class="{ 'type-filter-radio--selected': selectedType === option.value }"
           >
-            {{ option.label }}
-          </option>
-        </select>
+            <input
+              type="radio"
+              name="foodType"
+              :value="option.value"
+              :checked="selectedType === option.value"
+              :disabled="disabled"
+              class="type-filter-radio-input"
+              @change="handleTypeFilter(option.value as FoodType | '')"
+            >
+            <span class="type-filter-radio-label">{{ option.label }}</span>
+          </label>
+        </div>
       </div>
     </div>
 
@@ -302,7 +263,7 @@ watch(
       >
         <!-- Recent Selections -->
         <div
-          v-if="recentFoods.length > 0 && !searchQuery && selectedType === ''"
+          v-if="recentFoods.length > 0 && selectedType === ''"
           class="recent-section"
         >
           <div class="section-header">
@@ -341,7 +302,7 @@ watch(
         <!-- All Foods -->
         <div class="foods-section">
           <div
-            v-if="recentFoods.length > 0 && !searchQuery && !selectedType"
+            v-if="recentFoods.length > 0 && !selectedType"
             class="section-header"
           >
             すべてのフード
@@ -393,56 +354,59 @@ watch(
 }
 
 .selector-controls {
-  display: flex;
-  gap: 1rem;
   margin-bottom: 0.5rem;
 }
 
-.search-container {
-  position: relative;
-  flex: 1;
-}
-
-.search-input {
-  width: 100%;
-  padding: 0.5rem 2rem 0.5rem 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 0.9rem;
-}
-
-.search-input:focus {
-  outline: none;
-  border-color: #4caf50;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
-}
-
-.search-icon {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #666;
-  pointer-events: none;
-}
-
 .filter-container {
-  min-width: 140px;
+  display: flex;
+  align-items: center;
 }
 
-.type-filter {
-  width: 100%;
-  padding: 0.5rem;
+.type-filter-radio-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.type-filter-radio {
+  display: flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
   border: 1px solid #ddd;
   border-radius: 4px;
-  font-size: 0.9rem;
   background: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
 }
 
-.type-filter:focus {
-  outline: none;
+.type-filter-radio:hover:not(:has(input:disabled)) {
   border-color: #4caf50;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+  background: #f8fff8;
+}
+
+.type-filter-radio--selected {
+  border-color: #4caf50;
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.type-filter-radio-input {
+  margin: 0;
+  margin-right: 0.375rem;
+  accent-color: #4caf50;
+}
+
+.type-filter-radio-input:disabled {
+  cursor: not-allowed;
+}
+
+.type-filter-radio:has(input:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.type-filter-radio-label {
+  white-space: nowrap;
 }
 
 .selected-food {
@@ -667,13 +631,20 @@ watch(
 
 /* Mobile responsive */
 @media (max-width: 768px) {
-  .selector-controls {
-    flex-direction: column;
-    gap: 0.5rem;
+  .type-filter-radio-group {
+    width: 100%;
+    justify-content: space-between;
   }
 
-  .filter-container {
-    min-width: auto;
+  .type-filter-radio {
+    flex: 1;
+    justify-content: center;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+  }
+
+  .type-filter-radio-input {
+    margin-right: 0.25rem;
   }
 
   .dropdown-list {
