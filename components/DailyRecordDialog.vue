@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import type { DailyCalendarData } from '~/types/daily-calendar';
-import type { Cat, Food } from '~/types/cat-meal';
+import type { Food } from '~/types/cat-meal';
 import type { Medication } from '~/types/medication';
 
 interface Props {
   isOpen: boolean;
   date: string;
   dayData: DailyCalendarData | null;
+  initialCatId?: number | null;
+  initialCatName?: string;
 }
 
 interface Emits {
@@ -22,10 +24,8 @@ const emit = defineEmits<Emits>();
 const activeTab = ref<'meal' | 'excretion' | 'medication' | 'memo' | 'signal'>(
   'meal'
 );
-const cats = ref<Cat[]>([]);
 const foods = ref<Food[]>([]);
 const medications = ref<Medication[]>([]);
-const selectedCatId = ref<number | null>(null);
 
 // Daily note form
 const selectedMedicationId = ref<number | null>(null);
@@ -45,7 +45,6 @@ const excretionType = ref<'URINE' | 'FECES'>('URINE');
 const excretionTime = ref('');
 
 // Loading states
-const isLoadingCats = ref(false);
 const isLoadingFoods = ref(false);
 const isLoadingMedications = ref(false);
 const isSaving = ref(false);
@@ -71,21 +70,6 @@ watch([mealQuantity, mealFoodId], () => {
 });
 
 // Methods
-const fetchCats = async () => {
-  isLoadingCats.value = true;
-  try {
-    const data = await $fetch<Cat[]>('/api/cats');
-    cats.value = data;
-    if (data.length > 0 && !selectedCatId.value) {
-      selectedCatId.value = data[0]?.id ?? null;
-    }
-  } catch (err) {
-    console.error('猫データ取得エラー:', err);
-  } finally {
-    isLoadingCats.value = false;
-  }
-};
-
 const fetchFoods = async () => {
   isLoadingFoods.value = true;
   try {
@@ -165,13 +149,13 @@ const handleBackdropClick = (event: MouseEvent) => {
 };
 
 const saveDailyNote = async () => {
-  if (!selectedCatId.value) return;
+  if (!props.initialCatId) return;
 
   try {
     await $fetch('/api/daily-notes', {
       method: 'POST',
       body: {
-        catId: selectedCatId.value,
+        catId: props.initialCatId,
         date: props.date,
         medicationId: selectedMedicationId.value,
         emergencyMedication: selectedMedicationId.value ? true : false,
@@ -187,7 +171,7 @@ const saveDailyNote = async () => {
 };
 
 const saveMeal = async () => {
-  if (!selectedCatId.value || !mealFoodId.value) {
+  if (!props.initialCatId || !mealFoodId.value) {
     emit('showMessage', '猫とフードを選択してください', 'error');
     return;
   }
@@ -211,7 +195,7 @@ const saveMeal = async () => {
     await $fetch('/api/meals', {
       method: 'POST',
       body: {
-        catId: selectedCatId.value,
+        catId: props.initialCatId,
         foodId: mealFoodId.value,
         quantity: mealQuantity.value,
         calories,
@@ -231,7 +215,7 @@ const saveMeal = async () => {
 };
 
 const saveExcretion = async () => {
-  if (!selectedCatId.value) {
+  if (!props.initialCatId) {
     emit('showMessage', '猫を選択してください', 'error');
     return;
   }
@@ -245,7 +229,7 @@ const saveExcretion = async () => {
     await $fetch('/api/excretion-records', {
       method: 'POST',
       body: {
-        catId: selectedCatId.value,
+        catId: props.initialCatId,
         type: excretionType.value,
         recordedAt: localDateTime,
       },
@@ -263,7 +247,7 @@ const saveExcretion = async () => {
 };
 
 const saveMedication = async () => {
-  if (!selectedCatId.value) {
+  if (!props.initialCatId) {
     emit('showMessage', '猫を選択してください', 'error');
     return;
   }
@@ -288,7 +272,7 @@ const saveMedication = async () => {
 };
 
 const saveMemo = async () => {
-  if (!selectedCatId.value) {
+  if (!props.initialCatId) {
     emit('showMessage', '猫を選択してください', 'error');
     return;
   }
@@ -308,7 +292,7 @@ const saveMemo = async () => {
 };
 
 const saveHealthSignal = async () => {
-  if (!selectedCatId.value) {
+  if (!props.initialCatId) {
     emit('showMessage', '猫を選択してください', 'error');
     return;
   }
@@ -323,7 +307,7 @@ const saveHealthSignal = async () => {
     await $fetch('/api/health-signals', {
       method: 'POST',
       body: {
-        catId: selectedCatId.value,
+        catId: props.initialCatId,
         date: props.date,
         color: signalColor.value,
         note: signalNote.value || null,
@@ -405,7 +389,7 @@ const deleteHealthSignal = async () => {
     // Get the health signal ID by fetching it first
     const signals = await $fetch<{ id: number }[]>('/api/health-signals', {
       params: {
-        catId: selectedCatId.value,
+        catId: props.initialCatId,
         startDate: props.date,
         endDate: props.date,
       },
@@ -433,7 +417,6 @@ watch(
   () => props.isOpen,
   (newVal) => {
     if (newVal) {
-      fetchCats();
       fetchFoods();
       fetchMedications();
       loadDayData();
@@ -464,14 +447,13 @@ watch(
             </button>
           </div>
 
-          <!-- Cat Selector -->
-          <div class="cat-selector">
-            <label class="cat-label">猫を選択:</label>
-            <select v-model="selectedCatId" class="cat-select">
-              <option v-for="cat in cats" :key="cat.id" :value="cat.id">
-                {{ cat.name }}
-              </option>
-            </select>
+          <!-- Selected Cat Display -->
+          <div
+            v-if="initialCatName"
+            class="cat-display"
+          >
+            <span class="cat-display-label">対象の猫:</span>
+            <span class="cat-display-name">🐱 {{ initialCatName }}</span>
           </div>
 
           <!-- Tabs -->
@@ -886,26 +868,25 @@ watch(
   color: #333;
 }
 
-.cat-selector {
+.cat-display {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem 2rem;
-  background: #f8f9fa;
+  gap: 0.75rem;
+  padding: 0.75rem 2rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-bottom: 1px solid #e0e0e0;
 }
 
-.cat-label {
+.cat-display-label {
+  font-size: 0.85rem;
   font-weight: 600;
-  color: #666;
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.cat-select {
-  flex: 1;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+.cat-display-name {
   font-size: 1rem;
+  font-weight: 700;
+  color: white;
 }
 
 .tabs {
@@ -1316,12 +1297,6 @@ watch(
 
   .modal-title {
     font-size: 1.25rem;
-  }
-
-  .cat-selector {
-    padding: 1rem 1.5rem;
-    flex-direction: column;
-    align-items: stretch;
   }
 
   .tabs {

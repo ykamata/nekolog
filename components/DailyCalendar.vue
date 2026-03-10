@@ -44,6 +44,11 @@ const monthName = computed(() => {
   return `${currentYear.value}年${currentMonth.value}月`;
 });
 
+const selectedCatName = computed(() => {
+  const id = props.catId || selectedCatId.value;
+  return cats.value.find((c) => c.id === id)?.name ?? '';
+});
+
 const weekDays = ['日', '月', '火', '水', '木', '金', '土'];
 
 const calendarDays = computed(() => {
@@ -443,6 +448,8 @@ onMounted(() => {
       :is-open="showRecordDialog"
       :date="selectedDate"
       :day-data="selectedDayData"
+      :initial-cat-id="props.catId || selectedCatId"
+      :initial-cat-name="selectedCatName"
       @close="handleDialogClose"
       @refresh="handleDialogRefresh"
       @show-message="handleShowMessage"
