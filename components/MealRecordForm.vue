@@ -61,7 +61,7 @@ const predefinedQuantities = ref([
   { label: '3g', value: 3, unit: 'grams' },
   { label: '4g', value: 4, unit: 'grams' },
   { label: '5g', value: 5, unit: 'grams' },
-  { label: '10g', value: 10, unit: 'grams' },
+  { label: '20g', value: 20, unit: 'grams' },
 ]);
 
 // Computed properties
