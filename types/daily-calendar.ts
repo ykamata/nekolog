@@ -4,6 +4,33 @@
 
 import type { HealthSignalColor } from '@prisma/client';
 
+// イベント種別定数: 1=病院, 2=包帯交換
+export const DAILY_NOTE_EVENT_TYPES = {
+  HOSPITAL: 1,
+  BANDAGE_CHANGE: 2,
+} as const;
+
+export type DailyNoteEventType = typeof DAILY_NOTE_EVENT_TYPES[keyof typeof DAILY_NOTE_EVENT_TYPES];
+
+export interface DailyNoteEventMeta {
+  type: DailyNoteEventType;
+  label: string;
+  icon: string;
+}
+
+export const DAILY_NOTE_EVENT_META: Record<DailyNoteEventType, DailyNoteEventMeta> = {
+  [DAILY_NOTE_EVENT_TYPES.HOSPITAL]: { type: DAILY_NOTE_EVENT_TYPES.HOSPITAL, label: '病院', icon: '🏥' },
+  [DAILY_NOTE_EVENT_TYPES.BANDAGE_CHANGE]: { type: DAILY_NOTE_EVENT_TYPES.BANDAGE_CHANGE, label: '包帯交換', icon: '🩹' },
+};
+
+export interface DailyNoteEvent {
+  id: number;
+  dailyNoteId: number;
+  eventType: DailyNoteEventType;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Core entity interfaces
 export interface DailyNote {
   id: number;
@@ -58,6 +85,9 @@ export interface DailyCalendarData {
   // Health signal
   signalColor?: HealthSignalColor | null;
   signalNote?: string | null;
+
+  // Events
+  events: DailyNoteEvent[];
 }
 
 // Calendar month data

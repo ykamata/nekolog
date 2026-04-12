@@ -5,6 +5,7 @@ import type {
   MonthlyCalendarData,
   DailyCalendarData,
 } from '~/types/daily-calendar';
+import { DAILY_NOTE_EVENT_TYPES, DAILY_NOTE_EVENT_META } from '~/types/daily-calendar';
 import type { Cat } from '~/types/cat-meal';
 
 interface Props {
@@ -342,6 +343,12 @@ onMounted(() => {
               <span class="day-number">{{ new Date(day.date).getDate() }}</span>
               <div class="day-icons">
                 <span
+                  v-for="meta in Object.values(DAILY_NOTE_EVENT_META).filter(m => day.events.some(e => e.eventType === m.type))"
+                  :key="meta.type"
+                  class="icon-badge"
+                  :title="meta.label"
+                >{{ meta.icon }}</span>
+                <span
                   v-if="day.hasEmergencyMedication"
                   class="icon-badge"
                   title="頓服薬あり"
@@ -422,6 +429,14 @@ onMounted(() => {
         <div class="legend-item">
           <span class="legend-icon">📝</span>
           <span class="legend-label">メモ</span>
+        </div>
+        <div
+          v-for="meta in Object.values(DAILY_NOTE_EVENT_META)"
+          :key="meta.type"
+          class="legend-item"
+        >
+          <span class="legend-icon">{{ meta.icon }}</span>
+          <span class="legend-label">{{ meta.label }}</span>
         </div>
       </div>
       <div class="legend-separator" />

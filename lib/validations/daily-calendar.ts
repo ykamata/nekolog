@@ -50,8 +50,27 @@ export const calendarDataQuerySchema = z.object({
   catId: z.string().transform(Number).pipe(z.number().int().positive()).optional(),
 });
 
+// Daily note event input schema (イベント種別: 1=病院, 2=包帯交換)
+export const dailyNoteEventInputSchema = z.object({
+  catId: z.number({
+    required_error: '猫IDは必須です',
+    invalid_type_error: '猫IDは数値である必要があります',
+  }).int('猫IDは整数である必要があります').positive('猫IDは正の数である必要があります'),
+
+  date: z.coerce.date({
+    required_error: '日付は必須です',
+    invalid_type_error: '日付の形式が無効です',
+  }),
+
+  eventType: z.number({
+    required_error: 'イベント種別は必須です',
+    invalid_type_error: 'イベント種別は数値である必要があります',
+  }).int('イベント種別は整数である必要があります').min(1).max(2),
+});
+
 // Type exports
 export type DailyNoteInputSchema = z.infer<typeof dailyNoteInputSchema>;
 export type DailyNoteUpdateSchema = z.infer<typeof dailyNoteUpdateSchema>;
 export type DailyNoteFilterSchema = z.infer<typeof dailyNoteFilterSchema>;
 export type CalendarDataQuerySchema = z.infer<typeof calendarDataQuerySchema>;
+export type DailyNoteEventInputSchema = z.infer<typeof dailyNoteEventInputSchema>;

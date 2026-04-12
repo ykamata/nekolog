@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { DailyCalendarData } from '~/types/daily-calendar';
+import type { DailyCalendarData, DailyNoteEventType } from '~/types/daily-calendar';
+import { DAILY_NOTE_EVENT_TYPES, DAILY_NOTE_EVENT_META } from '~/types/daily-calendar';
 import type { Food } from '~/types/cat-meal';
 import type { Medication } from '~/types/medication';
 
@@ -21,7 +22,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<Emits>();
 
 // State
-const activeTab = ref<'meal' | 'excretion' | 'medication' | 'memo' | 'signal'>(
+const activeTab = ref<'meal' | 'event' | 'medication' | 'memo' | 'signal'>(
   'meal'
 );
 const foods = ref<Food[]>([]);
@@ -40,9 +41,8 @@ const mealFoodId = ref<number | null>(null);
 const mealQuantity = ref<number | null>(null);
 const mealTime = ref('');
 
-// Excretion form
-const excretionType = ref<'URINE' | 'FECES'>('URINE');
-const excretionTime = ref('');
+// Event form
+const selectedEventTypes = ref<Set<DailyNoteEventType>>(new Set());
 
 // Loading states
 const isLoadingFoods = ref(false);
@@ -101,14 +101,13 @@ const resetFormFields = () => {
   mealFoodId.value = null;
   mealQuantity.value = null;
 
-  // Reset excretion form
-  excretionType.value = 'URINE';
+  // Reset event form
+  selectedEventTypes.value = new Set();
 
   // Set default time to current time
   const now = new Date();
   const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
   mealTime.value = timeStr;
-  excretionTime.value = timeStr;
 };
 
 const loadDayData = () => {
@@ -136,6 +135,10 @@ const loadDayData = () => {
   // Load health signal data
   signalColor.value = props.dayData.signalColor || null;
   signalNote.value = props.dayData.signalNote || '';
+
+  // Load existing events
+  const existingTypes = props.dayData.events.map(e => e.eventType as DailyNoteEventType);
+  selectedEventTypes.value = new Set(existingTypes);
 };
 
 const handleClose = () => {
@@ -214,7 +217,17 @@ const saveMeal = async () => {
   }
 };
 
-const saveExcretion = async () => {
+const toggleEventType = (type: DailyNoteEventType) => {
+  const set = new Set(selectedEventTypes.value);
+  if (set.has(type)) {
+    set.delete(type);
+  } else {
+    set.add(type);
+  }
+  selectedEventTypes.value = set;
+};
+
+const saveEvents = async () => {
   if (!props.initialCatId) {
     emit('showMessage', '猫を選択してください', 'error');
     return;
@@ -222,25 +235,37 @@ const saveExcretion = async () => {
 
   isSaving.value = true;
   try {
-    const [hours = '0', minutes = '0'] = excretionTime.value.split(':');
-    // Create date string in YYYY-MM-DDTHH:mm:ss format (local time)
-    const localDateTime = `${props.date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+    // 既存のイベントIDマップ (eventType -> id)
+    const existingMap = new Map<DailyNoteEventType, number>();
+    for (const e of (props.dayData?.events ?? [])) {
+      existingMap.set(e.eventType as DailyNoteEventType, e.id);
+    }
 
-    await $fetch('/api/excretion-records', {
-      method: 'POST',
-      body: {
-        catId: props.initialCatId,
-        type: excretionType.value,
-        recordedAt: localDateTime,
-      },
-    });
+    const selected = selectedEventTypes.value;
 
-    emit('showMessage', '排泄記録を保存しました', 'success');
+    // 削除: 既存にあるが選択されていないもの
+    for (const [type, id] of existingMap.entries()) {
+      if (!selected.has(type)) {
+        await $fetch(`/api/daily-note-events/${id}`, { method: 'DELETE' });
+      }
+    }
+
+    // 追加: 選択されているが既存にないもの
+    for (const type of selected) {
+      if (!existingMap.has(type)) {
+        await $fetch('/api/daily-note-events', {
+          method: 'POST',
+          body: { catId: props.initialCatId, date: props.date, eventType: type },
+        });
+      }
+    }
+
+    emit('showMessage', 'イベントを保存しました', 'success');
     emit('refresh');
     emit('close');
   } catch (err) {
-    console.error('排泄記録保存エラー:', err);
-    emit('showMessage', '排泄記録の保存に失敗しました', 'error');
+    console.error('イベント保存エラー:', err);
+    emit('showMessage', 'イベントの保存に失敗しました', 'error');
   } finally {
     isSaving.value = false;
   }
@@ -469,10 +494,10 @@ watch(
             <button
               type="button"
               class="tab"
-              :class="{ 'tab--active': activeTab === 'excretion' }"
-              @click="activeTab = 'excretion'"
+              :class="{ 'tab--active': activeTab === 'event' }"
+              @click="activeTab = 'event'"
             >
-              💧 排泄
+              🏥 イベント
             </button>
             <button
               type="button"
@@ -569,35 +594,23 @@ watch(
               </div>
             </div>
 
-            <!-- Excretion Tab -->
-            <div v-if="activeTab === 'excretion'" class="tab-panel">
+            <!-- Event Tab -->
+            <div v-if="activeTab === 'event'" class="tab-panel">
               <div class="form-group">
-                <label class="form-label">種類</label>
-                <div class="radio-group">
-                  <label class="radio-label">
-                    <input
-                      v-model="excretionType"
-                      type="radio"
-                      value="URINE"
-                      class="radio-input"
-                    />
-                    <span class="radio-text">💧 おしっこ</span>
-                  </label>
-                  <label class="radio-label">
-                    <input
-                      v-model="excretionType"
-                      type="radio"
-                      value="FECES"
-                      class="radio-input"
-                    />
-                    <span class="radio-text">💩 うんち</span>
-                  </label>
+                <label class="form-label">イベントを選択（複数可）</label>
+                <div class="event-buttons">
+                  <button
+                    v-for="(meta, key) in DAILY_NOTE_EVENT_META"
+                    :key="key"
+                    type="button"
+                    class="event-button"
+                    :class="{ 'event-button--active': selectedEventTypes.has(meta.type) }"
+                    @click="toggleEventType(meta.type)"
+                  >
+                    <span class="event-icon">{{ meta.icon }}</span>
+                    <span class="event-label">{{ meta.label }}</span>
+                  </button>
                 </div>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label">時刻</label>
-                <input v-model="excretionTime" type="time" class="form-input" />
               </div>
 
               <div class="form-actions">
@@ -612,9 +625,9 @@ watch(
                   type="button"
                   class="btn btn--primary"
                   :disabled="isSaving"
-                  @click="saveExcretion"
+                  @click="saveEvents"
                 >
-                  {{ isSaving ? '保存中...' : '排泄を記録' }}
+                  {{ isSaving ? '保存中...' : 'イベントを保存' }}
                 </button>
               </div>
             </div>
@@ -976,40 +989,49 @@ watch(
   font-weight: 500;
 }
 
-.radio-group {
+/* Event Buttons */
+.event-buttons {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.radio-label {
+.event-button {
+  flex: 1;
+  min-width: 120px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 6px;
+  padding: 1.25rem 1rem;
+  border: 3px solid #e0e0e0;
+  border-radius: 12px;
+  background: #f8f9fa;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-size: 1rem;
 }
 
-.radio-label:hover {
+.event-button:hover {
   border-color: #4caf50;
   background: #e8f5e9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.radio-input {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
+.event-button--active {
+  border-color: #4caf50;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.15) 0%, rgba(129, 199, 132, 0.1) 100%);
+  box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.15);
 }
 
-.radio-input:checked + .radio-text {
+.event-icon {
+  font-size: 2rem;
+}
+
+.event-label {
   font-weight: 600;
-  color: #4caf50;
-}
-
-.radio-text {
-  font-size: 1rem;
+  color: #333;
 }
 
 .checkbox-label {

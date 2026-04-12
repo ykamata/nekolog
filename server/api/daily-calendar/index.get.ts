@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { calendarDataQuerySchema } from '~/lib/validations/daily-calendar';
 import { toLocalDateString } from '~/utils/cat-meal';
-import type { DailyCalendarData, MonthlyCalendarData } from '~/types/daily-calendar';
+import type { DailyCalendarData, MonthlyCalendarData, DailyNoteEventType } from '~/types/daily-calendar';
 
 /**
  * Get monthly calendar data with aggregated information
@@ -21,7 +21,7 @@ export default defineEventHandler(async (event) => {
     const startDate = new Date(year, month - 1, 1, 0, 0, 0, 0);
     const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
-    // Get all daily notes for the month
+    // Get all daily notes for the month (include events)
     const dailyNotes = await prisma.dailyNote.findMany({
       where: {
         ...(catId ? { catId } : {}),
@@ -29,6 +29,9 @@ export default defineEventHandler(async (event) => {
           gte: startDate,
           lte: endDate,
         },
+      },
+      include: {
+        events: true,
       },
     });
 
@@ -170,6 +173,7 @@ export default defineEventHandler(async (event) => {
         hasMemo: Boolean(dailyNote?.memo),
         signalColor: healthSignal?.color || null,
         signalNote: healthSignal?.note || null,
+        events: (dailyNote?.events ?? []).map(e => ({ ...e, eventType: e.eventType as DailyNoteEventType })),
       });
     }
 

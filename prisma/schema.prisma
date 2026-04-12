@@ -329,12 +329,27 @@ model DailyNote {
 
   cat             Cat        @relation(fields: [catId], references: [id], onDelete: Cascade)
   medication      Medication? @relation(fields: [medicationId], references: [id], onDelete: SetNull)
+  events          DailyNoteEvent[]
 
   // 1つの猫に対して1日1レコードのユニーク制約
   @@unique([catId, date])
   @@index([date])
   @@index([catId, date])
   @@map("daily_notes")
+}
+
+// イベント種別: 1=病院, 2=包帯交換
+model DailyNoteEvent {
+  id          Int      @id @default(autoincrement())
+  dailyNoteId Int
+  eventType   Int      // 1=病院, 2=包帯交換
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  dailyNote   DailyNote @relation(fields: [dailyNoteId], references: [id], onDelete: Cascade)
+
+  @@index([dailyNoteId])
+  @@map("daily_note_events")
 }
 
 model CatHealthSignal {
