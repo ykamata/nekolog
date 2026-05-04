@@ -11,6 +11,7 @@ services:
       MYSQL_DATABASE: nekolog
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: Asia/Tokyo
     ports:
       - "${MYSQL_PORT:-3306}:3306"
     volumes:
@@ -58,7 +59,6 @@ services:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/nekolog
       JWT_SECRET: ${JWT_SECRET}
       PORT: 3000
-      TZ: Asia/Tokyo
       # Nuxt production settings
       NITRO_PORT: 3000
       NITRO_HOST: 0.0.0.0
