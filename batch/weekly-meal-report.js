@@ -68,21 +68,28 @@ async function disconnect() {
 
 // scripts/slack/weekly-meal-report.ts
 var DAY_NAMES = ["\u65E5", "\u6708", "\u706B", "\u6C34", "\u6728", "\u91D1", "\u571F"];
+var JST_OFFSET_MS = 9 * 60 * 60 * 1e3;
 function getPreviousWeekRange() {
   const now = /* @__PURE__ */ new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7, 0, 0, 0, 0);
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
+  const jstNow = new Date(now.getTime() + JST_OFFSET_MS);
+  const y = jstNow.getUTCFullYear();
+  const m = jstNow.getUTCMonth();
+  const d = jstNow.getUTCDate();
+  const start = new Date(Date.UTC(y, m, d - 7, 0, 0, 0, 0) - JST_OFFSET_MS);
+  const end = new Date(Date.UTC(y, m, d - 1, 23, 59, 59, 999) - JST_OFFSET_MS);
   return { start, end };
 }
 function formatMMDD(date) {
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
+  const jstDate = new Date(date.getTime() + JST_OFFSET_MS);
+  const mm = String(jstDate.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(jstDate.getUTCDate()).padStart(2, "0");
   return `${mm}/${dd}`;
 }
 function buildTable(days) {
   const header = "\u66DC\u65E5  \u65E5\u4ED8      \u30AB\u30ED\u30EA\u30FC";
   const rows = days.map(({ date, totalCalories }) => {
-    const dow = DAY_NAMES[date.getDay()];
+    const jstDate = new Date(date.getTime() + JST_OFFSET_MS);
+    const dow = DAY_NAMES[jstDate.getUTCDay()];
     const mmdd = formatMMDD(date);
     const kcal = String(Math.round(totalCalories)).padStart(6);
     return `${dow}     ${mmdd}   ${kcal} kcal`;

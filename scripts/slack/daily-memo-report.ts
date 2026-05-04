@@ -2,14 +2,23 @@ import { loadConfig } from './lib/config';
 import { postToSlack, headerBlock, sectionBlock, dividerBlock } from './lib/slack';
 import { getPreviousDayMemos, disconnect } from './lib/db';
 
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
 // スクリプトは毎日 04:00 JST に起動する
-// 前日 = 昨日の 00:00:00 〜 23:59:59
+// 前日 = 昨日の 00:00:00 〜 23:59:59 JST
 function getPreviousDayRange(): { start: Date; end: Date; dateStr: string } {
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
-  const mm = String(start.getMonth() + 1).padStart(2, '0');
-  const dd = String(start.getDate()).padStart(2, '0');
+  const jstNow = new Date(now.getTime() + JST_OFFSET_MS);
+  const y = jstNow.getUTCFullYear();
+  const m = jstNow.getUTCMonth();
+  const d = jstNow.getUTCDate();
+
+  const start = new Date(Date.UTC(y, m, d - 1, 0, 0, 0, 0) - JST_OFFSET_MS);
+  const end = new Date(Date.UTC(y, m, d - 1, 23, 59, 59, 999) - JST_OFFSET_MS);
+
+  const jstPrevDay = new Date(start.getTime() + JST_OFFSET_MS);
+  const mm = String(jstPrevDay.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(jstPrevDay.getUTCDate()).padStart(2, '0');
   return { start, end, dateStr: `${mm}/${dd}` };
 }
 

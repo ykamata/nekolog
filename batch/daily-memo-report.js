@@ -47,12 +47,18 @@ async function disconnect() {
 }
 
 // scripts/slack/daily-memo-report.ts
+var JST_OFFSET_MS = 9 * 60 * 60 * 1e3;
 function getPreviousDayRange() {
   const now = /* @__PURE__ */ new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0, 0);
-  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999);
-  const mm = String(start.getMonth() + 1).padStart(2, "0");
-  const dd = String(start.getDate()).padStart(2, "0");
+  const jstNow = new Date(now.getTime() + JST_OFFSET_MS);
+  const y = jstNow.getUTCFullYear();
+  const m = jstNow.getUTCMonth();
+  const d = jstNow.getUTCDate();
+  const start = new Date(Date.UTC(y, m, d - 1, 0, 0, 0, 0) - JST_OFFSET_MS);
+  const end = new Date(Date.UTC(y, m, d - 1, 23, 59, 59, 999) - JST_OFFSET_MS);
+  const jstPrevDay = new Date(start.getTime() + JST_OFFSET_MS);
+  const mm = String(jstPrevDay.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(jstPrevDay.getUTCDate()).padStart(2, "0");
   return { start, end, dateStr: `${mm}/${dd}` };
 }
 async function main() {
