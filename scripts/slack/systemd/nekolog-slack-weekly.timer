@@ -1,0 +1,9 @@
+[Unit]
+Description=Nekolog Slack Weekly Meal Report Timer
+
+[Timer]
+OnCalendar=Sun *-*-* 04:15:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

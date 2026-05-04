@@ -59,9 +59,12 @@ services:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/nekolog
       JWT_SECRET: ${JWT_SECRET}
       PORT: 3000
+      TZ: Asia/Tokyo
       # Nuxt production settings
       NITRO_PORT: 3000
       NITRO_HOST: 0.0.0.0
+      # Slack通知
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
     ports:
       - "${APP_PORT:-3000}:3000"
     volumes:
