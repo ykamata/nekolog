@@ -2,16 +2,14 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
-
 export interface DailyCalories {
   date: Date;
   totalCalories: number;
 }
 
+// DBのDATETIMEはJST値で格納されているためオフセット不要
 function jstDateKey(date: Date): string {
-  const jst = new Date(date.getTime() + JST_OFFSET_MS);
-  return `${jst.getUTCFullYear()}-${jst.getUTCMonth()}-${jst.getUTCDate()}`;
+  return `${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}`;
 }
 
 export async function getCatName(catId: number): Promise<string> {

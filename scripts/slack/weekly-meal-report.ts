@@ -18,23 +18,22 @@ function getPreviousWeekRange(): { start: Date; end: Date } {
   const d = jstNow.getUTCDate();
   const dow = jstNow.getUTCDay(); // 0=日曜, 6=土曜
 
-  const start = new Date(Date.UTC(y, m, d - (dow + 7), 0, 0, 0, 0) - JST_OFFSET_MS);
-  const end = new Date(Date.UTC(y, m, d - (dow + 1), 23, 59, 59, 999) - JST_OFFSET_MS);
+  // DBのDATETIMEはJST値で格納されているためオフセット不要
+  const start = new Date(Date.UTC(y, m, d - (dow + 7), 0, 0, 0, 0));
+  const end = new Date(Date.UTC(y, m, d - (dow + 1), 23, 59, 59, 999));
   return { start, end };
 }
 
 function formatMMDD(date: Date): string {
-  const jstDate = new Date(date.getTime() + JST_OFFSET_MS);
-  const mm = String(jstDate.getUTCMonth() + 1).padStart(2, '0');
-  const dd = String(jstDate.getUTCDate()).padStart(2, '0');
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
   return `${mm}/${dd}`;
 }
 
 function buildTable(days: DailyCalories[]): string {
   const header = '曜日  日付      カロリー';
   const rows = days.map(({ date, totalCalories }) => {
-    const jstDate = new Date(date.getTime() + JST_OFFSET_MS);
-    const dow = DAY_NAMES[jstDate.getUTCDay()];
+    const dow = DAY_NAMES[date.getUTCDay()];
     const mmdd = formatMMDD(date);
     const kcal = String(Math.round(totalCalories)).padStart(6);
     return `${dow}     ${mmdd}   ${kcal} kcal`;
