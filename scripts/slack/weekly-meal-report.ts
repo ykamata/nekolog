@@ -7,16 +7,19 @@ const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'] as const;
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 // スクリプトは毎週日曜 04:15 JST に起動する
-// 前週 = 7日前(日曜) 00:00:00 〜 昨日(土曜) 23:59:59 JST
+// 前週 = 前週日曜 00:00:00 〜 前週土曜 23:59:59 JST
+// dow=0(日)のとき: start=d-7(先週日), end=d-1(昨日=土) ✓
+// dow=n のとき: start=d-(n+7)(前週日), end=d-(n+1)(前週土) ✓
 function getPreviousWeekRange(): { start: Date; end: Date } {
   const now = new Date();
   const jstNow = new Date(now.getTime() + JST_OFFSET_MS);
   const y = jstNow.getUTCFullYear();
   const m = jstNow.getUTCMonth();
   const d = jstNow.getUTCDate();
+  const dow = jstNow.getUTCDay(); // 0=日曜, 6=土曜
 
-  const start = new Date(Date.UTC(y, m, d - 7, 0, 0, 0, 0) - JST_OFFSET_MS);
-  const end = new Date(Date.UTC(y, m, d - 1, 23, 59, 59, 999) - JST_OFFSET_MS);
+  const start = new Date(Date.UTC(y, m, d - (dow + 7), 0, 0, 0, 0) - JST_OFFSET_MS);
+  const end = new Date(Date.UTC(y, m, d - (dow + 1), 23, 59, 59, 999) - JST_OFFSET_MS);
   return { start, end };
 }
 
