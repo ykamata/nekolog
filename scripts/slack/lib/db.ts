@@ -2,14 +2,16 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
 export interface DailyCalories {
   date: Date;
   totalCalories: number;
 }
 
-// コンテナの TZ=Asia/Tokyo により、ローカル時刻メソッドは JST を返す
-function localDateKey(date: Date): string {
-  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+function jstDateKey(date: Date): string {
+  const jst = new Date(date.getTime() + JST_OFFSET_MS);
+  return `${jst.getUTCFullYear()}-${jst.getUTCMonth()}-${jst.getUTCDate()}`;
 }
 
 export async function getCatName(catId: number): Promise<string> {
@@ -32,7 +34,7 @@ export async function getWeeklyMealSummary(
 
   const dayMap = new Map<string, number>();
   for (const r of records) {
-    const key = localDateKey(r.mealTime);
+    const key = jstDateKey(r.mealTime);
     dayMap.set(key, (dayMap.get(key) ?? 0) + r.calories);
   }
 
@@ -42,7 +44,7 @@ export async function getWeeklyMealSummary(
   for (let i = 0; i < 7; i++) {
     result.push({
       date: new Date(cur),
-      totalCalories: dayMap.get(localDateKey(cur)) ?? 0,
+      totalCalories: dayMap.get(jstDateKey(cur)) ?? 0,
     });
     cur.setDate(cur.getDate() + 1);
   }
