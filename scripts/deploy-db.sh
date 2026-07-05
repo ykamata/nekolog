@@ -27,11 +27,11 @@ cp prisma/schema.mysql.prisma prisma/schema.prisma
 
 # Generate Prisma client
 echo "🔧 Generating Prisma client..."
-npx prisma generate
+pnpm exec prisma generate
 
 # Deploy migrations
 echo "📦 Deploying database migrations..."
-npx prisma migrate deploy
+pnpm exec prisma migrate deploy
 
 # Restore development schema
 echo "🔄 Restoring development schema..."

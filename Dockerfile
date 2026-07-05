@@ -21,20 +21,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Allow node user to use sudo without password
 RUN echo "node ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
-# Copy package files
-COPY package*.json ./
+# Enable pnpm via corepack (built into Node.js — no external download)
+# Version + hash is enforced by package.json "packageManager" field
+RUN corepack enable
 
-# Copy Prisma schema (needed before npm ci for postinstall)
+# Copy package files (pnpm-lock.yaml is required for --frozen-lockfile)
+COPY package.json pnpm-lock.yaml ./
+
+# Copy Prisma schema (needed before pnpm install for postinstall)
 COPY prisma ./prisma/
 
-# Install dependencies (skip postinstall to avoid schema.prisma lookup)
-RUN npm ci --ignore-scripts
+# Install dependencies:
+#   --frozen-lockfile: abort if pnpm-lock.yaml is out of sync (tamper check)
+#   --ignore-scripts:  block malicious postinstall execution
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
-# Run nuxt prepare manually
-RUN npx nuxt prepare
-
-# Generate Prisma Client for MySQL
-RUN npx prisma generate --schema=prisma/schema.prisma
+# Invoke CLIs from node_modules directly (no npx external download)
+RUN pnpm exec nuxt prepare
+RUN pnpm exec prisma generate --schema=prisma/schema.prisma
 
 # Copy application source
 COPY . .

@@ -59,8 +59,8 @@
   },
 
   // Use 'postCreateCommand' to run commands after the container is created
-  // Note: npm install is already done in Dockerfile, so only generate Prisma client
-  "postCreateCommand": "npm run db:generate",
+  // Note: pnpm install is already done in Dockerfile, so only generate Prisma client
+  "postCreateCommand": "pnpm run db:generate",
 
   // Use 'postStartCommand' to run commands after the container starts
   "postStartCommand": "echo '🐱 Nekolog development environment is ready!'",

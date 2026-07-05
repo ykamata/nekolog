@@ -132,7 +132,7 @@ fi
 log_step "Step 6: Prisma Clientの生成（MySQL用）"
 
 log_info "Prisma Clientを生成しています..."
-npm run db:generate:mysql
+pnpm run db:generate:mysql
 log_success "Prisma Client（MySQL用）の生成が完了しました"
 
 # Step 7: データベースマイグレーション
@@ -143,11 +143,11 @@ log_info "マイグレーションを実行しています..."
 # 環境変数を設定してマイグレーション実行
 export DATABASE_URL="mysql://ykamata:ykamata@localhost:3306/nekolog"
 
-if npm run db:migrate:prod; then
+if pnpm run db:migrate:prod; then
   log_success "マイグレーションが完了しました"
 else
   log_warn "マイグレーションに失敗しました。db:pushを試行します..."
-  npm run db:push
+  pnpm run db:push
   log_success "db:pushが完了しました"
 fi
 
@@ -161,7 +161,7 @@ docker compose exec -T mysql mysql -u ykamata -pykamata nekolog -e "SHOW TABLES;
 log_step "Step 9: テストデータの投入"
 
 log_info "テストデータを投入しています..."
-if npm run db:seed:mysql; then
+if pnpm run db:seed:mysql; then
   log_success "テストデータの投入が完了しました"
 else
   log_warn "テストデータの投入をスキップしました（スクリプトが存在しない可能性があります）"
@@ -225,13 +225,13 @@ cat << EOF
 
 【次のステップ】
   1. アプリケーションコンテナを起動:
-     $ npm run docker:up
+     $ pnpm run docker:up
 
   2. Prisma Studioでデータを確認:
-     $ npm run db:studio:mysql
+     $ pnpm run db:studio:mysql
 
   3. すべてのコンテナを停止:
-     $ npm run docker:down
+     $ pnpm run docker:down
 
   4. データも含めて完全削除:
      $ docker compose down -v

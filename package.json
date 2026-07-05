@@ -15,10 +15,10 @@
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
     "test:run": "vitest run",
-    "test:agent": "npx tsx scripts/vitest-agent.ts",
-    "test:agent:watch": "npx tsx scripts/vitest-agent.ts -- --watch",
-    "test:agent:coverage": "npx tsx scripts/vitest-agent.ts -- --coverage",
-    "test:agent:verbose": "npx tsx scripts/vitest-agent.ts -- --verbose",
+    "test:agent": "pnpm exec tsx scripts/vitest-agent.ts",
+    "test:agent:watch": "pnpm exec tsx scripts/vitest-agent.ts -- --watch",
+    "test:agent:coverage": "pnpm exec tsx scripts/vitest-agent.ts -- --coverage",
+    "test:agent:verbose": "pnpm exec tsx scripts/vitest-agent.ts -- --verbose",
     "test:components": "vitest run tests/components",
     "test:performance": "vitest run tests/performance --reporter=verbose",
     "test:performance:report": "node scripts/run-performance-tests.js",
@@ -43,8 +43,8 @@
     "docker:logs:mysql": "docker-compose logs -f mysql",
     "docker:shell:app": "docker-compose exec app sh",
     "docker:shell:mysql": "docker-compose exec mysql mysql -u ${MYSQL_USER} -p${MYSQL_PASSWORD} ${MYSQL_DATABASE:-nekolog}",
-    "docker:seed": "docker-compose exec app npm run db:seed",
-    "docker:studio": "docker-compose exec app npm run db:studio:mysql",
+    "docker:seed": "docker-compose exec app pnpm run db:seed",
+    "docker:studio": "docker-compose exec app pnpm run db:studio:mysql",
     "docker:clean": "docker-compose down -v && rm -rf node_modules/.cache"
   },
   "dependencies": {
@@ -88,5 +88,16 @@
   },
   "engines": {
     "node": ">=20.0.0"
-  }
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "unrs-resolver"
+    ]
+  },
+  "packageManager": "pnpm@10.33.4+sha512.1c67b3b359b2d408119ba1ed289f34b8fc3c6873412bec6fd264fbdc82489e510fcbecb9ce9d22dae7f3b76269d8441046014bdca53b9979cd7a561ad631b800"
 }

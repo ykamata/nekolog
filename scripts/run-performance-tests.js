@@ -43,9 +43,11 @@ class PerformanceTestRunner {
 
       // 結果をレポート形式で出力
       this.generateReport();
-    }
-    catch (error) {
-      console.error('❌ パフォーマンステスト実行中にエラーが発生しました:', error.message);
+    } catch (error) {
+      console.error(
+        '❌ パフォーマンステスト実行中にエラーが発生しました:',
+        error.message
+      );
       process.exit(1);
     }
   }
@@ -58,7 +60,7 @@ class PerformanceTestRunner {
       const startTime = Date.now();
 
       // Vitestでテストを実行
-      const command = `npx vitest run ${testFile} --reporter=json --outputFile=temp-performance-results.json`;
+      const command = `pnpm exec vitest run ${testFile} --reporter=json --outputFile=temp-performance-results.json`;
 
       console.log(`  実行コマンド: ${command}`);
 
@@ -75,8 +77,7 @@ class PerformanceTestRunner {
       this.results.push(result);
 
       console.log(`  ✅ 完了 (${duration}ms)`);
-    }
-    catch (error) {
+    } catch (error) {
       console.error(`  ❌ ${testFile} の実行に失敗:`, error.message);
 
       this.results.push({
@@ -113,8 +114,7 @@ class PerformanceTestRunner {
         tests: testResults.tests || [],
         summary: this.extractPerformanceMetrics(output),
       };
-    }
-    catch (error) {
+    } catch (error) {
       console.warn(`  ⚠️ 結果解析に失敗: ${error.message}`);
 
       return {
@@ -136,13 +136,18 @@ class PerformanceTestRunner {
 
     for (const line of lines) {
       // パフォーマンス結果の行を検出
-      if (line.includes('パフォーマンステスト結果') || line.includes('カレンダーパフォーマンステスト結果')) {
+      if (
+        line.includes('パフォーマンステスト結果') ||
+        line.includes('カレンダーパフォーマンステスト結果')
+      ) {
         // 次の行からメトリクスを抽出
         continue;
       }
 
       // メトリクス行のパターンマッチング
-      const metricMatch = line.match(/^(.+?):\s*(\d+\.?\d*)ms,\s*データ数:\s*(\d+),\s*.*成功:\s*(true|false)/);
+      const metricMatch = line.match(
+        /^(.+?):\s*(\d+\.?\d*)ms,\s*データ数:\s*(\d+),\s*.*成功:\s*(true|false)/
+      );
       if (metricMatch) {
         metrics.push({
           operation: metricMatch[1].trim(),
@@ -247,24 +252,23 @@ class PerformanceTestRunner {
     if (metric.operation.includes('api') || metric.operation.includes('取得')) {
       if (metric.duration < PERFORMANCE_THRESHOLDS.apiResponseTime / 2) {
         return '🟢 優秀';
-      }
-      else if (metric.duration < PERFORMANCE_THRESHOLDS.apiResponseTime) {
+      } else if (metric.duration < PERFORMANCE_THRESHOLDS.apiResponseTime) {
         return '🟡 良好';
-      }
-      else {
+      } else {
         return '🔴 改善必要';
       }
     }
 
     // カレンダー関連の評価
-    if (metric.operation.includes('カレンダー') || metric.operation.includes('描画')) {
+    if (
+      metric.operation.includes('カレンダー') ||
+      metric.operation.includes('描画')
+    ) {
       if (metric.duration < PERFORMANCE_THRESHOLDS.calendarRenderTime / 2) {
         return '🟢 優秀';
-      }
-      else if (metric.duration < PERFORMANCE_THRESHOLDS.calendarRenderTime) {
+      } else if (metric.duration < PERFORMANCE_THRESHOLDS.calendarRenderTime) {
         return '🟡 良好';
-      }
-      else {
+      } else {
         return '🔴 改善必要';
       }
     }
@@ -272,11 +276,9 @@ class PerformanceTestRunner {
     // デフォルト評価
     if (metric.duration < 500) {
       return '🟢 優秀';
-    }
-    else if (metric.duration < 1000) {
+    } else if (metric.duration < 1000) {
       return '🟡 良好';
-    }
-    else {
+    } else {
       return '🔴 改善必要';
     }
   }
@@ -286,37 +288,49 @@ class PerformanceTestRunner {
    */
   generateRecommendations() {
     const recommendations = [];
-    const allMetrics = this.results.flatMap(r => r.summary?.metrics || []);
+    const allMetrics = this.results.flatMap((r) => r.summary?.metrics || []);
 
     // 遅いAPIを特定
-    const slowApis = allMetrics.filter(m =>
-      (m.operation.includes('api') || m.operation.includes('取得'))
-      && m.duration > PERFORMANCE_THRESHOLDS.apiResponseTime,
+    const slowApis = allMetrics.filter(
+      (m) =>
+        (m.operation.includes('api') || m.operation.includes('取得')) &&
+        m.duration > PERFORMANCE_THRESHOLDS.apiResponseTime
     );
 
     if (slowApis.length > 0) {
-      recommendations.push('- API レスポンス時間の改善: キャッシュの活用、データベースインデックスの最適化を検討してください');
+      recommendations.push(
+        '- API レスポンス時間の改善: キャッシュの活用、データベースインデックスの最適化を検討してください'
+      );
     }
 
     // 遅いカレンダー描画を特定
-    const slowCalendar = allMetrics.filter(m =>
-      m.operation.includes('カレンダー')
-      && m.duration > PERFORMANCE_THRESHOLDS.calendarRenderTime,
+    const slowCalendar = allMetrics.filter(
+      (m) =>
+        m.operation.includes('カレンダー') &&
+        m.duration > PERFORMANCE_THRESHOLDS.calendarRenderTime
     );
 
     if (slowCalendar.length > 0) {
-      recommendations.push('- カレンダー描画性能の改善: 仮想スクロール、遅延読み込みの実装を検討してください');
+      recommendations.push(
+        '- カレンダー描画性能の改善: 仮想スクロール、遅延読み込みの実装を検討してください'
+      );
     }
 
     // 大量データ処理の問題を特定
-    const largeDataOperations = allMetrics.filter(m => m.dataSize > 1000 && m.duration > 2000);
+    const largeDataOperations = allMetrics.filter(
+      (m) => m.dataSize > 1000 && m.duration > 2000
+    );
 
     if (largeDataOperations.length > 0) {
-      recommendations.push('- 大量データ処理の最適化: ページネーション、データの分割読み込みを検討してください');
+      recommendations.push(
+        '- 大量データ処理の最適化: ページネーション、データの分割読み込みを検討してください'
+      );
     }
 
     if (recommendations.length === 0) {
-      recommendations.push('- 現在のパフォーマンスは良好です。定期的な監視を継続してください');
+      recommendations.push(
+        '- 現在のパフォーマンスは良好です。定期的な監視を継続してください'
+      );
     }
 
     return `## 推奨事項
@@ -343,8 +357,8 @@ ${recommendations.join('\n')}
     console.log('='.repeat(50));
 
     const totalTests = this.results.length;
-    const successfulTests = this.results.filter(r => r.success).length;
-    const allMetrics = this.results.flatMap(r => r.summary?.metrics || []);
+    const successfulTests = this.results.filter((r) => r.success).length;
+    const allMetrics = this.results.flatMap((r) => r.summary?.metrics || []);
 
     console.log(`総テストファイル数: ${totalTests}`);
     console.log(`成功: ${successfulTests}`);
@@ -352,9 +366,10 @@ ${recommendations.join('\n')}
     console.log(`総メトリクス数: ${allMetrics.length}`);
 
     if (allMetrics.length > 0) {
-      const avgDuration = allMetrics.reduce((sum, m) => sum + m.duration, 0) / allMetrics.length;
-      const maxDuration = Math.max(...allMetrics.map(m => m.duration));
-      const minDuration = Math.min(...allMetrics.map(m => m.duration));
+      const avgDuration =
+        allMetrics.reduce((sum, m) => sum + m.duration, 0) / allMetrics.length;
+      const maxDuration = Math.max(...allMetrics.map((m) => m.duration));
+      const minDuration = Math.min(...allMetrics.map((m) => m.duration));
 
       console.log(`\n⏱️  実行時間統計:`);
       console.log(`  平均: ${avgDuration.toFixed(2)}ms`);
@@ -363,10 +378,11 @@ ${recommendations.join('\n')}
     }
 
     // 問題のあるメトリクスを表示
-    const problemMetrics = allMetrics.filter(m =>
-      !m.success
-      || m.duration > PERFORMANCE_THRESHOLDS.apiResponseTime
-      || m.duration > PERFORMANCE_THRESHOLDS.calendarRenderTime,
+    const problemMetrics = allMetrics.filter(
+      (m) =>
+        !m.success ||
+        m.duration > PERFORMANCE_THRESHOLDS.apiResponseTime ||
+        m.duration > PERFORMANCE_THRESHOLDS.calendarRenderTime
     );
 
     if (problemMetrics.length > 0) {
@@ -374,8 +390,7 @@ ${recommendations.join('\n')}
       problemMetrics.forEach((metric) => {
         console.log(`  - ${metric.operation}: ${metric.duration}ms`);
       });
-    }
-    else {
+    } else {
       console.log('\n✅ すべてのメトリクスが閾値内に収まっています');
     }
 
