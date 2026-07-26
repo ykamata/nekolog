@@ -14,23 +14,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files
-COPY package*.json ./
+# Enable pnpm via corepack (version + hash pinned by package.json "packageManager")
+RUN corepack enable
 
-# Copy Prisma schema
+# Copy package files (pnpm-lock.yaml is required for --frozen-lockfile)
+COPY package.json pnpm-lock.yaml ./
+
+# Copy Prisma schema (needed before pnpm install for postinstall)
 COPY prisma ./prisma/
 
-# Install dependencies (production only)
-RUN npm ci --only=production --ignore-scripts
-
-# Install dev dependencies needed for build
-RUN npm ci --ignore-scripts
+# Install all dependencies (--ignore-scripts: postinstall runs prisma generate before schema is fully in place)
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Run nuxt prepare
-RUN npx nuxt prepare
+RUN pnpm exec nuxt prepare
 
 # Generate Prisma Client for MySQL
-RUN npx prisma generate --schema=prisma/schema.prisma
+RUN pnpm exec prisma generate --schema=prisma/schema.prisma
 
 # Copy application source
 COPY . .
@@ -39,20 +39,20 @@ COPY . .
 ENV NODE_ENV=production
 
 # Build the application
-RUN npm run build
+RUN pnpm run build
 
 # Slack通知バッチスクリプトをバンドル（本番コンテナには tsx が含まれないため esbuild でコンパイル）
-RUN node_modules/.bin/esbuild scripts/slack/weekly-meal-report.ts \
+RUN pnpm exec esbuild scripts/slack/weekly-meal-report.ts \
       --bundle --platform=node --format=esm \
       --external:@prisma/client \
       --outfile=batch/weekly-meal-report.js
-RUN node_modules/.bin/esbuild scripts/slack/daily-memo-report.ts \
+RUN pnpm exec esbuild scripts/slack/daily-memo-report.ts \
       --bundle --platform=node --format=esm \
       --external:@prisma/client \
       --outfile=batch/daily-memo-report.js
 
 # 低カロリー見落としチェックバッチをバンドル
-RUN node_modules/.bin/esbuild scripts/batch/check-low-calorie.ts \
+RUN pnpm exec esbuild scripts/batch/check-low-calorie.ts \
       --bundle --platform=node --format=esm \
       --external:@prisma/client \
       --outfile=batch/check-low-calorie.js
@@ -72,17 +72,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     default-mysql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files
-COPY package*.json ./
+# Enable pnpm via corepack (version + hash pinned by package.json "packageManager")
+RUN corepack enable
+
+# Copy package files (pnpm-lock.yaml is required for --frozen-lockfile)
+COPY package.json pnpm-lock.yaml ./
 
 # Copy Prisma schema
 COPY prisma ./prisma/
 
 # Install production dependencies only
-RUN npm ci --only=production --ignore-scripts
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # Generate Prisma Client for MySQL
-RUN npx prisma generate --schema=prisma/schema.prisma
+RUN pnpm exec prisma generate --schema=prisma/schema.prisma
 
 # Copy built application from builder
 COPY --from=builder /app/.output /app/.output
