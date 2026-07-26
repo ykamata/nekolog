@@ -171,6 +171,7 @@ export default defineEventHandler(async (event) => {
         },
         hasEmergencyMedication: dailyNote?.emergencyMedication || false,
         hasMemo: Boolean(dailyNote?.memo),
+        hasLowCalorieAlert: dailyNote?.lowCalorieAlert || false,
         signalColor: healthSignal?.color || null,
         signalNote: healthSignal?.note || null,
         events: (dailyNote?.events ?? []).map(e => ({ ...e, eventType: e.eventType as DailyNoteEventType })),

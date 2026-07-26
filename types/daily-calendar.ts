@@ -39,6 +39,7 @@ export interface DailyNote {
   medicationId?: number | null;
   emergencyMedication: boolean;
   memo?: string | null;
+  lowCalorieAlert: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -81,6 +82,7 @@ export interface DailyCalendarData {
   // Flags
   hasEmergencyMedication: boolean;
   hasMemo: boolean;
+  hasLowCalorieAlert: boolean;
 
   // Health signal
   signalColor?: HealthSignalColor | null;

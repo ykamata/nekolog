@@ -332,6 +332,7 @@ onMounted(() => {
                 day.excretionCount.total > 0 ||
                 day.hasMemo ||
                 day.hasEmergencyMedication),
+            'calendar-day--low-calorie-alert': day && day.hasLowCalorieAlert,
             [getSignalColorClass(day?.signalColor)]: day && day.signalColor,
           }"
           @click="day && handleDayClick(day)"
@@ -357,6 +358,7 @@ onMounted(() => {
                 <span v-if="day.hasMemo" class="icon-badge" title="メモあり"
                   >📝</span
                 >
+                <span v-if="day.hasLowCalorieAlert" class="icon-badge" title="食事量が少ない可能性があります(前日120kcal未満)">🔵</span>
               </div>
             </div>
 
@@ -429,6 +431,10 @@ onMounted(() => {
         <div class="legend-item">
           <span class="legend-icon">📝</span>
           <span class="legend-label">メモ</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-color-box low-calorie-alert-box" />
+          <span class="legend-label">食事量が少ない可能性</span>
         </div>
         <div
           v-for="meta in Object.values(DAILY_NOTE_EVENT_META)"
@@ -759,6 +765,12 @@ onMounted(() => {
 
 .calendar-day--has-data {
   background: white;
+}
+
+/* 前日の食事量が120kcal未満の場合の見落とし防止マーク */
+.calendar-day--low-calorie-alert {
+  outline: 3px solid #0d47a1;
+  outline-offset: -3px;
 }
 
 /* Health Signal Colors */
@@ -1137,6 +1149,11 @@ onMounted(() => {
     rgba(239, 154, 154, 0.3) 100%
   );
   border-color: #f44336;
+}
+
+.low-calorie-alert-box {
+  background: white;
+  border: 3px solid #0d47a1;
 }
 
 .legend-label {

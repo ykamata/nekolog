@@ -324,6 +324,7 @@ model DailyNote {
   medicationId    Int?     // 頓服薬のID
   emergencyMedication Boolean @default(false) // 頓服薬の投与があったか
   memo            String?  @db.Text // 特記事項・メモ
+  lowCalorieAlert Boolean  @default(false) // 前日の食事量が120kcal未満だったか
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

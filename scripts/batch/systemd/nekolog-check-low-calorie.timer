@@ -1,0 +1,9 @@
+[Unit]
+Description=Nekolog Low Calorie Alert Check Timer
+
+[Timer]
+OnCalendar=*-*-* 04:10:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

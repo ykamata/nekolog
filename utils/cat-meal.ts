@@ -182,6 +182,18 @@ export function calculateGramsFromCalories(
 }
 
 /**
+ * 1日の食事量が「見落とし」とみなされる下限カロリー
+ */
+export const LOW_CALORIE_ALERT_THRESHOLD_KCAL = 120;
+
+/**
+ * 1日の合計カロリーが見落としフラグの対象(120kcal未満)かどうか判定
+ */
+export function isLowCalorieDay(totalCalories: number): boolean {
+  return totalCalories < LOW_CALORIE_ALERT_THRESHOLD_KCAL;
+}
+
+/**
  * Convert quantity input to grams and calories
  */
 export function convertQuantityInput(

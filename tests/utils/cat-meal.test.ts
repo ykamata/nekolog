@@ -14,6 +14,7 @@ import {
   calculateCaloriesFromGrams,
   calculateGramsFromCalories,
   convertQuantityInput,
+  isLowCalorieDay,
   formatDate,
   formatDateTime,
   getStartOfDay,
@@ -296,6 +297,18 @@ describe('Calculation Functions', () => {
         grams: 50,
         calories: 175,
       });
+    });
+  });
+
+  describe('isLowCalorieDay', () => {
+    it('should return true when total calories is below 120kcal', () => {
+      expect(isLowCalorieDay(0)).toBe(true);
+      expect(isLowCalorieDay(119.9)).toBe(true);
+    });
+
+    it('should return false when total calories is 120kcal or above', () => {
+      expect(isLowCalorieDay(120)).toBe(false);
+      expect(isLowCalorieDay(200)).toBe(false);
     });
   });
 });

@@ -1,0 +1,11 @@
+[Unit]
+Description=Nekolog Low Calorie Alert Check
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=ykamata
+ExecStart=docker exec nekolog-app-prod node /app/batch/check-low-calorie.js
+StandardOutput=journal
+StandardError=journal

@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { MealRecordUpdateSchema } from '~/lib/validations/cat-meal';
 import { calculateCaloriesFromGrams, toLocalISOString } from '~/utils/cat-meal';
+import { syncLowCalorieAlert } from '~/server/utils/low-calorie-alert';
 
 const paramsSchema = z.object({
   id: z.coerce.number().positive('Invalid meal record ID format'),
@@ -125,6 +126,8 @@ export default defineEventHandler(async (event) => {
         },
       },
     });
+
+    await syncLowCalorieAlert(mealRecord.catId, mealRecord.mealTime);
 
     console.log('📤 [PUT /api/meals/:id] Response mealRecord dates (before conversion):', {
       mealTime: mealRecord.mealTime,

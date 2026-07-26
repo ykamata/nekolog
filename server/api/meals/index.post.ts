@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { prisma } from '~/lib/prisma';
 import { MealRecordInputSchema } from '~/lib/validations/cat-meal';
 import { calculateCaloriesFromGrams, toLocalISOString } from '~/utils/cat-meal';
+import { syncLowCalorieAlert } from '~/server/utils/low-calorie-alert';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -91,6 +92,8 @@ export default defineEventHandler(async (event) => {
         },
       },
     });
+
+    await syncLowCalorieAlert(mealRecord.catId, mealRecord.mealTime);
 
     // DateオブジェクトをローカルISO文字列に変換してタイムゾーン情報を保持
     const responseRecord = {
